@@ -1,2 +1,2 @@
 # RIDO-Backend
-Reddit Image Downloader and Organizer
+Reddit Image Downloader & Organizer
