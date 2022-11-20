@@ -2,7 +2,6 @@ module Log
 
 open System.Data
 open Donald
-open API.DB
 
 type LogLevels =
     | Fatal
@@ -11,23 +10,18 @@ type LogLevels =
     | Info
     | Debug
 
-type Log =
+type Log<'T> =
     { createdAt: int
       level: LogLevels
       message: string option
       service: string option
       stack: string option
-      other: string option }
+      other: 'T option }
 
-type DBLog =
-    { createdAt: int
-      level: string
-      message: string option
-      service: string option
-      stack: string option
-      other: string option }
+type LogPreparedForDB =
+    { createdAt: int; level: string; message: string; service: string; stack: string; other: string }
 
-let createLog (logData: Log) : DBLog =
+let createLog (logData: Log<'T>) : LogPreparedForDB =
     let logLevel =
         match logData.level with
         | Fatal -> "fatal"
@@ -35,21 +29,31 @@ let createLog (logData: Log) : DBLog =
         | Warn -> "warn"
         | Info -> "info"
         | Debug -> "debug"
-    // TODO: convert Some/None to null/string for db with JSON.stringify. Also JSON.stringify the .other. ACTUALLY, i think in only need to do that for .other as wont the ORM convert Some string to a string and None to null?
+
     { createdAt = logData.createdAt
       level = logLevel
-      message = logData.message
-      service = logData.service
-      stack = logData.stack
-      other = logData.other }
+      message = logData.message |> Option.defaultValue "NULL"
+      service = logData.service |> Option.defaultValue "NULL"
+      stack = logData.stack |> Option.defaultValue "NULL"
+      // TODO: convert .other for db with JSON.stringify.
+      other = logData.other |> Option.defaultValue "NULL" }
 
-// let ofDataReader (reader: IDataReader) : LogReadyForDB =
-//     { createdAt = reader.ReadInt32 "createdAt"
-//       level = reader.ReadString "level"
-//       message = reader.ReadStringOption "message"
-//       service = reader.ReadStringOption "service"
-//       stack = reader.ReadStringOption "stack"
-//       other = reader.ReadStringOption "other" }
+let ofDataReader (reader: IDataReader) : Log<string> =
+    let level =
+        match reader.ReadString "level" with
+        | "fatal" -> Fatal
+        | "error" -> Error
+        | "warn" -> Warn
+        | "info" -> Info
+        | "debug" -> Debug
+        | _ -> Error
+
+    { createdAt = reader.ReadInt32 "createdAt"
+      level = level
+      message = reader.ReadStringOption "message"
+      service = reader.ReadStringOption "service"
+      stack = reader.ReadStringOption "stack"
+      other = reader.ReadStringOption "other" }
 
 // let logs: Result<Log list, DbError> =
 //     let sql =
