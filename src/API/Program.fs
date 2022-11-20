@@ -22,7 +22,6 @@ let webApp =
           // If none of the routes matched then return a 404
           setStatusCode 404 >=> text "Not Found" ]
 
-
 let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     let errorMessage =
         "An unhandled exception has occurred while executing the request."
@@ -30,7 +29,6 @@ let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     giraffeLogger.LogError(ex, errorMessage)
 
     clearResponse >=> setStatusCode 500 >=> text ex.Message
-
 
 let configureCors (builder: CorsPolicyBuilder) =
     builder.WithOrigins("http://localhost:5000").AllowAnyMethod().AllowAnyHeader()
@@ -55,11 +53,13 @@ let configureLogging (builder: ILoggingBuilder) =
 
 // let initLogger () =
 
-
 [<EntryPoint>]
 let main args =
-
+    DotNetEnv.Env.Load("../../.env") |> ignore
     // initLogger ()
+    Log.createLog
+        { createdAt = 1111111; level = Log.Error; message = Some "foo"; service = None; stack = None; other = None }
+    |> ignore
 
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")

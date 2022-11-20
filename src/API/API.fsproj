@@ -7,15 +7,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Donald" Version="7.1.0" />
+    <PackageReference Include="DotNetEnv" Version="2.3.0" />
     <PackageReference Include="Giraffe" Version="6.0.*" />
     <PackageReference Include="Giraffe.ViewEngine" Version="1.4.*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
     <PackageReference Include="Ply" Version="0.3.*" />
+    <PackageReference Include="SQLProvider" Version="1.3.3" />
   </ItemGroup>
 
   <ItemGroup>
     <Compile Include="../Shared/Logging/Logger.fs" />
+    <Compile Include="../Shared/Utils.fs" />
     <Compile Include="DB/DB.fs" />
+    <Compile Include="DB/Settings.fs" />
+    <Compile Include="DB/SubGroup.fs" />
+    <Compile Include="DB/Subreddit.fs" />
+    <Compile Include="DB/Tag.fs" />
+    <Compile Include="DB/Log/Log.fs" />
+    <Compile Include="DB/Log/TraceLog.fs" />
+    <Compile Include="DB/Post/Post.fs" />
     <Compile Include="Routes.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

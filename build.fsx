@@ -4,7 +4,9 @@
 
 // It is recommended to specify a version
 #r "nuget: FsMake, 0.6.1"
+#r "nuget: DotNetEnv, 2.3.0"
 
+open System.IO
 open FsMake
 
 // To import from another fsx/fs script
@@ -17,8 +19,17 @@ open FsMake
 // Skip the first 2 args as they are just a .dll thing and the file name.
 let args = System.Environment.GetCommandLineArgs()[2..]
 
+let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
+
+
+
+let loggingDbInitSQLFilePath = Path.Combine("src", "API", "DB", "init-db.sql")
+let loggingDBReadString = sprintf ".read %s" loggingDbInitSQLFilePath
+
 let dev =
     Step.create "dev" {
+        // Init the dbs
+        do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
         // Commands that return an exit code other than 0 fail the step by default.
         // This can be controlled with [Cmd.exitCodeCheck].
         do!
@@ -30,14 +41,12 @@ let dev =
 
 let devWatch =
     Step.create "dev-watch" {
-        // Commands that return an exit code other than 0 fail the step by default.
-        // This can be controlled with [Cmd.exitCodeCheck].
-        do!
-            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
-            |> Cmd.run
-        do!
-            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
-            |> Cmd.run
+        // Init the dbs
+        do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
+
+        // do!
+        //     Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
+        //     |> Cmd.run
 
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
     }

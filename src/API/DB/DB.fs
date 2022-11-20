@@ -1,36 +1,23 @@
 module API.DB
 
-open System
+open FSharp.Data.Sql
 open Microsoft.Data.Sqlite
-open Dapper.FSharp
+// open System.Data
 
-// https://github.com/Dzoukr/Dapper.FSharp#getting-started
+let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
 
-let init () =
-    OptionTypes.register ()
-    let conn = new SqliteConnection("Data Source=test.db;Version=3;New=True;")
+//https://github.com/fsprojects/SQLProvider/issues/192
+// [<Literal>]
+// let dummy = "Data Source=" + "./asd.db" + "Version=3;foreign keys=true"
 
-    conn.Open()
-// conn :> IDbConnection
+// [<Literal>]
+// let resolutionPath = "/home/coop/.nuget/packages/sqlprovider/1.3.3/lib/net472"
 
-type Person =
-    { Id: Guid
-      FirstName: string
-      LastName: string
-      Position: int
-      DateOfBirth: DateTime option }
+let connectionString =
+    "Data Source=" + loggingDBPath + "Version=3;foreign keys=true"
 
-let newPerson =
-    { Id = Guid.NewGuid()
-      FirstName = "Roman"
-      LastName = "Provaznik"
-      Position = 1
-      DateOfBirth = None }
+// type sql =
+//     SqlDataProvider<Common.DatabaseProviderTypes.SQLITE, SQLiteLibrary=Common.SQLiteLibrary.SystemDataSQLite, ConnectionString=dummy, ResolutionPath=resolutionPath, CaseSensitivityChange=Common.CaseSensitivityChange.ORIGINAL>
+// // open Donald
 
-let personTable = table<Person>
-
-insert {
-    into personTable
-    value newPerson
-}
-|> conn.InsertAsync
+let conn = new SqliteConnection(connectionString)
