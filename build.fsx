@@ -17,12 +17,51 @@ open FsMake
 // Skip the first 2 args as they are just a .dll thing and the file name.
 let args = System.Environment.GetCommandLineArgs()[2..]
 
-// Creates a restore step.
 let dev =
     Step.create "dev" {
         // Commands that return an exit code other than 0 fail the step by default.
         // This can be controlled with [Cmd.exitCodeCheck].
-        do! Cmd.createWithArgs "echo" [ "restore dev" ] |> Cmd.run
+        do!
+            Cmd.createWithArgs "dotnet" [ "run"; "--project"; "src/API/API.fsproj" ]
+            |> Cmd.run
+
+    //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
+    }
+
+let devWatch =
+    Step.create "dev-watch" {
+        // Commands that return an exit code other than 0 fail the step by default.
+        // This can be controlled with [Cmd.exitCodeCheck].
+        do!
+            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
+            |> Cmd.run
+        do!
+            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
+            |> Cmd.run
+
+    //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
+    }
+
+let audit =
+    Step.create "audit" {
+        // Commands that return an exit code other than 0 fail the step by default.
+        // This can be controlled with [Cmd.exitCodeCheck].
+        do!
+            Cmd.createWithArgs "dotnet" [ "list"; "src/API/API.fsproj"; "package"; "--vulnerable" ]
+            |> Cmd.run
+
+    //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
+    }
+
+let outdated =
+    Step.create "outdated" {
+        // Commands that return an exit code other than 0 fail the step by default.
+        // This can be controlled with [Cmd.exitCodeCheck].
+        do!
+            Cmd.createWithArgs "dotnet" [ "list"; "src/API/API.fsproj"; "package"; "--outdated" ]
+            |> Cmd.run
+
+    //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
     }
 
 let lint =
@@ -41,10 +80,11 @@ let lint =
 // You can also define pipelines from other pipelines.
 Pipelines.create {
     let! defaultPipeline = Pipeline.create "default" { run dev }
-
+    do! Pipeline.create "dev-watch" { run devWatch }
     do! Pipeline.create "lint" { run lint }
-
     do! Pipeline.create "dev" { run dev }
+    do! Pipeline.create "outdated" { run outdated }
+    do! Pipeline.create "audit" { run audit }
 
     default_pipeline defaultPipeline
 }

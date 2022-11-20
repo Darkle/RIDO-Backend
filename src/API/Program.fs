@@ -9,29 +9,31 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
+open API.Routes
 
 let webApp =
     choose
-        [ GET >=> choose [ route "/" >=> text "Hello World" ]
+        [ routeCix "/bar" >=> text "Bar"
+          routeCix "/name-as-query" >=> logquery
+          routeCif "/name/%s" logpath
+
+          subRouteCi "/api" (choose [ routeCix "/foo" >=> text "Foo 1"; routeCix "/bar" >=> text "Bar 1" ])
+
+          // If none of the routes matched then return a 404
           setStatusCode 404 >=> text "Not Found" ]
 
-// ---------------------------------
-// Error handler
-// ---------------------------------
 
-let errorHandler (ex: Exception) (logger: ILogger) =
-    logger.LogError(ex, "An unhandled exception has occurred while executing the request.")
+let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
+    let errorMessage =
+        "An unhandled exception has occurred while executing the request."
+
+    giraffeLogger.LogError(ex, errorMessage)
+
     clearResponse >=> setStatusCode 500 >=> text ex.Message
 
-// ---------------------------------
-// Config and Main
-// ---------------------------------
 
 let configureCors (builder: CorsPolicyBuilder) =
-    builder
-        .WithOrigins("http://localhost:5000", "https://localhost:5001")
-        .AllowAnyMethod()
-        .AllowAnyHeader()
+    builder.WithOrigins("http://localhost:5000").AllowAnyMethod().AllowAnyHeader()
     |> ignore
 
 let configureApp (app: IApplicationBuilder) =
@@ -39,7 +41,7 @@ let configureApp (app: IApplicationBuilder) =
 
     (match env.IsDevelopment() with
      | true -> app.UseDeveloperExceptionPage()
-     | false -> app.UseGiraffeErrorHandler(errorHandler).UseHttpsRedirection())
+     | false -> app.UseGiraffeErrorHandler(errorHandler))
         .UseCors(configureCors)
         .UseStaticFiles()
         .UseGiraffe(webApp)
@@ -51,8 +53,14 @@ let configureServices (services: IServiceCollection) =
 let configureLogging (builder: ILoggingBuilder) =
     builder.AddConsole().AddDebug() |> ignore
 
+// let initLogger () =
+
+
 [<EntryPoint>]
 let main args =
+
+    // initLogger ()
+
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")
 

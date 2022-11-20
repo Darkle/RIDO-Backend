@@ -9,10 +9,14 @@
   <ItemGroup>
     <PackageReference Include="Giraffe" Version="6.0.*" />
     <PackageReference Include="Giraffe.ViewEngine" Version="1.4.*" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
     <PackageReference Include="Ply" Version="0.3.*" />
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/Logging/Logger.fs" />
+    <Compile Include="DB/DB.fs" />
+    <Compile Include="Routes.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 
@@ -24,11 +28,7 @@
   </ItemGroup>
 
   <Target Name="FSharpLint" AfterTargets="BeforeBuild">
-    <Exec
-      Command="dotnet fsharplint -f msbuild lint $(MSBuildProjectFullPath)"
-      ConsoleToMsBuild="true"
-      IgnoreExitCode="false"
-    />
+    <Exec Command="dotnet fsharplint -f msbuild lint $(MSBuildProjectFullPath)" ConsoleToMsBuild="true" IgnoreExitCode="false" />
   </Target>
 
 </Project>
