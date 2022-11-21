@@ -1,6 +1,5 @@
 module API.DB
 
-open FSharp.Data.Sql
 open Microsoft.Data.Sqlite
 // open System.Data
 
@@ -20,4 +19,4 @@ let connectionString =
 //     SqlDataProvider<Common.DatabaseProviderTypes.SQLITE, SQLiteLibrary=Common.SQLiteLibrary.SystemDataSQLite, ConnectionString=dummy, ResolutionPath=resolutionPath, CaseSensitivityChange=Common.CaseSensitivityChange.ORIGINAL>
 // // open Donald
 
-let conn = new SqliteConnection(connectionString)
+// let conn = new SqliteConnection(connectionString)

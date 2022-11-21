@@ -2,7 +2,7 @@ module API.Routes
 
 open Giraffe
 open Microsoft.AspNetCore.Http
-open Serilog
+// open Serilog
 
 type AdditionalData = { Name: string }
 
@@ -10,7 +10,7 @@ let logquery: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         let time = 4
 
-        Log.Information("Processed in {TimeMS:000} ms.", time)
+        // Log.Information("Processed in {TimeMS:000} ms.", time)
 
         let name = ctx.TryGetQueryStringValue "name" |> Option.defaultValue "Giraffe"
         let greeting = sprintf "Hello World, from %s" name

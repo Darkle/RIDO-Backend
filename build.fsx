@@ -15,13 +15,10 @@ open FsMake
 // open foo
 // You should now have access to stuff in the foo module in this script
 
-
 // Skip the first 2 args as they are just a .dll thing and the file name.
 let args = System.Environment.GetCommandLineArgs()[2..]
 
 let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
-
-
 
 let loggingDbInitSQLFilePath = Path.Combine("src", "API", "DB", "init-db.sql")
 let loggingDBReadString = sprintf ".read %s" loggingDbInitSQLFilePath
@@ -44,9 +41,9 @@ let devWatch =
         // Init the dbs
         do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
 
-        // do!
-        //     Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
-        //     |> Cmd.run
+        do!
+            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
+            |> Cmd.run
 
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
     }

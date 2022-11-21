@@ -52,29 +52,30 @@ let configureLogging (builder: ILoggingBuilder) =
     builder.AddConsole().AddDebug() |> ignore
 
 // let initLogger () =
+type Merp = { hello: string }
 
 [<EntryPoint>]
 let main args =
     DotNetEnv.Env.Load("../../.env") |> ignore
     // initLogger ()
-    Log.createLog
-        { createdAt = 1111111; level = Log.Error; message = Some "foo"; service = None; stack = None; other = None }
+
+    Log.warn { message = Some "Hello"; service = None; stack = None; other = Some({ hello = "derp" }) }
     |> ignore
 
-    let contentRoot = Directory.GetCurrentDirectory()
-    let webRoot = Path.Combine(contentRoot, "WebRoot")
+    // let contentRoot = Directory.GetCurrentDirectory()
+    // let webRoot = Path.Combine(contentRoot, "WebRoot")
 
-    Host
-        .CreateDefaultBuilder(args)
-        .ConfigureWebHostDefaults(fun webHostBuilder ->
-            webHostBuilder
-                .UseContentRoot(contentRoot)
-                .UseWebRoot(webRoot)
-                .Configure(Action<IApplicationBuilder> configureApp)
-                .ConfigureServices(configureServices)
-                .ConfigureLogging(configureLogging)
-            |> ignore)
-        .Build()
-        .Run()
+    // Host
+    //     .CreateDefaultBuilder(args)
+    //     .ConfigureWebHostDefaults(fun webHostBuilder ->
+    //         webHostBuilder
+    //             .UseContentRoot(contentRoot)
+    //             .UseWebRoot(webRoot)
+    //             .Configure(Action<IApplicationBuilder> configureApp)
+    //             .ConfigureServices(configureServices)
+    //             .ConfigureLogging(configureLogging)
+    //         |> ignore)
+    //     .Build()
+    //     .Run()
 
     0
