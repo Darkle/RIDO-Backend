@@ -18,6 +18,9 @@ open FsMake
 // Skip the first 2 args as they are just a .dll thing and the file name.
 let args = System.Environment.GetCommandLineArgs()[2..]
 
+let loadEnvFile (isDev: bool) =
+    DotNetEnv.Env.Load(if isDev then "./.env.dev" else "./.env") |> ignore
+
 let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
 
 let loggingDbInitSQLFilePath = Path.Combine("src", "API", "DB", "init-db.sql")
@@ -25,12 +28,14 @@ let loggingDBReadString = sprintf ".read %s" loggingDbInitSQLFilePath
 
 let dev =
     Step.create "dev" {
+        loadEnvFile true
+
         // Init the dbs
         do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
         // Commands that return an exit code other than 0 fail the step by default.
         // This can be controlled with [Cmd.exitCodeCheck].
         do!
-            Cmd.createWithArgs "dotnet" [ "run"; "--project"; "src/API/API.fsproj" ]
+            Cmd.createWithArgs "dotnet" [ "run"; "--project"; "src/API/API.fsproj"; "--"; "ISDEV" ]
             |> Cmd.run
 
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
@@ -38,11 +43,14 @@ let dev =
 
 let devWatch =
     Step.create "dev-watch" {
+        loadEnvFile true
+
+        //  printfn "env var %A" (DotNetEnv.Env.GetBool("ISDEV"))
         // Init the dbs
         do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
 
         do!
-            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj" ]
+            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj"; "--"; "ISDEV" ]
             |> Cmd.run
 
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples

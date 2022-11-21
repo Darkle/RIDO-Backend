@@ -32,15 +32,23 @@ let private createLogForDB (logData: Log<'T>) : LogPreparedForDB =
 let private createTimestamp () =
     Convert.ToInt64((DateTime.UtcNow - DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds)
 
-let private logToConsole (log:Log<'T>) =
-    let printPreface = match log.level with
-                        | "fatal" -> "⛔"
-                        | "error" -> "⛔"
-                        | "warn" -> "⚠️"
-                        | _ -> ""
+let private logToConsole (log: Log<'T>) =
+    let printPreface =
+        match log.level with
+        | "fatal" -> "⛔"
+        | "error" -> "⛔"
+        | "warn" -> "⚠️"
+        | _ -> ""
+
     printfn "%s \n %A" printPreface log
 
+let setLogLevel = DotNetEnv.Env.GetString("LOGLEVEL", "error")
+
 let private log (logLevel: string) (logData: LogData<'T>) =
+    printfn "setLogLevel %s" setLogLevel
+    if logLevel.ToLower() <> setLogLevel.ToLower() then
+        ()
+
     let logDataWithLevelAndTimestamp: Log<'T> =
         { createdAt = createTimestamp ()
           level = logLevel
@@ -59,7 +67,6 @@ let fatal (logData: LogData<'T>) = log "fatal" logData
 let error (logData: LogData<'T>) = log "error" logData
 let warn (logData: LogData<'T>) = log "warn" logData
 let info (logData: LogData<'T>) = log "info" logData
-
 let debug (logData: LogData<'T>) = log "debug" logData
 
 // NOTE: not sure if setting ofDataReader to be private causes issues with Donald ORM

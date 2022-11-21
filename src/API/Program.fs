@@ -51,13 +51,16 @@ let configureServices (services: IServiceCollection) =
 let configureLogging (builder: ILoggingBuilder) =
     builder.AddConsole().AddDebug() |> ignore
 
-// let initLogger () =
 type Merp = { hello: string }
+
+let loadDotEnvFile (args: string array) =
+    let isDev = args |> Array.contains "ISDEV"
+    let dotEnvFileToLoad = if isDev then "../../.env.dev" else "../../.env"
+    DotNetEnv.Env.Load(dotEnvFileToLoad) |> ignore
 
 [<EntryPoint>]
 let main args =
-    DotNetEnv.Env.Load("../../.env") |> ignore
-    // initLogger ()
+    loadDotEnvFile (args)
 
     Log.warn { message = Some "Hello"; service = None; stack = None; other = Some({ hello = "derp" }) }
     |> ignore
