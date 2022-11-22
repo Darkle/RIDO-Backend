@@ -2,10 +2,11 @@ module API.DB
 
 open Microsoft.Data.Sqlite
 
-let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
+let loggingDBPath =
+    DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
+    |> Utils.getProperEnvVarFilePath
 
-let connectionString =
-    "Data Source=" + loggingDBPath + "Version=3;foreign keys=true"
+let loggingDBConnectionString = "Filename=" + loggingDBPath + ";foreign keys=true"
 
 // fsharplint:disable-next-line RedundantNewKeyword
-let conn = new SqliteConnection(connectionString)
+let logsDB = new SqliteConnection(loggingDBConnectionString)

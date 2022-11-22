@@ -1,3 +1,100 @@
-module Logger
+module Log
 
-let foo = 5
+open System
+
+type LogLevelAsNumber =
+    | Fatal = 0
+    | Error = 1
+    | Warn = 2
+    | Info = 3
+    | Debug = 4
+    | Trace = 4
+
+type LogData<'T> = { message: string option; service: string option; stack: string option; other: 'T option }
+
+type Log<'T> =
+    { createdAt: int64
+      level: string
+      message: string option
+      service: string option
+      stack: string option
+      other: 'T option }
+
+type LogPreparedForDB =
+    { createdAt: int64; level: string; message: string; service: string; stack: string; other: string }
+
+let private createLogForDB (logData: Log<'T>) =
+    { createdAt = logData.createdAt
+      level = logData.level
+      message = logData.message |> Option.defaultValue "NULL"
+      service = logData.service |> Option.defaultValue "NULL"
+      stack = logData.stack |> Option.defaultValue "NULL"
+      // Dont need to json stringify as not going to json parse on the frontend. Just gonna display it as a string.
+      other =
+          match logData.other with
+          | Some thing -> thing |> string
+          | None -> "NULL" }
+
+let private createTimestamp () =
+    Convert.ToInt64((DateTime.UtcNow - DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds)
+
+let private logToConsole (log: Log<'T>) =
+    let preface =
+        match log.level with
+        | "fatal" -> "⛔"
+        | "error" -> "⛔"
+        | "warn" -> "⚠️"
+        | _ -> ""
+
+    printfn "%s \n %A" preface log
+
+let sendLogToDB log =
+    //TODO: send via HTTP to the API service
+    ()
+
+let private convertStringLogLevelToNum (logLevel: string) =
+    match logLevel.ToLower() with
+    | "fatal" -> LogLevelAsNumber.Fatal
+    | "error" -> LogLevelAsNumber.Error
+    | "warn" -> LogLevelAsNumber.Warn
+    | "info" -> LogLevelAsNumber.Info
+    | "debug" -> LogLevelAsNumber.Debug
+    | "trace" -> LogLevelAsNumber.Trace
+    | _ -> LogLevelAsNumber.Error
+
+let private globalLogLevelAsNum =
+    convertStringLogLevelToNum (DotNetEnv.Env.GetString("LOGLEVEL", "error"))
+
+let logLevelIsNotHighEnough (logLevel: string) =
+    let logLevelAsNum = convertStringLogLevelToNum logLevel
+    logLevelAsNum > globalLogLevelAsNum
+
+let isTraceLog (logLevel: string) = logLevel.ToLower() = "trace"
+
+let private log (logLevel: string) (logData: LogData<'T>) =
+    // Always allow trace logs through to be saved to db
+    if not (isTraceLog logLevel) && logLevelIsNotHighEnough logLevel then
+        ()
+
+    let logDataWithLevelAndTimestamp: Log<'T> =
+        { createdAt = createTimestamp ()
+          level = logLevel
+          message = logData.message
+          service = logData.service
+          stack = logData.stack
+          other = logData.other }
+
+    logDataWithLevelAndTimestamp |> createLogForDB |> sendLogToDB
+
+    // Dont wanna log trace logs to console; too noisy.
+    if not (isTraceLog logLevel) then
+        logToConsole logDataWithLevelAndTimestamp
+
+    ()
+
+let fatal (logData: LogData<'T>) = log "fatal" logData
+let error (logData: LogData<'T>) = log "error" logData
+let warn (logData: LogData<'T>) = log "warn" logData
+let info (logData: LogData<'T>) = log "info" logData
+let debug (logData: LogData<'T>) = log "debug" logData
+let trace (logData: LogData<'T>) = log "trace" logData
