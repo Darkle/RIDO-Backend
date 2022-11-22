@@ -23,7 +23,15 @@ let loadEnvFile (isDev: bool) =
 
 let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
 
-let loggingDbInitSQLFilePath = Path.Combine("src", "API", "DB", "init-db.sql")
+let traceLoggingDBPath =
+    DotNetEnv.Env.GetString("TRACELOGGINGDBPATH", "./trace-logging.db")
+
+let loggingDbInitSQLFilePath =
+    Path.Combine("src", "API", "DB", "init-logging-db.sql")
+
+let traceLoggingDbInitSQLFilePath =
+    Path.Combine("src", "API", "DB", "init-trace-logging-db.sql")
+
 let loggingDBReadString = sprintf ".read %s" loggingDbInitSQLFilePath
 
 let dev =
@@ -32,6 +40,10 @@ let dev =
 
         // Init the dbs
         do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
+
+        do!
+            Cmd.createWithArgs "sqlite3" [ traceLoggingDBPath; traceLoggingDbInitSQLFilePath ]
+            |> Cmd.run
         // Commands that return an exit code other than 0 fail the step by default.
         // This can be controlled with [Cmd.exitCodeCheck].
         do!
@@ -45,9 +57,11 @@ let devWatch =
     Step.create "dev-watch" {
         loadEnvFile true
 
-        //  printfn "env var %A" (DotNetEnv.Env.GetBool("ISDEV"))
-        // Init the dbs
         do! Cmd.createWithArgs "sqlite3" [ loggingDBPath; loggingDBReadString ] |> Cmd.run
+
+        do!
+            Cmd.createWithArgs "sqlite3" [ traceLoggingDBPath; traceLoggingDbInitSQLFilePath ]
+            |> Cmd.run
 
         do!
             Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/API/API.fsproj"; "--"; "ISDEV" ]

@@ -1,7 +1,7 @@
 module Log
 
 open System
-open System.Data
+open Microsoft.Data.Sqlite
 open Donald
 
 type LogData<'T> = { message: string option; service: string option; stack: string option; other: 'T option }
@@ -17,7 +17,7 @@ type private Log<'T> =
 type private LogPreparedForDB =
     { createdAt: int64; level: string; message: string; service: string; stack: string; other: string }
 
-let private createLogForDB (logData: Log<'T>) : LogPreparedForDB =
+let private createLogForDB (logData: Log<'T>) =
     { createdAt = logData.createdAt
       level = logData.level
       message = logData.message |> Option.defaultValue "NULL"
@@ -42,11 +42,32 @@ let private logToConsole (log: Log<'T>) =
 
     printfn "%s \n %A" printPreface log
 
-let setLogLevel = DotNetEnv.Env.GetString("LOGLEVEL", "error")
+let private globalLogLevel = DotNetEnv.Env.GetString("LOGLEVEL", "error")
+
+let mutable private db = null
+
+let init (dbConnection: SqliteConnection) =
+    db <- dbConnection
+    ()
+
+let private saveLogToDB log =
+    let sql =
+        "
+    INSERT INTO Log (createdAt, level, message, service, stack, other)
+    VALUES (@createdAt, @level, @message, @service, @stack, @other);"
+
+    let sqlParams =
+        [ ("createdAt", SqlType.Int64 log.createdAt)
+          ("level", SqlType.String log.level)
+          ("message", SqlType.String log.message)
+          ("service", SqlType.String log.service)
+          ("stack", SqlType.String log.stack)
+          ("other", SqlType.String log.other) ]
+
+    db |> Db.newCommand sql |> Db.setParams sqlParams |> Db.Async.exec
 
 let private log (logLevel: string) (logData: LogData<'T>) =
-    printfn "setLogLevel %s" setLogLevel
-    if logLevel.ToLower() <> setLogLevel.ToLower() then
+    if logLevel.ToLower() <> globalLogLevel.ToLower() then
         ()
 
     let logDataWithLevelAndTimestamp: Log<'T> =
@@ -57,8 +78,7 @@ let private log (logLevel: string) (logData: LogData<'T>) =
           stack = logData.stack
           other = logData.other }
 
-    let dbLog = createLogForDB logDataWithLevelAndTimestamp
-    // TODO: Log to db
+    logDataWithLevelAndTimestamp |> createLogForDB |> saveLogToDB
 
     logToConsole logDataWithLevelAndTimestamp
     ()
@@ -68,23 +88,3 @@ let error (logData: LogData<'T>) = log "error" logData
 let warn (logData: LogData<'T>) = log "warn" logData
 let info (logData: LogData<'T>) = log "info" logData
 let debug (logData: LogData<'T>) = log "debug" logData
-
-// NOTE: not sure if setting ofDataReader to be private causes issues with Donald ORM
-let private ofDataReader (reader: IDataReader) : Log<string> =
-    { createdAt = reader.ReadInt32 "createdAt"
-      level = reader.ReadString "level"
-      message = reader.ReadStringOption "message"
-      service = reader.ReadStringOption "service"
-      stack = reader.ReadStringOption "stack"
-      other = reader.ReadStringOption "other" }
-
-// let logs: Result<Log list, DbError> =
-//     let sql =
-//         "
-//         SELECT  full_name
-//         FROM    author
-//         WHERE   author_id = @author_id"
-
-//     let param = [ "author_id", SqlType.Int 1 ]
-
-//     conn |> Db.newCommand sql |> Db.setParams param |> Db.query ofDataReader

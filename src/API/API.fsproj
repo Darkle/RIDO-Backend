@@ -38,7 +38,9 @@
   </ItemGroup>
 
   <Target Name="FSharpLint" AfterTargets="BeforeBuild">
-    <Exec Command="dotnet fsharplint -f msbuild lint $(MSBuildProjectFullPath)" ConsoleToMsBuild="true" IgnoreExitCode="false" />
+    <!-- Disabling this because when it errors, you dont get the fsharplint error reported,
+    you just get a generic error which is confusing -->
+    <!-- <Exec Command="dotnet fsharplint -f msbuild lint $(MSBuildProjectFullPath)" ConsoleToMsBuild="true" IgnoreExitCode="false" /> -->
   </Target>
 
 </Project>

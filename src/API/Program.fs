@@ -51,8 +51,6 @@ let configureServices (services: IServiceCollection) =
 let configureLogging (builder: ILoggingBuilder) =
     builder.AddConsole().AddDebug() |> ignore
 
-type Merp = { hello: string }
-
 let loadDotEnvFile (args: string array) =
     let isDev = args |> Array.contains "ISDEV"
     let dotEnvFileToLoad = if isDev then "../../.env.dev" else "../../.env"
@@ -61,8 +59,10 @@ let loadDotEnvFile (args: string array) =
 [<EntryPoint>]
 let main args =
     loadDotEnvFile (args)
+    // Logger needs db ref in order to log to db
+    Log.init DB.conn
 
-    Log.warn { message = Some "Hello"; service = None; stack = None; other = Some({ hello = "derp" }) }
+    Log.warn { message = Some "Hello"; service = None; stack = None; other = Some({| hello = "derp" |}) }
     |> ignore
 
     // let contentRoot = Directory.GetCurrentDirectory()
