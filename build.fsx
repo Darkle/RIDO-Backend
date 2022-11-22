@@ -15,37 +15,37 @@ open FsMake
 // open foo
 // You should now have access to stuff in the foo module in this script
 
-// Skip the first 2 args as they are just a .dll thing and the file name.
-let args = System.Environment.GetCommandLineArgs()[2..]
-
 let loadEnvFile (isDev: bool) =
     DotNetEnv.Env.Load(if isDev then "./.env.dev" else "./.env") |> ignore
 
-let loggingDBPath = DotNetEnv.Env.GetString("LOGGINGDBPATH", "./logging.db")
+let dataDirectory = DotNetEnv.Env.GetString("DATA_FOLDER", "./data")
 
-let traceLoggingDBPath =
-    DotNetEnv.Env.GetString("TRACELOGGINGDBPATH", "./trace-logging.db")
+let mediaDirectory =
+    DotNetEnv.Env.GetString("MEDIA_DOWNLOADS_FOLDER", "./media-downloads")
+
+let loggingDBPath = dataDirectory + "/logging.db"
 
 let loggingDbInitSQLFilePath =
-    Path.Combine("src", "API", "DB", "init-scripts", "init-logging-db.sql")
-
-let traceLoggingDbInitSQLFilePath =
-    Path.Combine("src", "API", "DB", "init-scripts", "init-trace-logging-db.sql")
+    Path.Join("src", "API", "DB", "init-scripts", "init-logging-db.sql")
 
 let sqliteReadString dbSqlFilePath = sprintf ".read %s" dbSqlFilePath
+
+let createDirs () =
+    Directory.CreateDirectory dataDirectory |> ignore
+    Directory.CreateDirectory mediaDirectory |> ignore
+    ()
 
 let dev =
     Step.create "dev" {
         loadEnvFile true
 
-        // Init the dbs
+        createDirs ()
+
+        // Init the DBs
         do!
             Cmd.createWithArgs "sqlite3" [ loggingDBPath; sqliteReadString loggingDbInitSQLFilePath ]
             |> Cmd.run
 
-        do!
-            Cmd.createWithArgs "sqlite3" [ traceLoggingDBPath; sqliteReadString traceLoggingDbInitSQLFilePath ]
-            |> Cmd.run
         // Commands that return an exit code other than 0 fail the step by default.
         // This can be controlled with [Cmd.exitCodeCheck].
         do!
@@ -59,12 +59,11 @@ let devWatch =
     Step.create "dev-watch" {
         loadEnvFile true
 
+        createDirs ()
+
+        // Init the DBs
         do!
             Cmd.createWithArgs "sqlite3" [ loggingDBPath; sqliteReadString loggingDbInitSQLFilePath ]
-            |> Cmd.run
-
-        do!
-            Cmd.createWithArgs "sqlite3" [ traceLoggingDBPath; sqliteReadString traceLoggingDbInitSQLFilePath ]
             |> Cmd.run
 
         do!
@@ -106,6 +105,9 @@ let lint =
     //     Cmd.createWithArgs "dotnet" [ "fsharplint"; "lint"; "src/Thing/Thing.fsproj" ]
     //     |> Cmd.run
     }
+
+// Skip the first 2 args as they are just a .dll thing and the file name.
+let args = System.Environment.GetCommandLineArgs()[2..]
 
 // Define your pipelines, for now we just want a simple "build" pipeline.
 // You can define pipelines with parallel/conditional steps.

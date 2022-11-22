@@ -1,15 +1,8 @@
-module Log
+module API.LogIngestion
 
-open Microsoft.Data.Sqlite
 open Donald
 
-let mutable private db = null
-
-let init (dbConnection: SqliteConnection) =
-    db <- dbConnection
-    ()
-
-let private saveLogToDB log =
+let saveLogToDB (log: Log.LogPreparedForDB) =
     let sql =
         "
     INSERT INTO Log (createdAt, level, message, service, stack, other)
@@ -23,4 +16,4 @@ let private saveLogToDB log =
           ("stack", SqlType.String log.stack)
           ("other", SqlType.String log.other) ]
 
-    db |> Db.newCommand sql |> Db.setParams sqlParams |> Db.Async.exec
+    DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams |> Db.Async.exec

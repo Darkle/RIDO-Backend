@@ -1,3 +1,5 @@
 !**/*.sql
 logging.db
 trace-logging.db
+data/**
+media-downloads/**

@@ -48,8 +48,8 @@ let private logToConsole (log: Log<'T>) =
 
     printfn "%s \n %A" preface log
 
-let sendLogToDB log =
-    //TODO: send via HTTP to the API service
+let private sendLogToDB log =
+    //TODO: send via HTTP to the API service so it can save the log to DB
     ()
 
 let private convertStringLogLevelToNum (logLevel: string) =
@@ -63,13 +63,13 @@ let private convertStringLogLevelToNum (logLevel: string) =
     | _ -> LogLevelAsNumber.Error
 
 let private globalLogLevelAsNum =
-    convertStringLogLevelToNum (DotNetEnv.Env.GetString("LOGLEVEL", "error"))
+    DotNetEnv.Env.GetString("LOGLEVEL", "error") |> convertStringLogLevelToNum
 
-let logLevelIsNotHighEnough (logLevel: string) =
+let private logLevelIsNotHighEnough (logLevel: string) =
     let logLevelAsNum = convertStringLogLevelToNum logLevel
     logLevelAsNum > globalLogLevelAsNum
 
-let isTraceLog (logLevel: string) = logLevel.ToLower() = "trace"
+let private isTraceLog (logLevel: string) = logLevel.ToLower() = "trace"
 
 let private log (logLevel: string) (logData: LogData<'T>) =
     // Always allow trace logs through to be saved to db
