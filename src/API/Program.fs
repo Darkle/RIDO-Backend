@@ -58,10 +58,9 @@ let loadDotEnvFile (args: string array) =
 
 [<EntryPoint>]
 let main args =
-    loadDotEnvFile (args)
+    loadDotEnvFile args
 
     Log.warn { message = Some "Hello"; service = None; stack = None; other = Some({| hello = "derp" |}) }
-    |> ignore
 
     // let contentRoot = Directory.GetCurrentDirectory()
     // let webRoot = Path.Combine(contentRoot, "WebRoot")

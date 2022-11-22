@@ -19,7 +19,7 @@
     <Compile Include="../Shared/Logging/Logger.fs" />
     <Compile Include="../Shared/Utils.fs" />
     <Compile Include="DB/DB.fs" />
-    <Compile Include="DB/Log/LogIngestion.fs" />
+    <Compile Include="DB/LogIngestion.fs" />
     <!-- <Compile Include="DB/Settings.fs" /> -->
     <!-- <Compile Include="DB/SubGroup.fs" /> -->
     <!-- <Compile Include="DB/Subreddit.fs" /> -->
