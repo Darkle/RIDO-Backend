@@ -1,6 +1,7 @@
 module Log
 
 open System
+open Donald
 
 type LogLevelAsNumber =
     | Fatal = 0
@@ -10,7 +11,8 @@ type LogLevelAsNumber =
     | Debug = 4
     | Trace = 4
 
-type LogData<'T> = { message: string option; service: string option; stack: string option; other: 'T option }
+type LogData<'T> =
+    { message: string option; service: string option; stack: string option; other: 'T option }
 
 type Log<'T> =
     { createdAt: int64
@@ -21,7 +23,12 @@ type Log<'T> =
       other: 'T option }
 
 type LogPreparedForDB =
-    { createdAt: int64; level: string; message: string; service: string; stack: string; other: string }
+    { createdAt: int64
+      level: string
+      message: string
+      service: string
+      stack: string
+      other: string }
 
 let private createLogForDB (logData: Log<'T>) =
     { createdAt = logData.createdAt

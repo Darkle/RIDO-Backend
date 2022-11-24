@@ -5,7 +5,7 @@ open Donald
 let saveLogToDB (log: Log.LogPreparedForDB) =
     let sql =
         "
-    INSERT INTO Log (createdAt, level, message, service, stack, other)
+    INSERT INTO Logasd (createdAt, level, message, service, stack, other)
     VALUES (@createdAt, @level, @message, @service, @stack, @other);"
 
     let sqlParams =
@@ -16,4 +16,24 @@ let saveLogToDB (log: Log.LogPreparedForDB) =
           ("stack", SqlType.String log.stack)
           ("other", SqlType.String log.other) ]
 
-    DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams |> Db.Async.exec
+    let sqlToExec = DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams
+
+    async {
+        let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
+
+        match dbResult with
+        | Choice2Of2 err -> printfn "DB Error: %A" err
+        | _ -> ignore ()
+    }
+    |> Async.Start
+
+    // task {
+    //     try
+    //         let! _ = Db.Async.exec sqlToExec
+    //         ()
+    //     with err ->
+    //         printfn "DB Error: %A" err
+    // }
+    // |> ignore
+
+    ()

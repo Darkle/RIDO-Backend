@@ -60,22 +60,34 @@ let loadDotEnvFile (args: string array) =
 let main args =
     loadDotEnvFile args
 
-    Log.warn { message = Some "Hello"; service = None; stack = None; other = Some({| hello = "derp" |}) }
+    Log.warn
+        { message = Some "Hello"
+          service = None
+          stack = None
+          other = Some({| hello = "derp" |}) }
 
-    // let contentRoot = Directory.GetCurrentDirectory()
-    // let webRoot = Path.Combine(contentRoot, "WebRoot")
+    LogIngestion.saveLogToDB
+        { createdAt = 1232
+          level = "debug"
+          message = "Hello"
+          service = "foo"
+          stack = "NULL"
+          other = "this is other" }
 
-    // Host
-    //     .CreateDefaultBuilder(args)
-    //     .ConfigureWebHostDefaults(fun webHostBuilder ->
-    //         webHostBuilder
-    //             .UseContentRoot(contentRoot)
-    //             .UseWebRoot(webRoot)
-    //             .Configure(Action<IApplicationBuilder> configureApp)
-    //             .ConfigureServices(configureServices)
-    //             .ConfigureLogging(configureLogging)
-    //         |> ignore)
-    //     .Build()
-    //     .Run()
+    let contentRoot = Directory.GetCurrentDirectory()
+    let webRoot = Path.Combine(contentRoot, "WebRoot")
+
+    Host
+        .CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(fun webHostBuilder ->
+            webHostBuilder
+                .UseContentRoot(contentRoot)
+                .UseWebRoot(webRoot)
+                .Configure(Action<IApplicationBuilder> configureApp)
+                .ConfigureServices(configureServices)
+                .ConfigureLogging(configureLogging)
+            |> ignore)
+        .Build()
+        .Run()
 
     0
