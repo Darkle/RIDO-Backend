@@ -20,11 +20,23 @@ let apiServerAddress = sprintf "http://localhost:%i" apiServerPort
 let routeBuilder (typeName: string) (methodName: string) =
     sprintf "/api/%s/%s" typeName methodName
 
-let webApp =
+let remoting =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder routeBuilder
     |> Remoting.fromValue api
     |> Remoting.buildHttpHandler
+
+let webApp =
+    choose
+        [
+          //TODO: Do qr-code page
+          //TODO: It should go above any auth/token check so its always accessible
+          routeCix "/qr-code" >=> text "QR Code Goes Here"
+
+          remoting
+
+          // If none of the routes matched then return a 404
+          setStatusCode 404 >=> text "Not Found" ]
 
 let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     let errorMessage =
@@ -64,11 +76,11 @@ let configureLogging (builder: ILoggingBuilder) =
 let main args =
     Utils.loadDotEnvFile args
 
-    // Log.warn
-    //     { message = Some "Hello"
-    //       service = None
-    //       stack = None
-    //       other = Some({| hello = "derp" |}) }
+    Log.warn
+        { message = Some "Hello"
+          service = None
+          stack = None
+          other = Some({| hello = "derp" |}) }
 
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")

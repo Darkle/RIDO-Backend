@@ -59,13 +59,9 @@ let private sendLogToDB log =
     // }
     // |> Async.Ignore
     // |> ignore
-    printfn "sendLogToDB "
 
     async {
-        printfn "sendLogToDB async 1"
         let! apiResult = apiClient.addLog log |> Async.Catch
-
-        printfn "sendLogToDB async 2"
 
         match apiResult with
         | Choice1Of2 _ -> ignore ()
