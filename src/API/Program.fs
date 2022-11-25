@@ -48,10 +48,12 @@ let configureApp (app: IApplicationBuilder) =
      | true -> app.UseDeveloperExceptionPage()
      | false -> app.UseGiraffeErrorHandler(errorHandler))
         .UseCors(configureCors)
+        .UseHealthChecks("/isup")
         .UseStaticFiles(StaticFileOptions(FileProvider = new PhysicalFileProvider(mediaDir), RequestPath = "/media"))
         .UseGiraffe(webApp)
 
 let configureServices (services: IServiceCollection) =
+    services.AddHealthChecks() |> ignore
     services.AddCors() |> ignore
     services.AddGiraffe() |> ignore
 
@@ -62,11 +64,11 @@ let configureLogging (builder: ILoggingBuilder) =
 let main args =
     Utils.loadDotEnvFile args
 
-    Log.warn
-        { message = Some "Hello"
-          service = None
-          stack = None
-          other = Some({| hello = "derp" |}) }
+    // Log.warn
+    //     { message = Some "Hello"
+    //       service = None
+    //       stack = None
+    //       other = Some({| hello = "derp" |}) }
 
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")
