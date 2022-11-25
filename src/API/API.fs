@@ -3,4 +3,4 @@ module API
 open API.LogIngestion
 open API.Types
 
-let musicStore: IAPI = { addLog = saveLogToDB }
+let API: IAPI = { addLog = saveLogToDB }

@@ -1,5 +1,5 @@
 module API.Types
 
-open Log
+open API.LogType
 
-type IAPI = { addLog: LogPreparedForDB -> unit }
+type IAPI = { addLog: LogPreparedForDB -> Async<unit> }

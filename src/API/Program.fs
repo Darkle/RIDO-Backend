@@ -8,19 +8,20 @@ open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.Extensions.FileProviders
+
 open Giraffe
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
-open API.Types
+
+let routeBuilder (typeName: string) (methodName: string) =
+    sprintf "/api/%s/%s" typeName methodName
 
 let webApp =
-    choose
-        [ routeCix "/media" >=> text "Bar"
-
-          subRouteCi "/api" (choose [ routeCix "/foo" >=> text "Foo 1"; routeCix "/bar" >=> text "Bar 1" ])
-
-          // If none of the routes matched then return a 404
-          setStatusCode 404 >=> text "Not Found" ]
+    Remoting.createApi ()
+    |> Remoting.withRouteBuilder routeBuilder
+    |> Remoting.fromValue API
+    |> Remoting.buildHttpHandler
 
 let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     let errorMessage =
@@ -44,8 +45,7 @@ let configureApp (app: IApplicationBuilder) =
      | true -> app.UseDeveloperExceptionPage()
      | false -> app.UseGiraffeErrorHandler(errorHandler))
         .UseCors(configureCors)
-        .UseStaticFiles() // NOTE: Not sure if i need this
-        .UseStaticFiles(mediaDir)
+        .UseStaticFiles(StaticFileOptions(FileProvider = new PhysicalFileProvider(mediaDir), RequestPath = "/media"))
         .UseGiraffe(webApp)
 
 let configureServices (services: IServiceCollection) =
@@ -55,14 +55,9 @@ let configureServices (services: IServiceCollection) =
 let configureLogging (builder: ILoggingBuilder) =
     builder.AddConsole().AddDebug() |> ignore
 
-let loadDotEnvFile (args: string array) =
-    let isDev = args |> Array.contains "ISDEV"
-    let dotEnvFileToLoad = if isDev then "../../.env.dev" else "../../.env"
-    DotNetEnv.Env.Load(dotEnvFileToLoad) |> ignore
-
 [<EntryPoint>]
 let main args =
-    loadDotEnvFile args
+    Utils.loadDotEnvFile args
 
     Log.warn
         { message = Some "Hello"

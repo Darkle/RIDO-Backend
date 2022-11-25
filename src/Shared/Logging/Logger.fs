@@ -1,6 +1,9 @@
 module Log
 
 open System
+open FsToolkit.ErrorHandling
+open RPC.Client
+open API.LogType
 
 type LogLevelAsNumber =
     | Fatal = 0
@@ -21,15 +24,7 @@ type Log<'T> =
       stack: string option
       other: 'T option }
 
-type LogPreparedForDB =
-    { createdAt: int64
-      level: string
-      message: string
-      service: string
-      stack: string
-      other: string }
-
-let private createLogForDB (logData: Log<'T>) =
+let private createLogForDB (logData: Log<'T>) : LogPreparedForDB =
     { createdAt = logData.createdAt
       level = logData.level
       message = logData.message |> Option.defaultValue "NULL"
@@ -55,8 +50,24 @@ let private logToConsole (log: Log<'T>) =
     printfn "%s \n %A" preface log
 
 let private sendLogToDB log =
-    //TODO: send via HTTP to the API service so it can save the log to DB
-    ()
+    // asyncResult {
+    //     let! apiResult = apiClient.addLog log |> AsyncResult.catch
+
+    //     match apiResult with
+    //     | Ok _ -> ignore ()
+    //     | Error err -> printfn "An error occured with apiClient: %A" err
+    // }
+    // |> Async.Ignore
+    // |> ignore
+    async {
+        let! apiResult = apiClient.addLog log |> Async.Catch
+
+        match apiResult with
+        | Choice1Of2 _ -> ignore ()
+        | Choice2Of2 err -> printfn "An error occured with apiClient: %A" err
+    }
+    |> Async.Ignore
+    |> ignore
 
 let private convertStringLogLevelToNum (logLevel: string) =
     match logLevel.ToLower() with

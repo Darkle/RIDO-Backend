@@ -1,8 +1,9 @@
 module API.LogIngestion
 
 open Donald
+open API.LogType
 
-let saveLogToDB (log: Log.LogPreparedForDB) =
+let saveLogToDB (log: LogPreparedForDB) =
     let sql =
         "
     INSERT INTO Log (createdAt, level, message, service, stack, other)
@@ -18,25 +19,23 @@ let saveLogToDB (log: Log.LogPreparedForDB) =
 
     let sqlToExec = DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams
 
-    // async {
-    //     let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
+    async {
+        let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
 
-    //     match dbResult with
-    //     | Choice2Of2 err -> printfn "DB Error: %A" err
-    //     | _ -> ignore ()
-    // }
-    // |> Async.Start
-
-    task {
-        try
-            let! dbResult = Db.Async.exec sqlToExec
-            printfn "dbResult.GetType: %A" (dbResult.GetType())
-            printfn "dbResult %A" dbResult
-            ()
-        with err ->
-            printfn "err.GetType: %A" (err.GetType())
-            printfn "DB Error: %A" err
+        match dbResult with
+        | Choice2Of2 err -> printfn "DB Error: %A" err
+        | _ -> ignore ()
     }
-    |> ignore
+// |> Async.Start
 
-    ()
+// task {
+//     try
+//         let! dbResult = Db.Async.exec sqlToExec
+//         printfn "dbResult.GetType: %A" (dbResult.GetType())
+//         printfn "dbResult %A" dbResult
+//         ()
+//     with err ->
+//         printfn "err.GetType: %A" (err.GetType())
+//         printfn "DB Error: %A" err
+// }
+// |> ignore
