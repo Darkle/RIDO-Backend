@@ -4,6 +4,7 @@ open Donald
 open API.LogType
 
 let saveLogToDB (log: LogPreparedForDB) =
+    printfn "saveLogToDB called"
     let sql =
         "
     INSERT INTO Log (createdAt, level, message, service, stack, other)

@@ -9,10 +9,13 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.FileProviders
-
 open Giraffe
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
+open API.Impl
+
+let apiServerPort = DotNetEnv.Env.GetInt("API_SERVICE_PORT", 3030)
+let apiServerAddress = sprintf "http://localhost:%i" apiServerPort
 
 let routeBuilder (typeName: string) (methodName: string) =
     sprintf "/api/%s/%s" typeName methodName
@@ -20,7 +23,7 @@ let routeBuilder (typeName: string) (methodName: string) =
 let webApp =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder routeBuilder
-    |> Remoting.fromValue API
+    |> Remoting.fromValue api
     |> Remoting.buildHttpHandler
 
 let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
@@ -32,7 +35,7 @@ let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     clearResponse >=> setStatusCode 500 >=> text ex.Message
 
 let configureCors (builder: CorsPolicyBuilder) =
-    builder.WithOrigins("http://localhost:5000").AllowAnyMethod().AllowAnyHeader()
+    builder.WithOrigins(apiServerAddress).AllowAnyMethod().AllowAnyHeader()
     |> ignore
 
 let configureApp (app: IApplicationBuilder) =
@@ -65,14 +68,6 @@ let main args =
           stack = None
           other = Some({| hello = "derp" |}) }
 
-    LogIngestion.saveLogToDB
-        { createdAt = 1232
-          level = "debug"
-          message = "Hello"
-          service = "foo"
-          stack = "NULL"
-          other = "this is other" }
-
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")
 
@@ -82,6 +77,7 @@ let main args =
             webHostBuilder
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(webRoot)
+                .UseUrls(apiServerAddress)
                 .Configure(Action<IApplicationBuilder> configureApp)
                 .ConfigureServices(configureServices)
                 .ConfigureLogging(configureLogging)

@@ -59,15 +59,19 @@ let private sendLogToDB log =
     // }
     // |> Async.Ignore
     // |> ignore
+    printfn "sendLogToDB "
+
     async {
+        printfn "sendLogToDB async 1"
         let! apiResult = apiClient.addLog log |> Async.Catch
+
+        printfn "sendLogToDB async 2"
 
         match apiResult with
         | Choice1Of2 _ -> ignore ()
         | Choice2Of2 err -> printfn "An error occured with apiClient: %A" err
     }
-    |> Async.Ignore
-    |> ignore
+    |> Async.Start
 
 let private convertStringLogLevelToNum (logLevel: string) =
     match logLevel.ToLower() with

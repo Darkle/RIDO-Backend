@@ -1,6 +1,6 @@
-module API
+module API.Impl
 
 open API.LogIngestion
 open API.Types
 
-let API: IAPI = { addLog = saveLogToDB }
+let api: IAPI = { addLog = saveLogToDB }
