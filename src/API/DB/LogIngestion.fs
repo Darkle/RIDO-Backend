@@ -29,9 +29,12 @@ let saveLogToDB (log: Log.LogPreparedForDB) =
 
     task {
         try
-            let! _ = Db.Async.exec sqlToExec
+            let! dbResult = Db.Async.exec sqlToExec
+            printfn "dbResult.GetType: %A" (dbResult.GetType())
+            printfn "dbResult %A" dbResult
             ()
         with err ->
+            printfn "err.GetType: %A" (err.GetType())
             printfn "DB Error: %A" err
     }
     |> ignore

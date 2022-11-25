@@ -9,13 +9,13 @@ open Microsoft.Extensions.Hosting
 open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Giraffe
-open API.Routes
+open Fable.Remoting.Server
+open Fable.Remoting.Giraffe
+open API.Types
 
 let webApp =
     choose
-        [ routeCix "/bar" >=> text "Bar"
-          routeCix "/name-as-query" >=> logquery
-          routeCif "/name/%s" logpath
+        [ routeCix "/media" >=> text "Bar"
 
           subRouteCi "/api" (choose [ routeCix "/foo" >=> text "Foo 1"; routeCix "/bar" >=> text "Bar 1" ])
 
@@ -37,11 +37,15 @@ let configureCors (builder: CorsPolicyBuilder) =
 let configureApp (app: IApplicationBuilder) =
     let env = app.ApplicationServices.GetService<IWebHostEnvironment>()
 
+    let mediaDir =
+        Utils.getProperEnvVarFilePath (DotNetEnv.Env.GetString("MEDIA_DOWNLOADS_FOLDER", "./media-downloads"))
+
     (match env.IsDevelopment() with
      | true -> app.UseDeveloperExceptionPage()
      | false -> app.UseGiraffeErrorHandler(errorHandler))
         .UseCors(configureCors)
-        .UseStaticFiles()
+        .UseStaticFiles() // NOTE: Not sure if i need this
+        .UseStaticFiles(mediaDir)
         .UseGiraffe(webApp)
 
 let configureServices (services: IServiceCollection) =

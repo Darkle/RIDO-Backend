@@ -1,7 +1,6 @@
 module Log
 
 open System
-open Donald
 
 type LogLevelAsNumber =
     | Fatal = 0
