@@ -10,30 +10,14 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.FileProviders
 open Giraffe
-open Fable.Remoting.Server
-open Fable.Remoting.Giraffe
-open API.Impl
-
-let apiServerPort = DotNetEnv.Env.GetInt("API_SERVICE_PORT", 3030)
-let apiServerAddress = sprintf "http://localhost:%i" apiServerPort
-
-let routeBuilder (typeName: string) (methodName: string) =
-    sprintf "/api/%s/%s" typeName methodName
-
-let remoting =
-    Remoting.createApi ()
-    |> Remoting.withRouteBuilder routeBuilder
-    |> Remoting.fromValue api
-    |> Remoting.buildHttpHandler
+open API.Views.QRCode
+// open API.Impl
 
 let webApp =
     choose
         [
-          //TODO: Do qr-code page
-          //TODO: It should go above any auth/token check so its always accessible
-          routeCix "/qr-code" >=> text "QR Code Goes Here"
-
-          remoting
+          //NOTE: this route should go above any auth/token check so its always accessible
+          routeCix "/qrcode" >=> generateSetupQRCode ()
 
           // If none of the routes matched then return a 404
           setStatusCode 404 >=> text "Not Found" ]
@@ -47,7 +31,7 @@ let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     clearResponse >=> setStatusCode 500 >=> text ex.Message
 
 let configureCors (builder: CorsPolicyBuilder) =
-    builder.WithOrigins(apiServerAddress).AllowAnyMethod().AllowAnyHeader()
+    builder.WithOrigins(Utils.apiServerAddress).AllowAnyMethod().AllowAnyHeader()
     |> ignore
 
 let configureApp (app: IApplicationBuilder) =
@@ -56,9 +40,10 @@ let configureApp (app: IApplicationBuilder) =
     let mediaDir =
         Utils.getProperEnvVarFilePath (DotNetEnv.Env.GetString("MEDIA_DOWNLOADS_FOLDER", "./media-downloads"))
 
-    (match env.IsDevelopment() with
-     | true -> app.UseDeveloperExceptionPage()
-     | false -> app.UseGiraffeErrorHandler(errorHandler))
+    (if env.IsDevelopment() then
+         app.UseDeveloperExceptionPage()
+     else
+         app.UseGiraffeErrorHandler(errorHandler))
         .UseCors(configureCors)
         .UseHealthChecks("/isup")
         .UseStaticFiles(StaticFileOptions(FileProvider = new PhysicalFileProvider(mediaDir), RequestPath = "/media"))
@@ -69,12 +54,27 @@ let configureServices (services: IServiceCollection) =
     services.AddCors() |> ignore
     services.AddGiraffe() |> ignore
 
+// This logger is the https://learn.microsoft.com/en-us/dotnet/api/microsoft.extensions.logging.ilogger?view=dotnet-plat-ext-7.0
 let configureLogging (builder: ILoggingBuilder) =
-    builder.AddConsole().AddDebug() |> ignore
+    let filter (l: LogLevel) =
+        if DotNetEnv.Env.GetBool("ISDEV") then
+            true
+        else
+            match l with
+            | LogLevel.Error -> true
+            | LogLevel.Warning -> true
+            | LogLevel.Critical -> true
+            | _ -> false
+
+    builder.AddFilter(filter).AddConsole().AddDebug() |> ignore
 
 [<EntryPoint>]
 let main args =
-    Utils.loadDotEnvFile args
+    let isDevArg = args |> Array.contains "ISDEV"
+
+    Environment.SetEnvironmentVariable("ISDEV", (if isDevArg then "true" else "false"))
+
+    Utils.loadDotEnvFile ()
 
     Log.warn
         { message = Some "Hello"
@@ -91,7 +91,7 @@ let main args =
             webHostBuilder
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(webRoot)
-                .UseUrls(apiServerAddress)
+                .UseUrls(Utils.apiServerAddress)
                 .Configure(Action<IApplicationBuilder> configureApp)
                 .ConfigureServices(configureServices)
                 .ConfigureLogging(configureLogging)
