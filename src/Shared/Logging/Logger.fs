@@ -2,6 +2,7 @@ module Log
 
 open System
 open FsToolkit.ErrorHandling
+open FsHttp
 
 type LogLevelAsNumber =
     | Fatal = 0
@@ -56,6 +57,14 @@ let private logToConsole (log: Log<'T>) =
     printfn "%s \n %A" preface log
 
 let private sendLogToDB log =
+    http {
+        POST "https://mysite"
+
+        body
+        jsonSerialize { createdAt = 111; level = "debug" }
+    }
+    |> Request.send
+    |> ignore
     //TODO:
     // asyncResult {
     //     let! apiResult = apiClient.addLog log |> AsyncResult.catch

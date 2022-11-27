@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Donald" Version="7.1.0" />
     <PackageReference Include="DotNetEnv" Version="2.3.0" />
+    <PackageReference Include="FsHttp" Version="10.0.0" />
     <PackageReference Include="FsToolkit.ErrorHandling" Version="4.0.0" />
     <PackageReference Include="Giraffe" Version="6.0.*" />
     <PackageReference Include="Giraffe.ViewEngine" Version="1.4.*" />

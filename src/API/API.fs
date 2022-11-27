@@ -1,7 +1,6 @@
 module API.Impl
 
 open Giraffe
-open Giraffe.EndpointRouting
 open Microsoft.AspNetCore.Http
 open Log
 
