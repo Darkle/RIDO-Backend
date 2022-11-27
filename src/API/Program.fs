@@ -2,6 +2,7 @@ module API.App
 
 open System
 open System.IO
+open Microsoft.AspNetCore.Http
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Cors.Infrastructure
 open Microsoft.AspNetCore.Hosting
@@ -10,7 +11,24 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.FileProviders
 open Giraffe
-// open API.Impl
+open Fable.Remoting.Server
+open Fable.Remoting.Giraffe
+open API.Impl
+
+let routeBuilder (typeName: string) (methodName: string) =
+    sprintf "/api/%s/%s" typeName methodName
+
+let remoting =
+    Remoting.createApi ()
+    |> Remoting.withRouteBuilder routeBuilder
+    |> Remoting.fromValue api
+    |> Remoting.buildHttpHandler
+
+let webApp =
+    choose
+        [ remoting
+          // If none of the routes matched then return a 404
+          setStatusCode StatusCodes.Status404NotFound >=> text "Not Found" ]
 
 let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     let errorMessage =
@@ -37,7 +55,7 @@ let configureApp (app: IApplicationBuilder) =
         .UseCors(configureCors)
         .UseHealthChecks("/isup")
         .UseStaticFiles(StaticFileOptions(FileProvider = new PhysicalFileProvider(mediaDir), RequestPath = "/media"))
-        .UseGiraffe(Routes.routes)
+        .UseGiraffe(webApp)
 
 let configureServices (services: IServiceCollection) =
     services.AddHealthChecks() |> ignore

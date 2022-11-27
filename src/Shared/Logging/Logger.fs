@@ -2,7 +2,8 @@ module Log
 
 open System
 open FsToolkit.ErrorHandling
-open FsHttp
+open RPC.Client
+open API.LogType
 
 type LogLevelAsNumber =
     | Fatal = 0
@@ -22,14 +23,6 @@ type Log<'T> =
       service: string option
       stack: string option
       other: 'T option }
-
-type LogPreparedForDB =
-    { createdAt: int64
-      level: string
-      message: string
-      service: string
-      stack: string
-      other: string }
 
 let private createLogForDB (logData: Log<'T>) : LogPreparedForDB =
     { createdAt = logData.createdAt
@@ -57,14 +50,6 @@ let private logToConsole (log: Log<'T>) =
     printfn "%s \n %A" preface log
 
 let private sendLogToDB log =
-    http {
-        POST "https://mysite"
-
-        body
-        jsonSerialize { createdAt = 111; level = "debug" }
-    }
-    |> Request.send
-    |> ignore
     //TODO:
     // asyncResult {
     //     let! apiResult = apiClient.addLog log |> AsyncResult.catch
@@ -76,15 +61,14 @@ let private sendLogToDB log =
     // |> Async.Ignore
     // |> ignore
 
-    // async {
-    //     let! apiResult = apiClient.addLog log |> Async.Catch
+    async {
+        let! apiResult = apiClient.addLog log |> Async.Catch
 
-    //     match apiResult with
-    //     | Choice1Of2 _ -> ignore ()
-    //     | Choice2Of2 err -> printfn "An error occured with apiClient: %A" err
-    // }
-    // |> Async.Start
-    ()
+        match apiResult with
+        | Choice1Of2 _ -> ignore ()
+        | Choice2Of2 err -> printfn "An error occured with apiClient: %A" err
+    }
+    |> Async.Start
 
 let private convertStringLogLevelToNum (logLevel: string) =
     match logLevel.ToLower() with
