@@ -4,8 +4,6 @@ open Donald
 open Log
 
 let saveLogToDB (log: LogPreparedForDB) =
-    printfn "saveLogToDB called"
-
     let sql =
         "
     INSERT INTO Log (createdAt, level, message, service, stack, other)
@@ -19,15 +17,15 @@ let saveLogToDB (log: LogPreparedForDB) =
           ("stack", SqlType.String log.stack)
           ("other", SqlType.String log.other) ]
 
-    let sqlToExec = DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams
+    DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams |> Db.Async.exec
 
-    async {
-        let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
+// async {
+//     let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
 
-        match dbResult with
-        | Choice2Of2 err -> printfn "DB Error: %A" err
-        | _ -> ignore ()
-    }
+//     match dbResult with
+//     | Choice2Of2 err -> printfn "DB Error: %A" err
+//     | _ -> ignore ()
+// }
 // |> Async.Start
 
 // task {

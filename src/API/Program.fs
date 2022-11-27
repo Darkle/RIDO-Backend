@@ -12,12 +12,6 @@ open Microsoft.Extensions.FileProviders
 open Giraffe
 // open API.Impl
 
-let webApp =
-    choose
-        [
-          // If none of the routes matched then return a 404
-          setStatusCode 404 >=> text "Not Found" ]
-
 let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     let errorMessage =
         "An unhandled exception has occurred while executing the request."
@@ -43,7 +37,7 @@ let configureApp (app: IApplicationBuilder) =
         .UseCors(configureCors)
         .UseHealthChecks("/isup")
         .UseStaticFiles(StaticFileOptions(FileProvider = new PhysicalFileProvider(mediaDir), RequestPath = "/media"))
-        .UseGiraffe(webApp)
+        .UseGiraffe(Routes.routes)
 
 let configureServices (services: IServiceCollection) =
     services.AddHealthChecks() |> ignore
@@ -72,13 +66,18 @@ let main args =
 
     Utils.loadDotEnvFile ()
 
-    printfn "RIDO Server Address %s" (Utils.apiServerAddress ())
+    printfn "RIDO Server Address: %s" (Utils.apiServerAddress ())
 
-    Log.warn
-        { message = Some "Hello"
-          service = None
-          stack = None
-          other = Some({| hello = "derp" |}) }
+    task {
+        do! Async.Sleep 2000
+
+        Log.warn
+            { message = Some "Hello"
+              service = None
+              stack = None
+              other = Some({| hello = "derp" |}) }
+    }
+    |> ignore
 
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")

@@ -1,22 +1,17 @@
 module API.Routes
 
+open API.Impl
 open Giraffe
+open Microsoft
 open Microsoft.AspNetCore.Http
-// open Serilog
 
-type AdditionalData = { Name: string }
+let routes: HttpFunc -> AspNetCore.Http.HttpContext -> HttpFuncResult =
+    choose
+        [ subRouteCi
+              "/api"
+              (choose
+                  [ GET >=> choose [ routeCix "/foo" >=> text "thing" ]
+                    POST >=> choose [ routeCix "/save-log-to-db" >=> saveLogToDB ] ])
 
-let logquery: HttpHandler =
-    fun (next: HttpFunc) (ctx: HttpContext) ->
-        // ctx.GetQueryStringValue
-        let time = 4
-
-        // Log.Information("Processed in {TimeMS:000} ms.", time)
-
-        let name = ctx.TryGetQueryStringValue "name" |> Option.defaultValue "Giraffe"
-        let greeting = sprintf "Hello World, from %s" name
-        text greeting next ctx
-
-let logpath (path: string) =
-    let thing = sprintf "Hello %s" path
-    text thing
+          // If none of the routes matched then return a 404
+          setStatusCode StatusCodes.Status404NotFound >=> text "Not Found" ]
