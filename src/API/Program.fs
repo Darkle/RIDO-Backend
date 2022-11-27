@@ -10,15 +10,11 @@ open Microsoft.Extensions.Logging
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.FileProviders
 open Giraffe
-open API.Views.QRCode
 // open API.Impl
 
 let webApp =
     choose
         [
-          //NOTE: this route should go above any auth/token check so its always accessible
-          routeCix "/qrcode" >=> generateSetupQRCode ()
-
           // If none of the routes matched then return a 404
           setStatusCode 404 >=> text "Not Found" ]
 
@@ -31,7 +27,7 @@ let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     clearResponse >=> setStatusCode 500 >=> text ex.Message
 
 let configureCors (builder: CorsPolicyBuilder) =
-    builder.WithOrigins(Utils.apiServerAddress).AllowAnyMethod().AllowAnyHeader()
+    builder.WithOrigins(Utils.apiServerAddress ()).AllowAnyMethod().AllowAnyHeader()
     |> ignore
 
 let configureApp (app: IApplicationBuilder) =
@@ -76,6 +72,8 @@ let main args =
 
     Utils.loadDotEnvFile ()
 
+    printfn "RIDO Server Address %s" (Utils.apiServerAddress ())
+
     Log.warn
         { message = Some "Hello"
           service = None
@@ -91,7 +89,7 @@ let main args =
             webHostBuilder
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(webRoot)
-                .UseUrls(Utils.apiServerAddress)
+                .UseUrls(Utils.apiServerAddress ())
                 .Configure(Action<IApplicationBuilder> configureApp)
                 .ConfigureServices(configureServices)
                 .ConfigureLogging(configureLogging)

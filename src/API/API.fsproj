@@ -14,7 +14,6 @@
     <PackageReference Include="Giraffe.ViewEngine" Version="1.4.*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
     <PackageReference Include="Ply" Version="0.3.*" />
-    <PackageReference Include="QRCoder" Version="1.4.3" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,7 +21,6 @@
     <Compile Include="../Shared/Utils.fs" />
     <Compile Include="DB/DB.fs" />
     <Compile Include="DB/LogIngestion.fs" />
-    <Compile Include="QRCode.fs" />
     <Compile Include="Routes.fs" />
     <Compile Include="API.fs" />
     <!-- <Compile Include="DB/Settings.fs" /> -->

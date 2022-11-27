@@ -2,8 +2,10 @@ module Utils
 
 open System.IO
 
-let apiServerPort = DotNetEnv.Env.GetInt("API_SERVICE_PORT", 3030)
-let apiServerAddress = sprintf "http://localhost:%i" apiServerPort
+// Needs to be a function as the .env vars arent available until .env file loaded.
+let apiServerAddress () = 
+    let apiServerPort = DotNetEnv.Env.GetInt("API_SERVICE_PORT", 3030)
+    sprintf "http://localhost:%i" apiServerPort
 
 let getProperEnvVarFilePath (envVarFilePath: string) =
     if envVarFilePath[0] = '/' then
