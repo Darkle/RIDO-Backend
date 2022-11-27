@@ -22,12 +22,7 @@ let pageHTML (base64QRCodeData: string) =
 let qrGenerator = new QRCodeGenerator()
 
 let qrCodeData =
-    qrGenerator.CreateQrCode(
-        Utils.apiServerAddress
-        + ";;api-token;;" // just a known seperator
-        + DotNetEnv.Env.GetString("API_ACCESS_TOKEN"),
-        QRCodeGenerator.ECCLevel.Q
-    )
+    qrGenerator.CreateQrCode(Utils.apiServerAddress, QRCodeGenerator.ECCLevel.Q)
 
 let qrCode = new BitmapByteQRCode(qrCodeData)
 let qrCodeAsBitmapByteArr = qrCode.GetGraphic(20)
