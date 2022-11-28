@@ -3,7 +3,7 @@ module Log
 open System
 open FsToolkit.ErrorHandling
 open RPC.Client
-open API.LogType
+open API.DBLogType
 
 type LogLevelAsNumber =
     | Fatal = 0
@@ -50,7 +50,6 @@ let private logToConsole (log: Log<'T>) =
     printfn "%s \n %A" preface log
 
 let private sendLogToDB log =
-    //TODO:
     // asyncResult {
     //     let! apiResult = apiClient.addLog log |> AsyncResult.catch
 

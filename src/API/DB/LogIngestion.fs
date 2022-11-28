@@ -1,7 +1,7 @@
 module API.LogIngestion
 
 open Donald
-open API.LogType
+open API.DBLogType
 
 let saveLogToDB (log: LogPreparedForDB) =
     let sql =
@@ -17,15 +17,20 @@ let saveLogToDB (log: LogPreparedForDB) =
           ("stack", SqlType.String log.stack)
           ("other", SqlType.String log.other) ]
 
-    let sqlToExec = DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParams
+    DB.logsDB
+    |> Db.newCommand sql
+    |> Db.setParams sqlParams
+    |> Db.Async.exec
+    |> Async.AwaitTask
+// |> Async.Catch
 
-    async {
-        let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
+// async {
+//     let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch
 
-        match dbResult with
-        | Choice2Of2 err -> printfn "DB Error: %A" err
-        | _ -> ignore ()
-    }
+//     match dbResult with
+//     | Choice2Of2 err -> printfn "DB Error: %A" err
+//     | _ -> ignore ()
+// }
 
 // task {
 //     try

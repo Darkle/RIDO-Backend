@@ -1,4 +1,4 @@
-module API.LogType
+module API.DBLogType
 
 type LogPreparedForDB =
     { createdAt: int64

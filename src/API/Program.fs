@@ -22,6 +22,7 @@ let remoting =
     Remoting.createApi ()
     |> Remoting.withRouteBuilder routeBuilder
     |> Remoting.fromValue api
+    |> Remoting.withDiagnosticsLogger (printfn "%s")
     |> Remoting.buildHttpHandler
 
 let webApp =
