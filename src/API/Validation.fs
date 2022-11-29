@@ -1,5 +1,6 @@
 module API.Validation
 
+open System
 open FsToolkit.ErrorHandling
 open API.DBLogType
 
@@ -8,6 +9,8 @@ open API.DBLogType
     data coming in to the api is that Giraffe doesnt guarantee that the JSON it serializes
     will have each property we expect.
 *)
+
+exception ApiValidationException of string
 
 let propExists (propName: string) (log: LogPreparedForDB) =
     match log.GetType().GetProperty(propName) <> null with
@@ -26,10 +29,12 @@ let stringIsOneOf (s: string) (strings: string list) =
     | true -> Ok true
     | false -> Error(sprintf "String %s is not one of %A" s strings)
 
-let propIsOfType (propName: string) (t: 'T) (log: LogPreparedForDB) =
-    let propType = log.GetType().GetProperty(propName).GetType()
+let propIsOfType (propName: string) (t: Type) (log: LogPreparedForDB) =
+    // When doing JSON serialization (via newtonsoft json), Fable.Remoting converts int32 to int64
+    let typeToCheckFor = if t = typeof<Int32> then typeof<Int64> else t
+    let propType = log.GetType().GetProperty(propName).PropertyType
 
-    match propType = typeof<'T> with
+    match propType = typeToCheckFor with
     | true -> Ok true
     | false -> Error(sprintf "Prop %s is not of type %A" propName t)
 
@@ -41,23 +46,43 @@ let propsAreAllOfType (props: string list) (t: 'T) (log: LogPreparedForDB) =
     | Ok _ -> Ok true
     | Error err -> Error err
 
-let dbLogValidator (log: LogPreparedForDB) =
+let validateIncomingLogForDB (log: LogPreparedForDB) =
+    printfn "here 1"
+
     let check1 =
         propsExist [ "createdAt"; "level"; "message"; "other"; "service"; "stack" ] log
+
+    printfn "here 2"
 
     let check2 =
         stringIsOneOf log.level [ "fatal"; "error"; "warn"; "info"; "debug"; "trace" ]
 
-    let check3 = propIsOfType "createdAt" int log
+    printfn "here 3"
+
+    let check3 = propIsOfType "createdAt" typeof<int> log
+    printfn "here 4"
 
     let check4 =
-        propsAreAllOfType [ "level"; "message"; "other"; "service"; "stack" ] string log
+        propsAreAllOfType [ "level"; "message"; "other"; "service"; "stack" ] typeof<string> log
+
+    printfn "here 5"
 
     let validationResults = [ check1; check2; check3; check4 ] |> List.sequenceResultA
+    // let validationResults = [ check1; check2; check3 ] |> List.sequenceResultA
+    printfn "here 6"
 
-    (match validationResults with
-     | Ok _ -> ignore
-     | Error errors -> failwith (sprintf "Validation error in dbLogValidator: %A" errors))
-    |> ignore
+    if validationResults |> Result.isError then
+        printfn "here 7"
+
+        let error =
+            match validationResults with
+            | Error err -> err[0]
+            | Ok _ -> null
+
+        let errorMessage = sprintf "Validation error in dbLogValidator: %A" error
+
+        printfn "%A" errorMessage
+
+        raise (ApiValidationException(errorMessage))
 
     ()

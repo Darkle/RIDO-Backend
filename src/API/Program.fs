@@ -15,14 +15,10 @@ open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
 open API.Impl
 
-let routeBuilder (typeName: string) (methodName: string) =
-    sprintf "/api/%s/%s" typeName methodName
-
 let remoting =
     Remoting.createApi ()
-    |> Remoting.withRouteBuilder routeBuilder
     |> Remoting.fromValue api
-    |> Remoting.withDiagnosticsLogger (printfn "%s")
+    // |> Remoting.withDiagnosticsLogger (printfn "%s")
     |> Remoting.buildHttpHandler
 
 let webApp =
