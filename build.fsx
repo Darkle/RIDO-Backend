@@ -35,8 +35,8 @@ let createDirs () =
     Directory.CreateDirectory mediaDirectory |> ignore
     ()
 
-let dev =
-    Step.create "dev" {
+let devApi =
+    Step.create "dev-api" {
         loadEnvFile true
 
         createDirs ()
@@ -55,8 +55,8 @@ let dev =
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
     }
 
-let devWatch =
-    Step.create "dev-watch" {
+let devWatchApi =
+    Step.create "dev-watch-api" {
         loadEnvFile true
 
         createDirs ()
@@ -73,12 +73,38 @@ let devWatch =
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
     }
 
+let devDownloads =
+    Step.create "dev-downloads" {
+        loadEnvFile true
+
+        do!
+            Cmd.createWithArgs "dotnet" [ "run"; "--project"; "src/Downloads/Downloads.fsproj"; "--"; "ISDEV" ]
+            |> Cmd.run
+
+    //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
+    }
+
+let devWatchDownloads =
+    Step.create "dev-watch-downloads" {
+        loadEnvFile true
+
+        do!
+            Cmd.createWithArgs "dotnet" [ "watch"; "run"; "--project"; "src/Downloads/Downloads.fsproj"; "--"; "ISDEV" ]
+            |> Cmd.run
+
+    //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
+    }
+
 let audit =
     Step.create "audit" {
         // Commands that return an exit code other than 0 fail the step by default.
         // This can be controlled with [Cmd.exitCodeCheck].
         do!
             Cmd.createWithArgs "dotnet" [ "list"; "src/API/API.fsproj"; "package"; "--vulnerable" ]
+            |> Cmd.run
+
+        do!
+            Cmd.createWithArgs "dotnet" [ "list"; "src/Downloads/Downloads.fsproj"; "package"; "--vulnerable" ]
             |> Cmd.run
 
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
@@ -90,6 +116,10 @@ let outdated =
         // This can be controlled with [Cmd.exitCodeCheck].
         do!
             Cmd.createWithArgs "dotnet" [ "list"; "src/API/API.fsproj"; "package"; "--outdated" ]
+            |> Cmd.run
+
+        do!
+            Cmd.createWithArgs "dotnet" [ "list"; "src/Downloads/Downloads.fsproj"; "package"; "--outdated" ]
             |> Cmd.run
 
     //https://github.com/seanamos/FsMake/blob/master/build.fsx - examples
@@ -113,10 +143,12 @@ let args = System.Environment.GetCommandLineArgs()[2..]
 // You can define pipelines with parallel/conditional steps.
 // You can also define pipelines from other pipelines.
 Pipelines.create {
-    let! defaultPipeline = Pipeline.create "default" { run dev }
-    do! Pipeline.create "dev-watch" { run devWatch }
+    let! defaultPipeline = Pipeline.create "default" { run devApi }
+    do! Pipeline.create "dev-watch-api" { run devWatchApi }
+    do! Pipeline.create "dev-api" { run devApi }
+    do! Pipeline.create "dev-downloads" { run devDownloads }
+    do! Pipeline.create "dev-watch-downloads" { run devWatchDownloads }
     do! Pipeline.create "lint" { run lint }
-    do! Pipeline.create "dev" { run dev }
     do! Pipeline.create "outdated" { run outdated }
     do! Pipeline.create "audit" { run audit }
 

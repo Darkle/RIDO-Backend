@@ -14,7 +14,7 @@ let main args =
     JobManager.Initialize()
 
     JobManager.add_JobException (fun info ->
-        Log.warn
+        Log.error
             { message = Some "Error occured in Downloads service jobs"
               service = Some "Download"
               stack = Some(info.Exception |> string)
@@ -22,6 +22,7 @@ let main args =
 
     )
 
+    // JobManager.AddJob((fun _ -> printfn "3 seconds passed"), (fun s -> s.ToRunEvery(3).Seconds() |> ignore))
     JobManager.AddJob((fun _ -> printfn "3 seconds passed"), (fun s -> s.ToRunEvery(3).Seconds() |> ignore))
 
     // Do it this way as opposed to a while loop so it runs on a background thread.
