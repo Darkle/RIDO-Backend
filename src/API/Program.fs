@@ -83,16 +83,16 @@ let main args =
 
     printfn "RIDO Server Address: %s" (Utils.apiServerAddress ())
 
-    task {
-        do! Async.Sleep 2000
+    // task {
+    //     do! Async.Sleep 2000
 
-        Log.warn
-            { message = Some "Hello"
-              service = None
-              stack = None
-              other = Some({| hello = "derp" |}) }
-    }
-    |> ignore
+    //     Log.warn
+    //         { message = Some "Hello"
+    //           service = None
+    //           stack = None
+    //           other = Some({| hello = "derp" |}) }
+    // }
+    // |> ignore
 
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")

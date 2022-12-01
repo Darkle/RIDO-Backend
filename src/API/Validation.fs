@@ -3,6 +3,12 @@ module API.Validation
 open FsToolkit.ErrorHandling
 open API.DBLogType
 
+(*
+    Fable.Remoting should take care of checking types, we just need to check
+    for any missing properties and that properties conform to what we want
+    (eg level has to be on of thise strings)
+*)
+
 exception ApiValidationException of string
 
 let propExists (propName: string) (log: LogPreparedForDB) =
