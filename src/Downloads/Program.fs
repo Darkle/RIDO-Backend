@@ -22,7 +22,6 @@ let main args =
 
     )
 
-    // JobManager.AddJob((fun _ -> printfn "3 seconds passed"), (fun s -> s.ToRunEvery(3).Seconds() |> ignore))
     JobManager.AddJob((fun _ -> printfn "3 seconds passed"), (fun s -> s.ToRunEvery(3).Seconds() |> ignore))
 
     // Do it this way as opposed to a while loop so it runs on a background thread.

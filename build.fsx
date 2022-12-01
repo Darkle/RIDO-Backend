@@ -28,6 +28,11 @@ let loggingDBPath = dataDirectory + "/logging.db"
 let loggingDbInitSQLFilePath =
     Path.Join("src", "API", "DB", "init-scripts", "init-logging-db.sql")
 
+let ridoDBPath = dataDirectory + "/RIDO.db"
+
+let ridoDbInitSQLFilePath =
+    Path.Join("src", "API", "DB", "init-scripts", "init-rido-db.sql")
+
 let sqliteReadString dbSqlFilePath = sprintf ".read %s" dbSqlFilePath
 
 let createDirs () =
@@ -44,6 +49,10 @@ let devApi =
         // Init the DBs
         do!
             Cmd.createWithArgs "sqlite3" [ loggingDBPath; sqliteReadString loggingDbInitSQLFilePath ]
+            |> Cmd.run
+
+        do!
+            Cmd.createWithArgs "sqlite3" [ ridoDBPath; sqliteReadString ridoDbInitSQLFilePath ]
             |> Cmd.run
 
         // Commands that return an exit code other than 0 fail the step by default.
@@ -64,6 +73,10 @@ let devWatchApi =
         // Init the DBs
         do!
             Cmd.createWithArgs "sqlite3" [ loggingDBPath; sqliteReadString loggingDbInitSQLFilePath ]
+            |> Cmd.run
+
+        do!
+            Cmd.createWithArgs "sqlite3" [ ridoDBPath; sqliteReadString ridoDbInitSQLFilePath ]
             |> Cmd.run
 
         do!

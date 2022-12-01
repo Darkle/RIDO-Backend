@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS Post(
   postUrl TEXT CHECK(length(postUrl) > 0) NOT NULL,
   score TEXT CHECK(typeof(score) = 'integer') NOT NULL,
   timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
-  mediaUrl TEXT NULL,
+  mediaUrl TEXT NOT NULL,
   mediaHasBeenDownloaded INTEGER CHECK(
     mediaHasBeenDownloaded = 0
     OR mediaHasBeenDownloaded = 1

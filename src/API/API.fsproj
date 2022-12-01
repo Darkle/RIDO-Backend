@@ -20,6 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/Types/Post.fs" />
+    <Compile Include="../Shared/Types/SubGroup.fs" />
+    <Compile Include="../Shared/Types/Subreddit.fs" />
+    <Compile Include="../Shared/Types/Tag.fs" />
     <Compile Include="../Shared/Types/DBLogType.fs" />
     <Compile Include="../Shared/Types/APITypes.fs" />
     <Compile Include="../Shared/Utils.fs" />
