@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS Post(
 CREATE TABLE IF NOT EXISTS Tag_Post(
   tag TEXT COLLATE NOCASE CHECK(length(tag) > 0) NOT NULL,
   postId TEXT CHECK(length(postId) > 0) NOT NULL,
-  FOREIGN KEY(tag) REFERENCES Tag(tag),
+  FOREIGN KEY(tag) REFERENCES Tag(tag) ON DELETE CASCADE,
   FOREIGN KEY(postId) REFERENCES Post(postId)
 );
 
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS Tag_Post(
 CREATE TABLE IF NOT EXISTS Subreddit_Post(
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
   postId TEXT CHECK(length(postId) > 0) NOT NULL,
-  FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit),
+  FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE,
   FOREIGN KEY(postId) REFERENCES Post(postId)
 );
 
