@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS Post(
   downloadedMediaCount INTEGER CHECK(downloadedMediaCount > 0) NOT NULL DEFAULT 0,
   downloadError TEXT NULL,
   downloadedMedia TEXT NULL,
+  -- https://sqlite.org/foreignkeys.html
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE
 );
 
@@ -77,5 +78,5 @@ CREATE TABLE IF NOT EXISTS Subreddit_SubGroup(
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
   sub_group TEXT COLLATE NOCASE CHECK(length(sub_group) > 0) NOT NULL,
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit),
-  FOREIGN KEY(sub_group) REFERENCES SubredditGroup(sub_group)
+  FOREIGN KEY(sub_group) REFERENCES SubredditGroup(sub_group) ON DELETE CASCADE
 );
