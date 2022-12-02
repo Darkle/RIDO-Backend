@@ -36,9 +36,6 @@ let private createLogForDB (logData: Log<'T>) : LogPreparedForDB =
           | Some thing -> thing |> string
           | None -> "NULL" }
 
-let private createTimestamp () =
-    Convert.ToInt64((DateTime.UtcNow - DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds)
-
 let private logToConsole (log: Log<'T>) =
     let preface =
         match log.level with
@@ -50,16 +47,6 @@ let private logToConsole (log: Log<'T>) =
     printfn "%s \n %A" preface log
 
 let private sendLogToDB log =
-    // asyncResult {
-    //     let! apiResult = apiClient.addLog log |> AsyncResult.catch
-
-    //     match apiResult with
-    //     | Ok _ -> ignore ()
-    //     | Error err -> printfn "An error occured with apiClient: %A" err
-    // }
-    // |> Async.Ignore
-    // |> ignore
-
     async {
         let! apiResult = apiClient.addLog log |> Async.Catch
 
@@ -94,7 +81,7 @@ let private log (logLevel: string) (logData: LogData<'T>) =
         ()
 
     let logDataWithLevelAndTimestamp: Log<'T> =
-        { createdAt = createTimestamp ()
+        { createdAt = Utils.createUnixTimestamp ()
           level = logLevel
           message = logData.message
           service = logData.service

@@ -1,6 +1,11 @@
 module Utils
 
+open System
 open System.IO
+
+// In .net the DateTime starts in year 0001 as opposed to 1970
+let createUnixTimestamp () =
+    Convert.ToInt64((DateTime.UtcNow - DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds)
 
 // Needs to be a function as the .env vars arent available until .env file loaded.
 let apiServerAddress () = 

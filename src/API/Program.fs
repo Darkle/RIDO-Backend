@@ -33,6 +33,12 @@ let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
 
     giraffeLogger.LogError(ex, errorMessage)
 
+    Log.error
+        { message = Some errorMessage
+          service = Some "api"
+          stack = Some ex.StackTrace
+          other = Some ex.Message }
+
     clearResponse >=> setStatusCode 500 >=> text ex.Message
 
 let configureCors (builder: CorsPolicyBuilder) =
@@ -83,14 +89,18 @@ let main args =
 
     printfn "RIDO Server Address: %s" (Utils.apiServerAddress ())
 
+    Jobs.LogPrune.initLogPruneJob ()
+
     // task {
     //     do! Async.Sleep 2000
 
-    //     Log.warn
-    //         { message = Some "Hello"
-    //           service = None
-    //           stack = None
-    //           other = Some({| hello = "derp" |}) }
+    //     for i in 1..20 do
+    //         Log.warn
+    //             { message = Some (sprintf "Hello %d" i)
+    //               service = None
+    //               stack = None
+    //               other = Some({| hello = "derp" |}) }
+
     // }
     // |> ignore
 
