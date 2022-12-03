@@ -5,15 +5,15 @@ type Post =
       subreddit: string
       title: string
       postUrl: string
-      score: int
-      timestamp: int
+      score: int64
+      timestamp: int64
       mediaUrl: string
       mediaHasBeenDownloaded: bool
       couldNotDownload: bool
       postMediaImagesHaveBeenProcessed: bool
       postMediaImagesProcessingError: string option
       postThumbnailsCreated: bool
-      mediaDownloadTries: int
-      downloadedMediaCount: int
+      mediaDownloadTries: int64
+      downloadedMediaCount: int64
       downloadError: string option
       downloadedMedia: string option }

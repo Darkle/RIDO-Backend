@@ -24,6 +24,10 @@ CREATE TABLE IF NOT EXISTS AdminSettings(
     AND 100
   ) NOT NULL DEFAULT 80,
   maxImageWidthForNonArchiveImage INTEGER CHECK(maxImageWidthForNonArchiveImage > 0) NOT NULL DEFAULT 1400,
+  hasSeenWelcomeMessage INTEGER CHECK(
+    updateAllDay = 0
+    OR updateAllDay = 1
+  ) NOT NULL DEFAULT 0,
   UNIQUE(uniqueId)
 );
 
