@@ -10,42 +10,54 @@ open API.AdminSettings
 let sseHandlerAdminSettingsUpdate: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
-
             let! initialAdminSettings = getAdminSettings ()
 
-            match initialAdminSettings with
-            | Ok _ -> ignore ()
-            | Error err ->
-                let errorMessage = "Unable to get admin settings data for SSE"
+            let mutable shouldPushEvents = true
 
-                Log.error
-                    { message = Some errorMessage
-                      service = Some "api"
-                      stack = None
-                      other = Some(err.ToString()) }
+            let mutable adminSettings =
+                match initialAdminSettings with
+                | Ok settings -> settings
+                | Error err ->
+                    let errorMessage = "Unable to get admin settings data for SSE"
 
-                failwith errorMessage
+                    Log.error
+                        { message = Some errorMessage
+                          service = Some "api"
+                          stack = None
+                          other = Some(err |> string) }
 
-            let mutable adminSettings = initialAdminSettings
+                    failwith errorMessage
 
-            // adminSettingsUpdateEventEmitter.AdminSettingsUpdate.Add(fun (updatedAdminSettings) ->
-            //     adminSettings = updatedAdminSettings)
+            adminSettingsUpdateEventEmitter.AdminSettingsUpdate.Add(fun (updatedAdminSettings) ->
+                adminSettings <- updatedAdminSettings)
 
-            let res = ctx.Response
             ctx.SetStatusCode StatusCodes.Status200OK
             ctx.SetHttpHeader("Content-Type", "text/event-stream")
             ctx.SetHttpHeader("Cache-Control", "no-cache")
             ctx.SetHttpHeader("x-no-compression", "true")
             ctx.SetHttpHeader("Connection", "keep-alive")
 
-            let data = JsonSerializer.Serialize(initialAdminSettings)
+            // For some reason this needs to be an anonymous record
+            let data =
+                JsonSerializer.Serialize(
+                    {| uniqueId = adminSettings.uniqueId
+                       numberMediaDownloadsAtOnce = adminSettings.numberMediaDownloadsAtOnce
+                       numberImagesProcessAtOnce = adminSettings.numberImagesProcessAtOnce
+                       updateAllDay = adminSettings.updateAllDay
+                       updateStartingHour = adminSettings.updateStartingHour
+                       updateEndingHour = adminSettings.updateEndingHour
+                       imageCompressionQuality = adminSettings.imageCompressionQuality
+                       archiveImageCompressionQuality = adminSettings.archiveImageCompressionQuality
+                       maxImageWidthForNonArchiveImage = adminSettings.maxImageWidthForNonArchiveImage
+                       hasSeenWelcomeMessage = adminSettings.hasSeenWelcomeMessage |}
+                )
 
-            while true do
-                do! res.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
-                do! res.Body.FlushAsync()
+            while shouldPushEvents do
+                do! ctx.Response.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
+                do! ctx.Response.Body.FlushAsync()
 
-                do! Async.Sleep(TimeSpan.FromSeconds 1.)
-            // count <- count + 1
+                if ctx.RequestAborted.IsCancellationRequested then
+                    shouldPushEvents <- false
 
             return! text "" next ctx
         }
