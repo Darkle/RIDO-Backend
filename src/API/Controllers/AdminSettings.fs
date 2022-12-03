@@ -13,8 +13,7 @@ let ofDataReader (rd: IDataReader) : RIDOTypes.AdminSettings =
       imageCompressionQuality = rd.ReadInt64 "uniqueId"
       archiveImageCompressionQuality = rd.ReadInt64 "uniqueId"
       maxImageWidthForNonArchiveImage = rd.ReadInt64 "uniqueId"
-
-    }
+      hasSeenWelcomeMessage = rd.ReadBoolean "hasSeenWelcomeMessage" }
 
 let getAdminSettings () =
     let sql = "SELECT * from AdminSettings where uniqueId = 'admin-settings'"
