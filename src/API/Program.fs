@@ -104,17 +104,18 @@ let main args =
         //           stack = None
         //           other = Some({| hello = "derp" |}) }
 
-        // adminSettingsUpdateEventEmitter.Trigger(
-        //     { uniqueId = "admin-settings"
-        //       numberMediaDownloadsAtOnce = 21
-        //       numberImagesProcessAtOnce = 1
-        //       updateAllDay = true
-        //       updateStartingHour = 1
-        //       updateEndingHour = 23
-        //       imageCompressionQuality = 80
-        //       archiveImageCompressionQuality = 80
-        //       maxImageWidthForNonArchiveImage = 1200 }
-        // )
+        adminSettingsUpdateEventEmitter.Trigger(
+            { uniqueId = "admin-settings"
+              numberMediaDownloadsAtOnce = 21
+              numberImagesProcessAtOnce = 1
+              updateAllDay = true
+              updateStartingHour = 1
+              updateEndingHour = 23
+              imageCompressionQuality = 80
+              archiveImageCompressionQuality = 80
+              maxImageWidthForNonArchiveImage = 1200
+              hasSeenWelcomeMessage = false }
+        )
     }
     |> ignore
 

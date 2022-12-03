@@ -7,13 +7,14 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Donald" Version="7.1.0" />
+    <PackageReference Include="Dapper.FSharp" Version="4.1.0" />
     <PackageReference Include="DotNetEnv" Version="2.3.0" />
     <PackageReference Include="Fable.Remoting.DotnetClient" Version="3.28.0" />
     <PackageReference Include="Fable.Remoting.Giraffe" Version="5.14.0" />
     <PackageReference Include="Fable.Remoting.Server" Version="5.32.0" />
     <PackageReference Include="FluentScheduler" Version="5.5.1" />
     <PackageReference Include="FsToolkit.ErrorHandling" Version="4.0.0" />
+    <PackageReference Include="FsToolkit.ErrorHandling.TaskResult" Version="4.0.0" />
     <PackageReference Include="Giraffe" Version="6.0.*" />
     <PackageReference Include="Giraffe.ViewEngine" Version="1.4.*" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="7.0.0" />
@@ -33,10 +34,10 @@
     <Compile Include="../Shared/Logging/Logger.fs" />
     <Compile Include="EventEmitter.fs" />
     <Compile Include="DB/DB.fs" />
+    <Compile Include="Controllers/Logs.fs" />
     <Compile Include="Jobs.fs" />
     <Compile Include="Controllers/AdminSettings.fs" />
     <Compile Include="Controllers/SSE.fs" />
-    <Compile Include="Controllers/Logs.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="API.fs" />
     <!-- <Compile Include="DB/Settings.fs" /> -->

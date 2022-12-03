@@ -1,21 +1,18 @@
 module API.AdminSettings
 
-open Donald
-open System.Data
+open Dapper.FSharp.SQLite
+open FsToolkit.ErrorHandling
+open System.Linq
 
-let ofDataReader (rd: IDataReader) : RIDOTypes.AdminSettings =
-    { uniqueId = rd.ReadString "uniqueId"
-      numberMediaDownloadsAtOnce = rd.ReadInt64 "numberMediaDownloadsAtOnce"
-      numberImagesProcessAtOnce = rd.ReadInt64 "numberImagesProcessAtOnce"
-      updateAllDay = rd.ReadBoolean "updateAllDay"
-      updateStartingHour = rd.ReadInt64 "uniqueId"
-      updateEndingHour = rd.ReadInt64 "uniqueId"
-      imageCompressionQuality = rd.ReadInt64 "uniqueId"
-      archiveImageCompressionQuality = rd.ReadInt64 "uniqueId"
-      maxImageWidthForNonArchiveImage = rd.ReadInt64 "uniqueId"
-      hasSeenWelcomeMessage = rd.ReadBoolean "hasSeenWelcomeMessage" }
+let adminSettingsTable = table<RIDOTypes.AdminSettings>
 
 let getAdminSettings () =
-    let sql = "SELECT * from AdminSettings where uniqueId = 'admin-settings'"
-
-    DB.ridoDB |> Db.newCommand sql |> Db.Async.querySingle ofDataReader
+    taskResult {
+        return!
+            select {
+                for adminSettings in adminSettingsTable do
+                    where (adminSettings.uniqueId = "admin-settings")
+            }
+            |> DB.ridoDB.SelectAsync<RIDOTypes.AdminSettings>
+    }
+    |> TaskResult.map (fun (adminSettingsIenumerable) -> adminSettingsIenumerable.First())

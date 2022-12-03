@@ -1,28 +1,54 @@
 module API.Logs
 
-open Donald
+// open Donald
+open Dapper.FSharp.SQLite
 open RIDOTypes
+open FsToolkit.ErrorHandling
+open System.Threading.Tasks
+
+let logsTable = table<LogPreparedForDB>
 
 let saveLogToDB (log: LogPreparedForDB) =
-    let sql =
-        "
-    INSERT INTO Log (createdAt, level, message, service, stack, other)
-    VALUES (@createdAt, @level, @message, @service, @stack, @other);"
+    taskResult {
+        return!
+            insert {
+                into logsTable
+                value log
+            }
+            |> DB.logsDB.InsertAsync
+    }
 
-    let sqlParams =
-        [ ("createdAt", SqlType.Int64 log.createdAt)
-          ("level", SqlType.String log.level)
-          ("message", SqlType.String log.message)
-          ("service", SqlType.String log.service)
-          ("stack", SqlType.String log.stack)
-          ("other", SqlType.String log.other) ]
+let private fiveDaysAgoUnixTime () =
+    let fiveDaysInMs = 432_000_000
+    Utils.createUnixTimestamp () - (fiveDaysInMs |> int64)
 
-    DB.logsDB
-    |> Db.newCommand sql
-    |> Db.setParams sqlParams
-    |> Db.Async.exec
-    |> Async.AwaitTask
-// |> Async.Catch
+let pruneOldLogs () =
+    taskResult {
+        return!
+            delete {
+                for log in logsTable do
+                    where (log.createdAt < fiveDaysAgoUnixTime ())
+            }
+            |> DB.logsDB.DeleteAsync
+    }
+// let sql =
+//     "
+// INSERT INTO Log (createdAt, level, message, service, stack, other)
+// VALUES (@createdAt, @level, @message, @service, @stack, @other);"
+
+// let sqlParams =
+//     [ ("createdAt", SqlType.Int64 log.createdAt)
+//       ("level", SqlType.String log.level)
+//       ("message", SqlType.String log.message)
+//       ("service", SqlType.String log.service)
+//       ("stack", SqlType.String log.stack)
+//       ("other", SqlType.String log.other) ]
+
+// DB.logsDB
+// |> Db.newCommand sql
+// |> Db.setParams sqlParams
+// |> Db.Async.exec
+// |> Async.AwaitTask
 
 // async {
 //     let! dbResult = Db.Async.exec sqlToExec |> Async.AwaitTask |> Async.Catch

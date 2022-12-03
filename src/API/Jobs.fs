@@ -1,29 +1,21 @@
 namespace Jobs
 
 open FluentScheduler
-open Donald
 open API
 
 module LogPrune =
-    let private fiveDaysAgoUnixTime () =
-        let fiveDaysInMs = 432_000_000
-        Utils.createUnixTimestamp () - (fiveDaysInMs |> int64)
-
     let private pruneLogs () =
-        let sql = "DELETE FROM Log WHERE createdAt < @fiveDaysAgoInMs"
-
-        let sqlParam = [ ("fiveDaysAgoInMs", SqlType.Int64(fiveDaysAgoUnixTime ())) ]
-
         task {
-            try
-                let! _ = DB.logsDB |> Db.newCommand sql |> Db.setParams sqlParam |> Db.Async.exec
-                ()
-            with err ->
+            let! dbResult = Logs.pruneOldLogs () |> Async.AwaitTask
+
+            match dbResult with
+            | Ok _ -> ignore ()
+            | Error err ->
                 Log.error
                     { message = Some "DB Error pruning logs"
                       service = Some "api"
-                      stack = Some err.StackTrace
-                      other = Some err.Message }
+                      stack = None
+                      other = Some(err |> string) }
         }
         |> ignore
 

@@ -1,5 +1,7 @@
 namespace RIDOTypes
 
+// [<CLIMutable>] is for Dapper orm
+[<CLIMutable>]
 type AdminSettings =
     { uniqueId: string
       numberMediaDownloadsAtOnce: int64

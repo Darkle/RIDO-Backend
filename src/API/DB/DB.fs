@@ -2,6 +2,8 @@ module API.DB
 
 open Microsoft.Data.Sqlite
 
+Dapper.FSharp.OptionTypes.register ()
+
 let loggingDBPath =
     Utils.getProperEnvVarFilePath (DotNetEnv.Env.GetString("DATA_FOLDER", "./data"))
     + "/logging.db"
