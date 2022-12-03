@@ -13,6 +13,7 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
             let! initialAdminSettings = getAdminSettings ()
 
             let mutable shouldPushEvents = true
+            let mutable newUpdate = true
 
             let mutable adminSettings =
                 match initialAdminSettings with
@@ -29,7 +30,9 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
                     failwith errorMessage
 
             adminSettingsUpdateEventEmitter.AdminSettingsUpdate.Add(fun (updatedAdminSettings) ->
-                adminSettings <- updatedAdminSettings)
+                adminSettings <- updatedAdminSettings
+                newUpdate <- true
+                ())
 
             ctx.SetStatusCode StatusCodes.Status200OK
             ctx.SetHttpHeader("Content-Type", "text/event-stream")
@@ -37,27 +40,17 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
             ctx.SetHttpHeader("x-no-compression", "true")
             ctx.SetHttpHeader("Connection", "keep-alive")
 
-            // For some reason this needs to be an anonymous record
-            let data =
-                JsonSerializer.Serialize(
-                    {| uniqueId = adminSettings.uniqueId
-                       numberMediaDownloadsAtOnce = adminSettings.numberMediaDownloadsAtOnce
-                       numberImagesProcessAtOnce = adminSettings.numberImagesProcessAtOnce
-                       updateAllDay = adminSettings.updateAllDay
-                       updateStartingHour = adminSettings.updateStartingHour
-                       updateEndingHour = adminSettings.updateEndingHour
-                       imageCompressionQuality = adminSettings.imageCompressionQuality
-                       archiveImageCompressionQuality = adminSettings.archiveImageCompressionQuality
-                       maxImageWidthForNonArchiveImage = adminSettings.maxImageWidthForNonArchiveImage
-                       hasSeenWelcomeMessage = adminSettings.hasSeenWelcomeMessage |}
-                )
+            let data = JsonSerializer.Serialize<RIDOTypes.AdminSettings>(adminSettings)
 
             while shouldPushEvents do
-                do! ctx.Response.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
-                do! ctx.Response.Body.FlushAsync()
+                if newUpdate then
+                    do! ctx.Response.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
+                    do! ctx.Response.Body.FlushAsync()
+
+                newUpdate <- false
 
                 if ctx.RequestAborted.IsCancellationRequested then
                     shouldPushEvents <- false
 
-            return! text "" next ctx
+            return Some ctx
         }
