@@ -1,3 +1,38 @@
+CREATE TABLE IF NOT EXISTS AdminSettings(
+  uniqueId TEXT NOT NULL,
+  numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) NOT NULL DEFAULT 2,
+  numberImagesProcessAtOnce INTEGER CHECK(numberImagesProcessAtOnce > 0) NOT NULL DEFAULT 2,
+  updateAllDay INTEGER CHECK(
+    updateAllDay = 0
+    OR updateAllDay = 1
+  ) NOT NULL DEFAULT 1,
+  -- between check is inclusive
+  updateStartingHour INTEGER CHECK(
+    updateStartingHour BETWEEN 0
+    AND 23
+  ) NOT NULL DEFAULT 1,
+  updateEndingHour INTEGER CHECK(
+    updateEndingHour BETWEEN 0
+    AND 23
+  ) NOT NULL DEFAULT 7,
+  imageCompressionQuality INTEGER CHECK(
+    imageCompressionQuality BETWEEN 1
+    AND 100
+  ) NOT NULL DEFAULT 80,
+  archiveImageCompressionQuality INTEGER CHECK(
+    archiveImageCompressionQuality BETWEEN 1
+    AND 100
+  ) NOT NULL DEFAULT 80,
+  maxImageWidthForNonArchiveImage INTEGER CHECK(maxImageWidthForNonArchiveImage > 0) NOT NULL DEFAULT 1400,
+  UNIQUE(uniqueId)
+);
+
+-- Set up default admin settings
+INSERT
+  OR IGNORE INTO AdminSettings(uniqueId)
+VALUES
+  ("admin-settings");
+
 CREATE TABLE IF NOT EXISTS Tag(
   tag TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(tag) > 0) NOT NULL,
   favourited INTEGER CHECK(
