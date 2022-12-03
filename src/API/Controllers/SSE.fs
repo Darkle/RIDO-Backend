@@ -46,10 +46,9 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
 
             while shouldPushEvents do
                 if newUpdate then
+                    newUpdate <- false
                     do! ctx.Response.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
                     do! ctx.Response.Body.FlushAsync()
-
-                newUpdate <- false
 
                 if ctx.RequestAborted.IsCancellationRequested then
                     shouldPushEvents <- false
