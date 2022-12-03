@@ -34,6 +34,8 @@
     <Compile Include="EventEmitter.fs" />
     <Compile Include="DB/DB.fs" />
     <Compile Include="Jobs.fs" />
+    <Compile Include="Controllers/AdminSettings.fs" />
+    <Compile Include="Controllers/SSE.fs" />
     <Compile Include="Controllers/Logs.fs" />
     <Compile Include="Validation.fs" />
     <Compile Include="API.fs" />

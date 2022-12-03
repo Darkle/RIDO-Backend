@@ -14,6 +14,8 @@ open Giraffe
 open Fable.Remoting.Server
 open Fable.Remoting.Giraffe
 open API.Impl
+open API.SSE
+open API.EventEmitter
 
 let remoting =
     Remoting.createApi ()
@@ -23,7 +25,8 @@ let remoting =
 
 let webApp =
     choose
-        [ remoting
+        [ subRouteCi "/sse" (choose [ routeCix "/admin-settings-update" >=> sseHandlerAdminSettingsUpdate ])
+          remoting
           // If none of the routes matched then return a 404
           setStatusCode StatusCodes.Status404NotFound >=> text "Not Found" ]
 
@@ -91,18 +94,29 @@ let main args =
 
     Jobs.LogPrune.initLogPruneJob ()
 
-    // task {
-    //     do! Async.Sleep 2000
+    task {
+        do! Async.Sleep 5000
 
-    //     // for i in 1..20 do
-    //     //     Log.warn
-    //     //         { message = Some (sprintf "Hello %d" i)
-    //     //           service = None
-    //     //           stack = None
-    //     //           other = Some({| hello = "derp" |}) }
-    //     let adminUpdate = new EventEmitter.AdminSettingsEventEmitter()
-    // }
-    // |> ignore
+        // for i in 1..20 do
+        //     Log.warn
+        //         { message = Some (sprintf "Hello %d" i)
+        //           service = None
+        //           stack = None
+        //           other = Some({| hello = "derp" |}) }
+
+        // adminSettingsUpdateEventEmitter.Trigger(
+        //     { uniqueId = "admin-settings"
+        //       numberMediaDownloadsAtOnce = 21
+        //       numberImagesProcessAtOnce = 1
+        //       updateAllDay = true
+        //       updateStartingHour = 1
+        //       updateEndingHour = 23
+        //       imageCompressionQuality = 80
+        //       archiveImageCompressionQuality = 80
+        //       maxImageWidthForNonArchiveImage = 1200 }
+        // )
+    }
+    |> ignore
 
     let contentRoot = Directory.GetCurrentDirectory()
     let webRoot = Path.Combine(contentRoot, "WebRoot")

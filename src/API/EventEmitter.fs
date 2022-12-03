@@ -2,7 +2,7 @@ module API.EventEmitter
 
 open RIDOTypes
 
-type AdminSettingsEventEmitter() =
+type AdminSettingsUpdateEventEmitter() =
     let adminSettingsUpdate = new Event<AdminSettings>()
 
     [<CLIEvent>]
@@ -10,6 +10,8 @@ type AdminSettingsEventEmitter() =
 
     member this.Trigger(updatedAdminSettings: AdminSettings) =
         adminSettingsUpdate.Trigger(updatedAdminSettings)
+
+let adminSettingsUpdateEventEmitter = new AdminSettingsUpdateEventEmitter()
 
 (*
 USE:    
