@@ -31,8 +31,7 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
             let emitterHandler =
                 new Handler<RIDOTypes.AdminSettings>(fun sender updatedAdminSettings ->
                     adminSettings <- updatedAdminSettings
-                    newUpdate <- true
-                    ())
+                    newUpdate <- true)
 
             adminSettingsUpdateEventEmitter.AdminSettingsUpdate.AddHandler(emitterHandler)
 
@@ -42,10 +41,10 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
             ctx.SetHttpHeader("x-no-compression", "true")
             ctx.SetHttpHeader("Connection", "keep-alive")
 
-            let data = JsonSerializer.Serialize<RIDOTypes.AdminSettings>(adminSettings)
 
             while shouldPushEvents do
                 if newUpdate then
+                    let data = JsonSerializer.Serialize<RIDOTypes.AdminSettings>(adminSettings)
                     newUpdate <- false
                     do! ctx.Response.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
                     do! ctx.Response.Body.FlushAsync()

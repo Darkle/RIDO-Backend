@@ -45,7 +45,10 @@ let errorHandler (ex: Exception) (giraffeLogger: ILogger) =
     clearResponse >=> setStatusCode 500 >=> text ex.Message
 
 let configureCors (builder: CorsPolicyBuilder) =
-    builder.WithOrigins(Utils.apiServerAddress ()).AllowAnyMethod().AllowAnyHeader()
+    builder
+        .WithOrigins(Utils.getApiServerAddress ())
+        .AllowAnyMethod()
+        .AllowAnyHeader()
     |> ignore
 
 let configureApp (app: IApplicationBuilder) =
@@ -90,12 +93,12 @@ let main args =
 
     Utils.loadDotEnvFile ()
 
-    printfn "RIDO Server Address: %s" (Utils.apiServerAddress ())
+    printfn "RIDO Server Address: %s" (Utils.getApiServerAddress ())
 
     Jobs.LogPrune.initLogPruneJob ()
 
     task {
-        do! Async.Sleep 5000
+        do! Async.Sleep 10000
 
         // for i in 1..20 do
         //     Log.warn
@@ -128,7 +131,7 @@ let main args =
             webHostBuilder
                 .UseContentRoot(contentRoot)
                 .UseWebRoot(webRoot)
-                .UseUrls(Utils.apiServerAddress ())
+                .UseUrls(Utils.getApiServerAddress ())
                 .Configure(Action<IApplicationBuilder> configureApp)
                 .ConfigureServices(configureServices)
                 .ConfigureLogging(configureLogging)

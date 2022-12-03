@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="3v.EvtSource" Version="2.0.0" />
     <PackageReference Include="DotNetEnv" Version="2.3.0" />
     <PackageReference Include="Fable.Remoting.DotnetClient" Version="3.28.0" />
     <PackageReference Include="FluentScheduler" Version="5.5.1" />

@@ -8,7 +8,7 @@ let createUnixTimestamp () =
     Convert.ToInt64((DateTime.UtcNow - DateTime(1970, 1, 1, 0, 0, 0)).TotalMilliseconds)
 
 // Needs to be a function as the .env vars arent available until .env file loaded.
-let apiServerAddress () = 
+let getApiServerAddress () =
     let apiServerPort = DotNetEnv.Env.GetInt("API_SERVICE_PORT", 3030)
     sprintf "http://localhost:%i" apiServerPort
 

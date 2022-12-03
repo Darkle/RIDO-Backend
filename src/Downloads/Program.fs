@@ -2,6 +2,8 @@
 
 open System
 open FluentScheduler
+open EvtSource
+open System.Text.Json
 
 [<EntryPoint>]
 let main args =
@@ -23,6 +25,14 @@ let main args =
     )
 
     JobManager.AddJob((fun _ -> printfn "3 seconds passed"), (fun s -> s.ToRunEvery(3).Seconds() |> ignore))
+
+    let evt =
+        new EventSourceReader(new Uri(Utils.getApiServerAddress () + "/sse/admin-settings-update"))
+
+    evt.MessageReceived.Add(fun e ->
+        printfn "event: %s data: %A" e.Event (JsonSerializer.Deserialize<RIDOTypes.AdminSettings>(e.Message)))
+    // evt.add_MessageReceived <- fun data -> printfn "data received2: %A" data
+    evt.Start() |> ignore
 
     // Do it this way as opposed to a while loop so it runs on a background thread.
     let rec loop () = async { return! loop () }
