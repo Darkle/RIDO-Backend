@@ -1,7 +1,6 @@
 module API.SSE
 
 open Giraffe
-open System
 open Microsoft.AspNetCore.Http
 open System.Text.Json
 open API.EventEmitter
@@ -29,10 +28,13 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
 
                     failwith errorMessage
 
-            adminSettingsUpdateEventEmitter.AdminSettingsUpdate.Add(fun (updatedAdminSettings) ->
-                adminSettings <- updatedAdminSettings
-                newUpdate <- true
-                ())
+            let emitterHandler =
+                new Handler<RIDOTypes.AdminSettings>(fun sender updatedAdminSettings ->
+                    adminSettings <- updatedAdminSettings
+                    newUpdate <- true
+                    ())
+
+            adminSettingsUpdateEventEmitter.AdminSettingsUpdate.AddHandler(emitterHandler)
 
             ctx.SetStatusCode StatusCodes.Status200OK
             ctx.SetHttpHeader("Content-Type", "text/event-stream")
@@ -51,6 +53,8 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
 
                 if ctx.RequestAborted.IsCancellationRequested then
                     shouldPushEvents <- false
+
+            adminSettingsUpdateEventEmitter.AdminSettingsUpdate.RemoveHandler(emitterHandler)
 
             return Some ctx
         }
