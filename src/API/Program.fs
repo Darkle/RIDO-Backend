@@ -94,13 +94,13 @@ let main args =
     // task {
     //     do! Async.Sleep 2000
 
-    //     for i in 1..20 do
-    //         Log.warn
-    //             { message = Some (sprintf "Hello %d" i)
-    //               service = None
-    //               stack = None
-    //               other = Some({| hello = "derp" |}) }
-
+    //     // for i in 1..20 do
+    //     //     Log.warn
+    //     //         { message = Some (sprintf "Hello %d" i)
+    //     //           service = None
+    //     //           stack = None
+    //     //           other = Some({| hello = "derp" |}) }
+    //     let adminUpdate = new EventEmitter.AdminSettingsEventEmitter()
     // }
     // |> ignore
 

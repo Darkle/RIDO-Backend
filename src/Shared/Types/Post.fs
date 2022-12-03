@@ -1,4 +1,4 @@
-module Post
+namespace RIDOTypes
 
 type Post =
     { postId: string

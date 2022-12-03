@@ -1,7 +1,7 @@
 module API.Impl
 
-open API.LogIngestion
-open API.Types
+open API.Logs
+open RIDOTypes
 
 let api: IAPI =
     { addLog =

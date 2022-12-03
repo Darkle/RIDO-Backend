@@ -1,7 +1,7 @@
-module API.LogIngestion
+module API.Logs
 
 open Donald
-open API.DBLogType
+open RIDOTypes
 
 let saveLogToDB (log: LogPreparedForDB) =
     let sql =

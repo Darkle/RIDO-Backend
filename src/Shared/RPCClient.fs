@@ -1,7 +1,7 @@
 module RPC.Client
 
 open Fable.Remoting.DotnetClient
-open API.Types
+open RIDOTypes
 
 let apiServerAddress = Utils.apiServerAddress ()
 

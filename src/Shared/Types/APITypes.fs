@@ -1,5 +1,3 @@
-module API.Types
-
-open API.DBLogType
+namespace RIDOTypes
 
 type IAPI = { addLog: LogPreparedForDB -> Async<unit> }

@@ -1,7 +1,7 @@
 module API.Validation
 
 open FsToolkit.ErrorHandling
-open API.DBLogType
+open RIDOTypes
 
 (*
     Fable.Remoting should take care of checking types, we just need to check

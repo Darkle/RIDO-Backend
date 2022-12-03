@@ -1,4 +1,4 @@
-module API.DBLogType
+namespace RIDOTypes
 
 type LogPreparedForDB =
     { createdAt: int64

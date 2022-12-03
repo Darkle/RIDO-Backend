@@ -3,7 +3,7 @@ module Log
 open System
 open FsToolkit.ErrorHandling
 open RPC.Client
-open API.DBLogType
+open RIDOTypes
 
 type LogLevelAsNumber =
     | Fatal = 0
