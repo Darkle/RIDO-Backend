@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS AdminSettings(
+CREATE TABLE IF NOT EXISTS Settings(
   uniqueId TEXT NOT NULL,
   numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) NOT NULL DEFAULT 2,
   numberImagesProcessAtOnce INTEGER CHECK(numberImagesProcessAtOnce > 0) NOT NULL DEFAULT 2,
@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS AdminSettings(
 
 -- Set up default admin settings
 INSERT
-  OR IGNORE INTO AdminSettings(uniqueId)
+  OR IGNORE INTO Settings(uniqueId)
 VALUES
   ("admin-settings");
 

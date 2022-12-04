@@ -1,3 +1,0 @@
-[*.{fs,fsx,fsi}]
-fsharp_max_record_width = 90
-fsharp_keep_max_number_of_blank_lines = 1

@@ -1,0 +1,23 @@
+{
+  "files.exclude": {
+    "tsconfig.tsbuildinfo": true,
+    ".scannerwork": true,
+    ".nyc_output": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.swc": true,
+  },
+  "search.exclude": {
+    "tsconfig.tsbuildinfo": true,
+    "**/node_modules": true,
+    ".scannerwork": true,
+    "LICENSE": true,
+    "**/pnpm-lock.yaml": true,
+    "**/.swc": true,
+  },
+  "files.associations": {
+    ".Env": "dotenv",
+    ".env.dev": "dotenv",
+    ".env.defaults": "dotenv",
+    ".env.schema": "dotenv",
+  }
+}

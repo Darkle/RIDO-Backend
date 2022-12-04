@@ -1,5 +1,17 @@
+!.vscode
+.DS_Store
+# dependencies
+**/node_modules
+/.pnp
+.pnp.js
+
+# typescript
+*.tsbuildinfo
+
+**/*.db-wal
+**/*.db-shm
+**/*.db
 !**/*.sql
-logging.db
-trace-logging.db
+!services/downloads
+media-downloads
 data/**
-media-downloads/**
