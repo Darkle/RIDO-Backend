@@ -1,6 +1,5 @@
 namespace RIDOTypes
 
-[<CLIMutable>]
 type Post =
     { postId: string
       subreddit: string

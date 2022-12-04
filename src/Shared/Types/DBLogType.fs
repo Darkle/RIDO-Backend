@@ -1,6 +1,5 @@
 namespace RIDOTypes
 
-[<CLIMutable>]
 type LogPreparedForDB =
     { createdAt: int64
       level: string

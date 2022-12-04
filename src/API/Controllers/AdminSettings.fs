@@ -1,9 +1,14 @@
 module API.AdminSettings
 
-open Dapper.FSharp.SQLite
-open Dapper
+open Donald
 open FsToolkit.ErrorHandling
 open System.Linq
+
+(*
+Updating stuff is akward cause sometimes need to update a record dynamically
+*)
+// let dummySettings = {}
+
 
 let adminSettingsTable = table<RIDOTypes.AdminSettings>
 
@@ -18,11 +23,22 @@ let getAdminSettings () =
     }
     |> TaskResult.map (fun (adminSettingsIenumerable) -> adminSettingsIenumerable.First())
 
-// https://github.com/Dzoukr/Dapper.FSharp/issues/25
-let updateAdminSetting (settingName) settingValue =
-    taskResult {
-        let sql = @"UPDATE AdminSettings SET @col = 20 WHERE uniqueId = 'admin-settings'"
-        let pars = [ ("col", box settingName); ("val", box settingValue) ]
 
-        return! DB.ridoDB.ExecuteAsync(sql, pars)
+let updateAdminSetting (settingName: string) settingValue =
+    taskResult {
+        return!
+            update {
+                for adminSettings in adminSettingsTable do
+                    // setColumn
+                    //     (adminSettings
+                    //         .GetType()
+                    //         .GetProperty(settingName)
+                    //         .GetValue(adminSettings, [| settingName |]))
+                    //     settingValue
+                    adminSettings :?> DynamicDictionary
+                    setColumn adminSettings.``settingName`` 20
+
+                    where (adminSettings.uniqueId = "admin-settings")
+            }
+            |> DB.ridoDB.UpdateAsync
     }
