@@ -10,7 +10,7 @@ open API.AdminSettings
 let sseHandlerAdminSettingsUpdate: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
-            let! initialAdminSettings = getAdminSettings ()
+            let! initialAdminSettings = getAdminSettings () 
 
             let mutable shouldPushEvents = true
             let mutable newUpdate = true

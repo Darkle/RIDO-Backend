@@ -98,7 +98,7 @@ let main args =
     Jobs.LogPrune.initLogPruneJob ()
 
     task {
-        do! Async.Sleep 5000
+        do! Async.Sleep 3000
 
         // for i in 1..20 do
         //     Log.warn
