@@ -6,6 +6,7 @@ open System.Text.Json
 open API.EventEmitter
 open API.AdminSettings
 
+//Based on https://gist.github.com/AngelMunoz/01f9bccbf338c1be18470ec684e91898#file-server-sent-events-fs
 let sseHandlerAdminSettingsUpdate: HttpHandler =
     fun (next: HttpFunc) (ctx: HttpContext) ->
         task {
@@ -41,6 +42,7 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
             ctx.SetHttpHeader("x-no-compression", "true")
             ctx.SetHttpHeader("Connection", "keep-alive")
 
+            ctx.RequestAborted.Register(fun _ -> shouldPushEvents <- false) |> ignore
 
             while shouldPushEvents do
                 if newUpdate then
@@ -48,9 +50,6 @@ let sseHandlerAdminSettingsUpdate: HttpHandler =
                     newUpdate <- false
                     do! ctx.Response.WriteAsync($"event: admin-settings-update\ndata: {data}\n\n")
                     do! ctx.Response.Body.FlushAsync()
-
-                if ctx.RequestAborted.IsCancellationRequested then
-                    shouldPushEvents <- false
 
             adminSettingsUpdateEventEmitter.AdminSettingsUpdate.RemoveHandler(emitterHandler)
 

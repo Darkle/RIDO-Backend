@@ -31,7 +31,7 @@ let main args =
 
     evt.MessageReceived.Add(fun e ->
         printfn "event: %s data: %A" e.Event (JsonSerializer.Deserialize<RIDOTypes.AdminSettings>(e.Message)))
-    // evt.add_MessageReceived <- fun data -> printfn "data received2: %A" data
+
     evt.Start() |> ignore
 
     // Do it this way as opposed to a while loop so it runs on a background thread.

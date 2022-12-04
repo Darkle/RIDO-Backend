@@ -45,7 +45,7 @@
     <!-- <Compile Include="DB/Subreddit.fs" /> -->
     <!-- <Compile Include="DB/Tag.fs" /> -->
     <!-- <Compile Include="DB/Post/Post.fs" /> -->
-    <Compile Include="Program.fs" />
+    <Compile Include="API-Init.fs" />
   </ItemGroup>
 
   <ItemGroup>

@@ -98,7 +98,7 @@ let main args =
     Jobs.LogPrune.initLogPruneJob ()
 
     task {
-        do! Async.Sleep 10000
+        do! Async.Sleep 5000
 
         // for i in 1..20 do
         //     Log.warn
@@ -107,18 +107,29 @@ let main args =
         //           stack = None
         //           other = Some({| hello = "derp" |}) }
 
-        adminSettingsUpdateEventEmitter.Trigger(
-            { uniqueId = "admin-settings"
-              numberMediaDownloadsAtOnce = 21
-              numberImagesProcessAtOnce = 1
-              updateAllDay = true
-              updateStartingHour = 1
-              updateEndingHour = 23
-              imageCompressionQuality = 80
-              archiveImageCompressionQuality = 80
-              maxImageWidthForNonArchiveImage = 1200
-              hasSeenWelcomeMessage = false }
-        )
+        // adminSettingsUpdateEventEmitter.Trigger(
+        //     { uniqueId = "admin-settings"
+        //       numberMediaDownloadsAtOnce = 21
+        //       numberImagesProcessAtOnce = 1
+        //       updateAllDay = true
+        //       updateStartingHour = 1
+        //       updateEndingHour = 23
+        //       imageCompressionQuality = 80
+        //       archiveImageCompressionQuality = 80
+        //       maxImageWidthForNonArchiveImage = 1200
+        //       hasSeenWelcomeMessage = false }
+        // )
+        printfn "here 1"
+
+        try
+            let! dbResult = API.AdminSettings.updateAdminSetting "numberImagesProcessAtOnce" 20
+            printfn "here 2"
+
+            match dbResult with
+            | Ok _ -> printfn "DB Update Successful"
+            | Error err -> printfn "DB Update Error: %A" err
+        with err ->
+            printfn "In catch. Err: %A" err
     }
     |> ignore
 
