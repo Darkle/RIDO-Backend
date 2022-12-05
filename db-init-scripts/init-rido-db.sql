@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS Post(
   mediaDownloadTries INTEGER CHECK(mediaDownloadTries > 0) NOT NULL DEFAULT 0,
   downloadedMediaCount INTEGER CHECK(downloadedMediaCount > 0) NOT NULL DEFAULT 0,
   downloadError TEXT NULL,
-  downloadedMedia TEXT NULL,
+  downloadedMedia JSON NULL,
   -- https://sqlite.org/foreignkeys.html
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE
 );

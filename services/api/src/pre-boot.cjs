@@ -1,9 +1,9 @@
 const fs = require('fs')
 const path = require('path')
-
-const execa = require('execa')
+const { execFileSync } = require('node:child_process')
 
 require('dotenv-extended').load({
+  // only two levels up as the cwd is the dir the process started in
   path: '../../.env',
   defaults: '../../.env.defaults',
   schema: '../../.env.schema',
@@ -14,14 +14,20 @@ require('dotenv-extended').load({
 
 const isAbsolutePath = (pth = '') => pth.startsWith('/')
 
-const rootProjectFolder = path.resolve(process.cwd(), '..', '..')
+const ridoProjectRootFolder = path.resolve(process.cwd(), '..', '..')
 
 // start from project root, not sub project process cwd
-const getEnvFilePath = (pth = '') => (isAbsolutePath(pth) ? pth : path.join(rootProjectFolder, pth))
+const getEnvFilePath = (pth = '') => (isAbsolutePath(pth) ? pth : path.join(ridoProjectRootFolder, pth))
 
 const dbDir = getEnvFilePath(process.env['DATA_FOLDER'])
+const mediaDir = getEnvFilePath(process.env['MEDIA_DOWNLOADS_FOLDER'])
 
 const dbDirExists = fs.existsSync(dbDir)
+const mediaDirExists = fs.existsSync(mediaDir)
+
+if (!mediaDirExists) {
+  fs.mkdirSync(mediaDir, { recursive: true })
+}
 
 if (!dbDirExists) {
   fs.mkdirSync(dbDir, { recursive: true })
@@ -30,18 +36,10 @@ if (!dbDirExists) {
 const loggingDBPath = path.join(dbDir, 'logging.db')
 const ridoDBPath = path.join(dbDir, 'RIDO.db')
 
-const loggingDbInitSQLFilePath = path.join(rootProjectFolder, 'db-init-scripts', 'init-logging-db.sql')
-const ridoDbInitSQLFilePath = path.join(rootProjectFolder, 'db-init-scripts', 'init-rido-db.sql')
+const loggingDbInitSQLFilePath = path.join(ridoProjectRootFolder, 'db-init-scripts', 'init-logging-db.sql')
+const ridoDbInitSQLFilePath = path.join(ridoProjectRootFolder, 'db-init-scripts', 'init-rido-db.sql')
 
-Promise.all([
-  execa('sqlite3', [loggingDBPath, `.read ${loggingDbInitSQLFilePath}`]),
-  execa('sqlite3', [ridoDBPath, `.read ${ridoDbInitSQLFilePath}`]),
-])
-  .then(() => {
-    console.log(`RIDO DB's initialized`)
-  })
-  .catch(err => {
-    console.error(err)
-  })
+execFileSync('sqlite3', [loggingDBPath, `.read ${loggingDbInitSQLFilePath}`])
+execFileSync('sqlite3', [ridoDBPath, `.read ${ridoDbInitSQLFilePath}`])
 
-// NOTE: The downloads service pre-boot script creates the media downloads folder
+console.log(`RIDO DB's initialized`)

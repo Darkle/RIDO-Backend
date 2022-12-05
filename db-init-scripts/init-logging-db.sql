@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS Log(
   message TEXT NULL,
   service TEXT NULL,
   stack TEXT NULL,
-  other TEXT NULL
+  other JSON NULL
 );
 
 CREATE TABLE IF NOT EXISTS TraceLog(
@@ -22,5 +22,5 @@ CREATE TABLE IF NOT EXISTS TraceLog(
   message TEXT NULL,
   service TEXT NULL,
   stack TEXT NULL,
-  other TEXT NULL
+  other JSON NULL
 );

@@ -81,24 +81,24 @@ module.exports = {
     'functional/no-class': 'off',
     'functional/no-expression-statement': 'off',
     'functional/no-this-expression': 'off',
-    'functional/prefer-readonly-type': 'off',
-    'functional/no-mixed-type': 'off',
-    'functional/immutable-data': [
-      'error',
-      {
-        ignoreImmediateMutation: true,
-        ignorePattern: [],
-      },
-    ],
+    // 'functional/prefer-readonly-type': 'off',
+    // 'functional/no-mixed-type': 'off',
+    // 'functional/immutable-data': [
+    //   'error',
+    //   {
+    //     ignoreImmediateMutation: true,
+    //     ignorePattern: [],
+    //   },
+    // ],
     'functional/functional-parameters': 'off',
-    'functional/no-throw-statement': 'off',
-    'functional/no-try-statement': 'off',
-    'functional/no-conditional-statement': [
-      'error',
-      {
-        allowReturningBranches: true,
-      },
-    ],
+    // 'functional/no-throw-statement': 'off',
+    // 'functional/no-try-statement': 'off',
+    // 'functional/no-conditional-statement': [
+    //   'error',
+    //   {
+    //     allowReturningBranches: true,
+    //   },
+    // ],
     'functional/prefer-tacit': 'error',
     'import/extensions': 'off',
     'import/newline-after-import': 'off',
