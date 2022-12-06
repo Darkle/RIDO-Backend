@@ -1,7 +1,7 @@
 {
   "name": "feed-updates",
   "scripts": {
-    "dev": "NODE_ENV=development nodemon --require ./src/pre-boot.cjs --require @swc-node/register --watch src --ext ts ./src/feeds-update-scheduler.ts",
+    "dev": "NODE_ENV=development node --require ./src/pre-boot.cjs --require @swc-node/register --watch ./src/feeds-update-scheduler.ts",
     "inspect": "NODE_ENV=development node --require ./src/pre-boot.cjs --require @swc-node/register --inspect ./src/feeds-update-scheduler.ts",
     "start": "NODE_ENV=production node --require ./src/pre-boot.cjs --require @swc-node/register ./src/feeds-update-scheduler.ts"
   },
@@ -17,7 +17,6 @@
     "dns-cache": "^2.0.0",
     "dotenv-extended": "^2.9.0",
     "eventsource": "^2.0.2",
-    "nodemon": "^2.0.20",
     "superagent": "^8.0.5",
     "superjson": "^1.11.0",
     "ts-pattern": "^4.0.6",

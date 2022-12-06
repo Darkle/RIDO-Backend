@@ -2,7 +2,7 @@
   "name": "api",
   "scripts": {
     "//": "NOTE: NODE_ENV=\"${NODE_ENV:-development}\" assigns NODE_ENV if it exist (eg test), else defaults to development",
-    "dev": "NODE_ENV=\"${NODE_ENV:-development}\" nodemon --require ./src/pre-boot.cjs --require @swc-node/register --watch src --ext ts ./src/api.ts",
+    "dev": "NODE_ENV=\"${NODE_ENV:-development}\" node --require ./src/pre-boot.cjs --require @swc-node/register --watch ./src/api.ts",
     "inspect": "NODE_ENV=development node --require ./src/pre-boot.cjs --require @swc-node/register --inspect ./src/api.ts",
     "start": "NODE_ENV=production node --require ./src/pre-boot.cjs --require @swc-node/register ./src/api.ts"
   },
@@ -16,11 +16,11 @@
     "@swc/core": "^1.3.21",
     "@trpc/client": "^10.4.3",
     "@trpc/server": "^10.4.3",
-    "better-sqlite3": "^8.0.1",
     "dotenv-extended": "^2.9.0",
-    "kysely": "^0.22.0",
+    "knex": "^2.3.0",
     "luxon": "^3.1.1",
     "node-static": "^0.7.11",
+    "sqlite3": "^5.1.2",
     "superjson": "^1.11.0",
     "tsee": "^1.3.2",
     "typescript": "^4.9.3",
@@ -28,7 +28,5 @@
     "winston-transport": "^4.5.0",
     "zod": "^3.19.1"
   },
-  "devDependencies": {
-    "nodemon": "^2.0.20"
-  }
+  "devDependencies": {}
 }
