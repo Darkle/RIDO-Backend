@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS Settings(
   uniqueId TEXT NOT NULL,
   numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) NOT NULL DEFAULT 2,
   numberImagesProcessAtOnce INTEGER CHECK(numberImagesProcessAtOnce > 0) NOT NULL DEFAULT 2,
-  updateAllDay INTEGER CHECK(
+  updateAllDay BOOLEAN CHECK(
     updateAllDay = 0
     OR updateAllDay = 1
   ) NOT NULL DEFAULT 1,
@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS Settings(
     AND 100
   ) NOT NULL DEFAULT 80,
   maxImageWidthForNonArchiveImage INTEGER CHECK(maxImageWidthForNonArchiveImage > 0) NOT NULL DEFAULT 1400,
-  hasSeenWelcomeMessage INTEGER CHECK(
+  hasSeenWelcomeMessage BOOLEAN CHECK(
     updateAllDay = 0
     OR updateAllDay = 1
   ) NOT NULL DEFAULT 0,
@@ -39,7 +39,7 @@ VALUES
 
 CREATE TABLE IF NOT EXISTS Tag(
   tag TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(tag) > 0) NOT NULL,
-  favourited INTEGER CHECK(
+  favourited BOOLEAN CHECK(
     favourited = 0
     OR favourited = 1
   ) NOT NULL DEFAULT 0
@@ -53,20 +53,20 @@ CREATE TABLE IF NOT EXISTS Post(
   score TEXT CHECK(typeof(score) = 'integer') NOT NULL,
   timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
   mediaUrl TEXT NOT NULL,
-  mediaHasBeenDownloaded INTEGER CHECK(
+  mediaHasBeenDownloaded BOOLEAN CHECK(
     mediaHasBeenDownloaded = 0
     OR mediaHasBeenDownloaded = 1
   ) NOT NULL DEFAULT 0,
-  couldNotDownload INTEGER CHECK(
+  couldNotDownload BOOLEAN CHECK(
     couldNotDownload = 0
     OR couldNotDownload = 1
   ) NOT NULL DEFAULT 0,
-  postMediaImagesHaveBeenProcessed INTEGER CHECK(
+  postMediaImagesHaveBeenProcessed BOOLEAN CHECK(
     postMediaImagesHaveBeenProcessed = 0
     OR postMediaImagesHaveBeenProcessed = 1
   ) NOT NULL DEFAULT 0,
   postMediaImagesProcessingError TEXT NULL,
-  postThumbnailsCreated INTEGER CHECK(
+  postThumbnailsCreated BOOLEAN CHECK(
     postThumbnailsCreated = 0
     OR postThumbnailsCreated = 1
   ) NOT NULL DEFAULT 0,
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS Subreddit_Post(
 CREATE TABLE IF NOT EXISTS Subreddit(
   -- case insensitive so user cant accidentally create same subreddit twice with different casing
   subreddit TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(subreddit) > 0) NOT NULL,
-  favourited INTEGER CHECK(
+  favourited BOOLEAN CHECK(
     favourited = 0
     OR favourited = 1
   ) NOT NULL DEFAULT 0,
@@ -106,7 +106,7 @@ CREATE TABLE IF NOT EXISTS Subreddit(
 
 CREATE TABLE IF NOT EXISTS SubredditGroup(
   sub_group TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(sub_group) > 0) NOT NULL,
-  favourited INTEGER CHECK(
+  favourited BOOLEAN CHECK(
     favourited = 0
     OR favourited = 1
   ) NOT NULL DEFAULT 0

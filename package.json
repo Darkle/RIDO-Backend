@@ -1,12 +1,12 @@
 {
-  "name": "rido",
+  "name": "rido-backend",
   "version": "0.1.0",
-  "description": "RIDO",
+  "description": "RIDO-backend",
   "license": "AGPL",
   "scripts": {
     "dev": "npm-run-all --parallel dev-**",
     "dev-api": "cd services/api && pnpm run dev",
-    "dev-updates": "wait-on http://0.0.0.0:3002 && cd services/feed-updates && pnpm run dev",
+    "dev-updates": "wait-on http://0.0.0.0:3002 && cd services/updates && pnpm run dev",
     "dev-imageoptim": "wait-on http://0.0.0.0:3002 && cd services/image-processing && pnpm run dev",
     "dev-cleanup": "wait-on http://0.0.0.0:3002 && cd services/cleanup && pnpm run dev",
     "dev-downloads": "wait-on http://0.0.0.0:3002 && cd services/downloads && pnpm run dev",
@@ -18,13 +18,14 @@
     "test": "pnpm -r run test",
     "outdated": "pnpm -r outdated",
     "update": "pnpm -r update -L -i",
-    "reinstall-modules": "trash '**/node_modules' '**/pnpm-lock.yaml' && pnpm i && cd test && pnpm i && cd ../services/api && pnpm i && cd ../downloads && pnpm i && cd ../cleanup && pnpm i && cd ../feed-updates && pnpm i && cd ../image-processing && pnpm i"
+    "reinstall-modules": "trash '**/node_modules' '**/pnpm-lock.yaml' && pnpm i && cd test && pnpm i && cd ../services/api && pnpm i && cd ../downloads && pnpm i && cd ../cleanup && pnpm i && cd ../updates && pnpm i && cd ../image-processing && pnpm i"
   },
   "engines": {
     "node": ">=18.2.0",
     "pnpm": ">=7.18.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.2",
     "@types/eventsource": "^1.1.10",
     "@types/luxon": "^3.1.0",
     "@types/node": "^18.11.10",
@@ -34,8 +35,6 @@
     "@typescript-eslint/parser": "^5.45.0",
     "eslint": "^8.29.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
-    "eslint-plugin-compat": "^4.0.2",
-    "eslint-plugin-escompat": "^3.3.4",
     "eslint-plugin-eslint-comments": "^3.2.0",
     "eslint-plugin-extra-rules": "0.0.0-development",
     "eslint-plugin-functional": "^4.4.1",

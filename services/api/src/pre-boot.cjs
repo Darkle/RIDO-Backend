@@ -33,7 +33,7 @@ if (!dbDirExists) {
   fs.mkdirSync(dbDir, { recursive: true })
 }
 
-const loggingDBPath = path.join(dbDir, 'logging.db')
+const loggingDBPath = path.join(dbDir, 'RIDO-logs.db')
 const ridoDBPath = path.join(dbDir, 'RIDO.db')
 
 const loggingDbInitSQLFilePath = path.join(ridoProjectRootFolder, 'db-init-scripts', 'init-logging-db.sql')

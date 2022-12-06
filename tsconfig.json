@@ -17,8 +17,8 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "esnext",
-    "moduleResolution": "node",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "noEmit": true,
     "noErrorTruncation": true,
     "noFallthroughCasesInSwitch": true,

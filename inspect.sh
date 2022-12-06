@@ -10,7 +10,7 @@ if [[ "$*" == *"image"* ]]; then
 fi
 
 if [[ "$*" == *"update"* ]]; then
-  cd services/feed-updates && pnpm run inspect
+  cd services/updates && pnpm run inspect
 fi
 
 if [[ "$*" == *"download"* ]]; then

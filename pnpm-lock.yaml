@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@types/better-sqlite3': ^7.6.2
   '@types/eventsource': ^1.1.10
   '@types/luxon': ^3.1.0
   '@types/node': ^18.11.10
@@ -10,8 +11,6 @@ specifiers:
   '@typescript-eslint/parser': ^5.45.0
   eslint: ^8.29.0
   eslint-config-airbnb-typescript: ^17.0.0
-  eslint-plugin-compat: ^4.0.2
-  eslint-plugin-escompat: ^3.3.4
   eslint-plugin-eslint-comments: ^3.2.0
   eslint-plugin-extra-rules: 0.0.0-development
   eslint-plugin-functional: ^4.4.1
@@ -25,6 +24,7 @@ specifiers:
   wait-on: ^6.0.1
 
 devDependencies:
+  '@types/better-sqlite3': 7.6.2
   '@types/eventsource': 1.1.10
   '@types/luxon': 3.1.0
   '@types/node': 18.11.10
@@ -34,8 +34,6 @@ devDependencies:
   '@typescript-eslint/parser': 5.45.0_s5ps7njkmjlaqajutnox5ntcla
   eslint: 8.29.0
   eslint-config-airbnb-typescript: 17.0.0_ditimktmhxbwnln2dq52zljtdq
-  eslint-plugin-compat: 4.0.2_eslint@8.29.0
-  eslint-plugin-escompat: 3.3.4_eslint@8.29.0
   eslint-plugin-eslint-comments: 3.2.0_eslint@8.29.0
   eslint-plugin-extra-rules: 0.0.0-development
   eslint-plugin-functional: 4.4.1_s5ps7njkmjlaqajutnox5ntcla
@@ -118,14 +116,6 @@ packages:
     resolution: {integrity: sha512-ZnQMnLV4e7hDlUvw8H+U8ASL02SS2Gn6+9Ac3wGGLIe7+je2AeAOxPY+izIPJDfFDb7eDjev0Us8MO1iFRN8hA==}
     dev: true
 
-  /@mdn/browser-compat-data/3.3.14:
-    resolution: {integrity: sha512-n2RC9d6XatVbWFdHLimzzUJxJ1KY8LdjqrW6YvGPiRmsHkhOUx74/Ct10x5Yo7bC/Jvqx7cDEW8IMPv/+vwEzA==}
-    dev: true
-
-  /@mdn/browser-compat-data/4.2.1:
-    resolution: {integrity: sha512-EWUguj2kd7ldmrF9F+vI5hUOralPd+sdsUnYbRy33vZTuZkduC1shE9TtEMEjAQwyfyMb4ole5KtjF8MsnQOlA==}
-    dev: true
-
   /@nodelib/fs.scandir/2.1.5:
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
     engines: {node: '>= 8'}
@@ -181,6 +171,12 @@ packages:
   /@stroncium/procfs/1.2.1:
     resolution: {integrity: sha512-X1Iui3FUNZP18EUvysTHxt+Avu2nlVzyf90YM8OYgP6SGzTzzX/0JgObfO1AQQDzuZtNNz29bVh8h5R97JrjxA==}
     engines: {node: '>=8'}
+    dev: true
+
+  /@types/better-sqlite3/7.6.2:
+    resolution: {integrity: sha512-RgmaapusqTq6IMAr4McMyAsC6RshYTCjXCnzwVV59WctUxC8bNPyUfT9t5F81lKcU41lLurhjqjoMHfauzfqGg==}
+    dependencies:
+      '@types/node': 18.11.10
     dev: true
 
   /@types/eventsource/1.1.10:
@@ -470,12 +466,6 @@ packages:
     engines: {node: '>=0.10.0'}
     dev: true
 
-  /ast-metadata-inferer/0.7.0:
-    resolution: {integrity: sha512-OkMLzd8xelb3gmnp6ToFvvsHLtS6CbagTkFQvQ+ZYFe3/AIl9iKikNR9G7pY3GfOR/2Xc222hwBjzI7HLkE76Q==}
-    dependencies:
-      '@mdn/browser-compat-data': 3.3.14
-    dev: true
-
   /axios/0.25.0:
     resolution: {integrity: sha512-cD8FOb0tRH3uuEe6+evtAbgJtfxr7ly3fQjYcMcuPlgkwVS9xboaVIpcDV+cYQe+yGykgwZCs1pzjntcGa6l5g==}
     dependencies:
@@ -500,17 +490,6 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       fill-range: 7.0.1
-    dev: true
-
-  /browserslist/4.21.4:
-    resolution: {integrity: sha512-CBHJJdDmgjl3daYjN5Cp5kbTf1mUhZoS+beLklHIvkOWscs83YAhLlF3Wsh/lciQYAcbBJgTOD44VtG31ZM4Hw==}
-    engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
-    hasBin: true
-    dependencies:
-      caniuse-lite: 1.0.30001436
-      electron-to-chromium: 1.4.284
-      node-releases: 2.0.6
-      update-browserslist-db: 1.0.10_browserslist@4.21.4
     dev: true
 
   /call-bind/1.0.2:
@@ -538,10 +517,6 @@ packages:
   /camelcase/6.3.0:
     resolution: {integrity: sha512-Gmy6FhYlCY7uOElZUSbxo2UCDH8owEk996gkbrpsgGtrJLM3J7jGxl9Ic7Qwwj4ivOE5AWZWRMecDdF7hqGjFA==}
     engines: {node: '>=10'}
-    dev: true
-
-  /caniuse-lite/1.0.30001436:
-    resolution: {integrity: sha512-ZmWkKsnC2ifEPoWUvSAIGyOYwT+keAaaWPHiQ9DfMqS1t6tfuyFYoWR78TeZtznkEQ64+vGXH9cZrElwR2Mrxg==}
     dev: true
 
   /chalk/2.4.2:
@@ -599,11 +574,6 @@ packages:
 
   /console-assert/1.0.0:
     resolution: {integrity: sha512-YtowQtZLdzPUlXL+kxMEBclXVOrWzR/+9TAUbIdgnjCkRW8+Dj0y4ajMJtOoQFXEubMONX0fkFS3SNLxx4FQRA==}
-    dev: true
-
-  /core-js/3.26.1:
-    resolution: {integrity: sha512-21491RRQVzUn0GGM9Z1Jrpr6PNPxPi+Za8OM9q4tksTSnlbXXGKK1nXNg/QvwFYettXvSX6zWKCtHHfjN4puyA==}
-    requiresBuild: true
     dev: true
 
   /cross-spawn/6.0.5:
@@ -723,10 +693,6 @@ packages:
       esutils: 2.0.3
     dev: true
 
-  /electron-to-chromium/1.4.284:
-    resolution: {integrity: sha512-M8WEXFuKXMYMVr45fo8mq0wUrrJHheiKZf6BArTKk9ZBYCKJEOU5H8cdWgDT+qCVZf7Na4lVUaZsA+h6uA9+PA==}
-    dev: true
-
   /end-of-stream/1.4.4:
     resolution: {integrity: sha512-+uw1inIHVPQoaVuHzRyXd21icM+cnt4CzD5rW+NC1wjOUSTOs+Te7FOv7AhN7vS9x/oIyhLP5PR1H+phQAHu5Q==}
     dependencies:
@@ -782,11 +748,6 @@ packages:
       is-callable: 1.2.7
       is-date-object: 1.0.5
       is-symbol: 1.0.4
-    dev: true
-
-  /escalade/3.1.1:
-    resolution: {integrity: sha512-k0er2gUkLf8O0zKJiAhmkTnJlTvINGv7ygDNPbeIsX/TJjGJZHuh9B2UxbsaEkmlEo9MfhrSzmhIlhRlI2GXnw==}
-    engines: {node: '>=6'}
     dev: true
 
   /escape-string-regexp/1.0.5:
@@ -870,32 +831,6 @@ packages:
       eslint-import-resolver-node: 0.3.6
     transitivePeerDependencies:
       - supports-color
-    dev: true
-
-  /eslint-plugin-compat/4.0.2_eslint@8.29.0:
-    resolution: {integrity: sha512-xqvoO54CLTVaEYGMzhu35Wzwk/As7rCvz/2dqwnFiWi0OJccEtGIn+5qq3zqIu9nboXlpdBN579fZcItC73Ycg==}
-    engines: {node: '>=9.x'}
-    peerDependencies:
-      eslint: ^4.0.0 || ^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0
-    dependencies:
-      '@mdn/browser-compat-data': 4.2.1
-      ast-metadata-inferer: 0.7.0
-      browserslist: 4.21.4
-      caniuse-lite: 1.0.30001436
-      core-js: 3.26.1
-      eslint: 8.29.0
-      find-up: 5.0.0
-      lodash.memoize: 4.1.2
-      semver: 7.3.5
-    dev: true
-
-  /eslint-plugin-escompat/3.3.4_eslint@8.29.0:
-    resolution: {integrity: sha512-d/k6JwRzGRY6uZ426l6Ut6Eb2S/pi/079Ykj2GdWSzwm6WJHkdm28tECUWfLtpFA5ObApjPw6wR9bgY+uWAhag==}
-    peerDependencies:
-      eslint: '>=5.14.1'
-    dependencies:
-      browserslist: 4.21.4
-      eslint: 8.29.0
     dev: true
 
   /eslint-plugin-eslint-comments/3.2.0_eslint@8.29.0:
@@ -1622,10 +1557,6 @@ packages:
       p-locate: 5.0.0
     dev: true
 
-  /lodash.memoize/4.1.2:
-    resolution: {integrity: sha512-t7j+NzmgnQzTAYXcsHYLgimltOV1MXHtlOWf6GjL9Kj8GK5FInw5JotxvbOs+IvV1/Dzo04/fCGfLVs7aXb4Ag==}
-    dev: true
-
   /lodash.merge/4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
     dev: true
@@ -1758,10 +1689,6 @@ packages:
 
   /nice-try/1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
-    dev: true
-
-  /node-releases/2.0.6:
-    resolution: {integrity: sha512-PiVXnNuFm5+iYkLBNeq5211hvO38y63T0i2KKh2KnUs3RpzJ+JtODFjkD8yjLwnDkTYF1eKXheUwdssR+NRZdg==}
     dev: true
 
   /normalize-package-data/2.5.0:
@@ -1965,10 +1892,6 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /picocolors/1.0.0:
-    resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
-    dev: true
-
   /picomatch/2.3.1:
     resolution: {integrity: sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==}
     engines: {node: '>=8.6'}
@@ -2147,14 +2070,6 @@ packages:
   /semver/6.3.0:
     resolution: {integrity: sha512-b39TBaTSfV6yBrapU89p5fKekE2m/NwnDocOVruQFS1/veMgdzuPcnOM34M6CwxW8jH/lxEa5rBoDeUwu5HHTw==}
     hasBin: true
-    dev: true
-
-  /semver/7.3.5:
-    resolution: {integrity: sha512-PoeGJYh8HK4BTO/a9Tf6ZG3veo/A7ZVsYrSA6J8ny9nb3B1VrpkuN+z9OE5wfE5p6H4LchYZsegiQgbJD94ZFQ==}
-    engines: {node: '>=10'}
-    hasBin: true
-    dependencies:
-      lru-cache: 6.0.0
     dev: true
 
   /semver/7.3.8:
@@ -2414,17 +2329,6 @@ packages:
       has-bigints: 1.0.2
       has-symbols: 1.0.3
       which-boxed-primitive: 1.0.2
-    dev: true
-
-  /update-browserslist-db/1.0.10_browserslist@4.21.4:
-    resolution: {integrity: sha512-OztqDenkfFkbSG+tRxBeAnCVPckDBcvibKd35yDONx6OU8N7sqgwc7rCbkJ/WcYtVRZ4ba68d6byhC21GFh7sQ==}
-    hasBin: true
-    peerDependencies:
-      browserslist: '>= 4.21.0'
-    dependencies:
-      browserslist: 4.21.4
-      escalade: 3.1.1
-      picocolors: 1.0.0
     dev: true
 
   /uri-js/4.4.1:

@@ -1,0 +1,108 @@
+{
+  "extractor": {
+    "filename": {
+      "": "{filename}.{extension}"
+    },
+    "blacklist": [
+      "*:video"
+    ],
+    "#": "range 1-15 prevents us from accidentally downloading a whole user account on instagram et.al.. However this does mean that if it is just a regular gallery, and that gallery has more than 15 images, we only get the first 15.",
+    "image-range": "1-15",
+    "instagram": {
+      "username": "foo",
+      "password": "bar",
+      "include": "posts",
+      "videos": false
+    },
+    "tumblr": {
+      "posts": "photo",
+      "api-key": "foo",
+      "api-secret": "bar"
+    },
+    "twitter": {
+      "username": "foo",
+      "password": "bar",
+      "videos": false
+    },
+    "reddit": {
+      "videos": false,
+      "comments": 0
+    },
+    "artstation": {},
+    "aryion": {},
+    "bbc": {},
+    "blogger": {
+      "videos": false
+    },
+    "danbooru": {},
+    "derpibooru": {},
+    "deviantart": {},
+    "e621": {},
+    "exhentai": {},
+    "flickr": {
+      "videos": false,
+      "size-max": null
+    },
+    "furaffinity": {},
+    "gfycat": {
+      "format": [
+        "gif"
+      ]
+    },
+    "hentaifoundry": {
+      "include": "pictures"
+    },
+    "hitomi": {
+      "format": "webp",
+      "metadata": false
+    },
+    "idolcomplex": {},
+    "imgbb": {},
+    "imgur": {
+      "mp4": false
+    },
+    "inkbunny": {},
+    "khinsider": {},
+    "luscious": {
+      "gif": true
+    },
+    "mangadex": {},
+    "mangoxo": {},
+    "newgrounds": {},
+    "nijie": {},
+    "oauth": {},
+    "pillowfort": {},
+    "pinterest": {
+      "videos": false
+    },
+    "pixiv": {},
+    "reactor": {
+      "gif": true
+    },
+    "redgifs": {
+      "format": [
+        "gif"
+      ]
+    },
+    "sankakucomplex": {
+      "videos": false
+    },
+    "sankaku": {},
+    "smugmug": {
+      "videos": false
+    },
+    "seiga": {},
+    "subscribestar": {},
+    "tsumino": {},
+    "unsplash": {},
+    "vsco": {
+      "videos": false
+    },
+    "wallhaven": {},
+    "weasyl": {},
+    "weibo": {
+      "videos": false
+    },
+    "booru": {}
+  }
+}
