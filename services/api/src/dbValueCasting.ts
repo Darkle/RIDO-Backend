@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs'
 import path from 'path'
 
 import * as R from 'ramda'
-// import { evolve } from 'rambda'
 
 import sqliteParser from 'sqlite-parser'
 import type { SQLFileParserReturnType } from './types'
 
 const uJSONParse = R.unary(JSON.parse)
+const uJSONStringify = R.unary(JSON.stringify)
 
 /*****
 now that i think about it, it might be alright to auto json.parse here cause when will i be getting thousands of posts at once? That wont happen on the front-end, and even when i do need to do that for the services, I will not be getting the json data columns for that (eg getting all posts that need to be downloaded)
@@ -43,9 +43,11 @@ const booleanColumnsForAllDBs = [
   ...getAllDataColmnsOfCertainType(ridoDBSQL, 'boolean'),
 ].flat()
 
+type Transformer = ((jsonString: string) => unknown) | ((bool: boolean) => number) | BooleanConstructor
+
 const convertColumnNamesToTransforms = (
   columns: readonly string[],
-  transformer: (a: string) => unknown | BooleanConstructor
+  transformer: Transformer
 ): Record<string, typeof transformer> =>
   columns.reduce(
     (accumulator, column) => ({
@@ -55,24 +57,37 @@ const convertColumnNamesToTransforms = (
     {}
   )
 
-const transformations = {
+const boolToSQLiteBool = (bool: boolean): number => (bool === true ? 1 : 0)
+
+const outputTransformations = {
   ...convertColumnNamesToTransforms(jsonColumnsForAllDBs, uJSONParse),
   ...convertColumnNamesToTransforms(booleanColumnsForAllDBs, Boolean),
+}
+
+const inputTransformations = {
+  ...convertColumnNamesToTransforms(jsonColumnsForAllDBs, uJSONStringify),
+  ...convertColumnNamesToTransforms(booleanColumnsForAllDBs, boolToSQLiteBool),
 }
 
 /*****
   When using .pluck('foo') in knex and the pluck is getting either boolean values or json values, we use a query context
    to tell our postProcessResponse to convert it (since pluck just returns an array of values with no key name, which would otherwise make it impossible to know when to convert it).
 *****/
-const castValues = R.evolve(transformations)
+// [(_, queryContext) => queryContext?.plucking === 'boolean', R.map(Boolean)],
+// [(_, queryContext) => queryContext?.plucking === 'json', R.map(uJSONParse)],
 
-const dbOutputCasting = R.cond([
-  // [(_, queryContext) => queryContext?.plucking === 'boolean', R.map(Boolean)],
-  // [(_, queryContext) => queryContext?.plucking === 'json', R.map(uJSONParse)],
-  [Array.isArray, R.map(R.when(R.is(Object), castValues))],
+const dbOutputValCasting = R.cond([
+  [Array.isArray, R.map(R.when(R.is(Object), R.evolve(outputTransformations)))],
   // @ts-expect-error bloody ramda and types again
-  [R.is(Object), castValues],
+  [R.is(Object), R.evolve(outputTransformations)],
   [R.T, R.identity],
 ])
 
-export { dbOutputCasting }
+const dbInputValCasting = R.cond([
+  [Array.isArray, R.map(R.when(R.is(Object), R.evolve(inputTransformations)))],
+  // @ts-expect-error bloody ramda and types again
+  [R.is(Object), R.evolve(inputTransformations)],
+  [R.T, R.identity],
+])
+
+export { dbOutputValCasting, dbInputValCasting }
