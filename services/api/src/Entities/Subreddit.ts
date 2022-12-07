@@ -1,7 +1,7 @@
 interface Subreddit {
   readonly subreddit: string
   readonly favourited: boolean
-  readonly lastUpdated: number
+  readonly last_updated: number
 }
 
 export type { Subreddit }

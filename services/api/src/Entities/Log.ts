@@ -1,5 +1,5 @@
 interface Log {
-  readonly createdAt: number
+  readonly created_at: number
   readonly level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
   readonly message?: string
   readonly service?: string
@@ -7,4 +7,8 @@ interface Log {
   readonly other?: Record<string, unknown>
 }
 
-export type { Log }
+interface LogReadyForDB extends Omit<Log, 'other'> {
+  readonly other: string
+}
+
+export type { Log, LogReadyForDB }

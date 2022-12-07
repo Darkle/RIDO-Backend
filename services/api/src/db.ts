@@ -7,7 +7,7 @@ import type { Subreddit } from './Entities/Subreddit'
 import { dbOutputCasting } from './db-output-casting'
 // import type { Log } from './Entities/Log'
 // import type { TraceLog } from './Entities/TraceLog'
-// import type { Post } from './Entities/Post'
+import type { Post, PostForReadyForDB } from './Entities/Post'
 // import type { Settings } from './Entities/Settings'
 // import type { SubGroup } from './Entities/SubGroup'
 // import type { Tag } from './Entities/Tag'
@@ -51,14 +51,41 @@ const ridoDB = knex({
   },
 })
 
+// eslint-disable-next-line max-lines-per-function
 const thing = () =>
   // ridoDB<Subreddit>('Subreddit')
-  //   .where('subreddit', 'merp')
+  //   .where('subreddit', 'Slaughterhouse Five')
   //   .first()
   //   .then(result => console.log(result))
   //   .catch(err => console.error(err))
-  ridoDB<Subreddit>('Subreddit')
-    .insert({ subreddit: 'Slaughterhouse Five' })
+  // ridoDB<Subreddit>('Subreddit')
+  // .insert({ subreddit: 'merp' })
+  // .then(result => console.log(result))
+  // .catch(err => console.error(err))
+  // .then(() =>
+  // ridoDB<PostForReadyForDB>('Post')
+  //   .insert({
+  //     post_id: 'asd',
+  //     could_not_download: false,
+  //     downloaded_media: JSON.stringify(['asd.png']),
+  //     downloaded_media_count: 0,
+  //     media_download_tries: 0,
+  //     media_has_been_downloaded: false,
+  //     media_url: 'http://asd.com',
+  //     post_media_images_have_been_processed: false,
+  //     post_thumbnails_created: false,
+  //     post_url: 'http://xcv.com',
+  //     score: 2,
+  //     subreddit: 'merp',
+  //     timestamp: 3,
+  //     title: 'hello',
+  //   })
+  //   .then(result => console.log(result))
+  //   .catch(err => console.error(err))
+  // )
+  ridoDB<Post>('Post')
+    .where('post_id', 'asd')
+    .first()
     .then(result => console.log(result))
     .catch(err => console.error(err))
 

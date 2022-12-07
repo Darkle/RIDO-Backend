@@ -1,6 +1,6 @@
 interface Tag_Post {
   readonly tag: string
-  readonly postId: string
+  readonly post_id: string
 }
 
 export type { Tag_Post }

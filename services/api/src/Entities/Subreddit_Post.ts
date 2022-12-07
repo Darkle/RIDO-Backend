@@ -1,6 +1,6 @@
 interface Subreddit_Post {
   readonly subreddit: string
-  readonly postId: string
+  readonly post_id: string
 }
 
 export type { Subreddit_Post }

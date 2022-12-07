@@ -1,5 +1,6 @@
+-- The column names need to be snake case as the sqlite-parse lib we use ignores casing for column names which makes it impossible to do the auto casting if using camel case.
 CREATE TABLE IF NOT EXISTS Log(
-  createdAt INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
   level TEXT COLLATE NOCASE CHECK(
     level IN (
       'fatal',
@@ -17,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Log(
 );
 
 CREATE TABLE IF NOT EXISTS TraceLog(
-  createdAt INTEGER NOT NULL,
+  created_at INTEGER NOT NULL,
   level TEXT COLLATE NOCASE CHECK(level = 'trace') NOT NULL,
   message TEXT NULL,
   service TEXT NULL,

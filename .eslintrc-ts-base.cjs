@@ -91,12 +91,12 @@ module.exports = {
     'functional/functional-parameters': 'off',
     // 'functional/no-throw-statement': 'off',
     // 'functional/no-try-statement': 'off',
-    // 'functional/no-conditional-statement': [
-    //   'error',
-    //   {
-    //     allowReturningBranches: true,
-    //   },
-    // ],
+    'functional/no-conditional-statement': [
+      'error',
+      {
+        allowReturningBranches: true,
+      },
+    ],
     'functional/prefer-tacit': 'error',
     'import/extensions': 'off',
     'import/newline-after-import': 'off',

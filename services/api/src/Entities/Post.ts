@@ -1,20 +1,24 @@
 interface Post {
-  readonly postId: string
+  readonly post_id: string
   readonly subreddit: string
   readonly title: string
-  readonly postUrl: string
+  readonly post_url: string
   readonly score: number
   readonly timestamp: number
-  readonly mediaUrl: string
-  readonly mediaHasBeenDownloaded: boolean
-  readonly couldNotDownload: boolean
-  readonly postMediaImagesHaveBeenProcessed: boolean
-  readonly postMediaImagesProcessingError?: string
-  readonly postThumbnailsCreated: boolean
-  readonly mediaDownloadTries: number
-  readonly downloadedMediaCount: number
-  readonly downloadError?: string
-  readonly downloadedMedia?: readonly string[]
+  readonly media_url: string
+  readonly media_has_been_downloaded: boolean
+  readonly could_not_download: boolean
+  readonly post_media_images_have_been_processed: boolean
+  readonly post_media_images_processing_eError?: string
+  readonly post_thumbnails_created: boolean
+  readonly media_download_tries: number
+  readonly downloaded_media_count: number
+  readonly download_error?: string
+  readonly downloaded_media?: readonly string[]
 }
 
-export type { Post }
+interface PostForReadyForDB extends Omit<Post, 'downloaded_media'> {
+  readonly downloaded_media: string
+}
+
+export type { Post, PostForReadyForDB }

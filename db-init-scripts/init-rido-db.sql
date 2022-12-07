@@ -1,39 +1,40 @@
+-- The column names need to be snake case as the sqlite-parse lib we use ignores casing for column names which makes it impossible to do the auto casting if using camel case.
 CREATE TABLE IF NOT EXISTS Settings(
-  uniqueId TEXT NOT NULL,
-  numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) DEFAULT 2,
-  numberImagesProcessAtOnce INTEGER CHECK(numberImagesProcessAtOnce > 0) DEFAULT 2,
-  updateAllDay BOOLEAN CHECK(
-    updateAllDay = 0
-    OR updateAllDay = 1
-  ) DEFAULT 1,g
+  unique_id TEXT NOT NULL,
+  number_media_downloads_at_once INTEGER CHECK(number_media_downloads_at_once > 0) DEFAULT 2,
+  number_images_process_at_once INTEGER CHECK(number_images_process_at_once > 0) DEFAULT 2,
+  update_all_day BOOLEAN CHECK(
+    update_all_day = 0
+    OR update_all_day = 1
+  ) DEFAULT 1,
   -- between check is inclusive
-  updateStartingHour INTEGER CHECK(
-    updateStartingHour BETWEEN 0
+  update_starting_hour INTEGER CHECK(
+    update_starting_hour BETWEEN 0
     AND 23
   ) DEFAULT 1,
-  updateEndingHour INTEGER CHECK(
-    updateEndingHour BETWEEN 0
+  update_ending_hour INTEGER CHECK(
+    update_ending_hour BETWEEN 0
     AND 23
   ) DEFAULT 7,
-  imageCompressionQuality INTEGER CHECK(
-    imageCompressionQuality BETWEEN 1
+  image_compression_quality INTEGER CHECK(
+    image_compression_quality BETWEEN 1
     AND 100
   ) DEFAULT 80,
-  archiveImageCompressionQuality INTEGER CHECK(
-    archiveImageCompressionQuality BETWEEN 1
+  archive_image_compression_quality INTEGER CHECK(
+    archive_image_compression_quality BETWEEN 1
     AND 100
   ) DEFAULT 80,
-  maxImageWidthForNonArchiveImage INTEGER CHECK(maxImageWidthForNonArchiveImage > 0) DEFAULT 1400,
-  hasSeenWelcomeMessage BOOLEAN CHECK(
-    updateAllDay = 0
-    OR updateAllDay = 1
+  max_image_width_for_non_archive_image INTEGER CHECK(max_image_width_for_non_archive_image > 0) DEFAULT 1400,
+  has_seen_welcome_message BOOLEAN CHECK(
+    has_seen_welcome_message = 0
+    OR has_seen_welcome_message = 1
   ) DEFAULT 0,
-  UNIQUE(uniqueId)
+  UNIQUE(unique_id)
 );
 
 -- Set up default admin settings
 INSERT
-  OR IGNORE INTO Settings(uniqueId)
+  OR IGNORE INTO Settings(unique_id)
 VALUES
   ("admin-settings");
 
@@ -46,34 +47,34 @@ CREATE TABLE IF NOT EXISTS Tag(
 );
 
 CREATE TABLE IF NOT EXISTS Post(
-  postId TEXT PRIMARY KEY CHECK(length(postId) > 0) NOT NULL,
+  post_id TEXT PRIMARY KEY CHECK(length(post_id) > 0) NOT NULL,
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
   title TEXT NOT NULL,
-  postUrl TEXT CHECK(length(postUrl) > 0) NOT NULL,
-  score TEXT CHECK(typeof(score) = 'integer') NOT NULL,
+  post_url TEXT CHECK(length(post_url) > 0) NOT NULL,
+  score TEXT NOT NULL,
   timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
-  mediaUrl TEXT NOT NULL,
-  mediaHasBeenDownloaded BOOLEAN CHECK(
-    mediaHasBeenDownloaded = 0
-    OR mediaHasBeenDownloaded = 1
+  media_url TEXT NOT NULL,
+  media_has_been_downloaded BOOLEAN CHECK(
+    media_has_been_downloaded = 0
+    OR media_has_been_downloaded = 1
   ) DEFAULT 0,
-  couldNotDownload BOOLEAN CHECK(
-    couldNotDownload = 0
-    OR couldNotDownload = 1
+  could_not_download BOOLEAN CHECK(
+    could_not_download = 0
+    OR could_not_download = 1
   ) DEFAULT 0,
-  postMediaImagesHaveBeenProcessed BOOLEAN CHECK(
-    postMediaImagesHaveBeenProcessed = 0
-    OR postMediaImagesHaveBeenProcessed = 1
+  post_media_images_have_been_processed BOOLEAN CHECK(
+    post_media_images_have_been_processed = 0
+    OR post_media_images_have_been_processed = 1
   ) DEFAULT 0,
-  postMediaImagesProcessingError TEXT NULL,
-  postThumbnailsCreated BOOLEAN CHECK(
-    postThumbnailsCreated = 0
-    OR postThumbnailsCreated = 1
+  post_media_images_processing_eError TEXT NULL,
+  post_thumbnails_created BOOLEAN CHECK(
+    post_thumbnails_created = 0
+    OR post_thumbnails_created = 1
   ) DEFAULT 0,
-  mediaDownloadTries INTEGER CHECK(mediaDownloadTries > 0) DEFAULT 0,
-  downloadedMediaCount INTEGER CHECK(downloadedMediaCount > 0) DEFAULT 0,
-  downloadError TEXT NULL,
-  downloadedMedia JSON NULL,
+  media_download_tries INTEGER CHECK(media_download_tries > -1) DEFAULT 0,
+  downloaded_media_count INTEGER CHECK(downloaded_media_count > -1) DEFAULT 0,
+  download_error TEXT NULL,
+  downloaded_media JSON NULL,
   -- https://sqlite.org/foreignkeys.html
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE
 );
@@ -81,17 +82,17 @@ CREATE TABLE IF NOT EXISTS Post(
 -- Binding table
 CREATE TABLE IF NOT EXISTS Tag_Post(
   tag TEXT COLLATE NOCASE CHECK(length(tag) > 0) NOT NULL,
-  postId TEXT CHECK(length(postId) > 0) NOT NULL,
+  post_id TEXT CHECK(length(post_id) > 0) NOT NULL,
   FOREIGN KEY(tag) REFERENCES Tag(tag) ON DELETE CASCADE,
-  FOREIGN KEY(postId) REFERENCES Post(postId)
+  FOREIGN KEY(post_id) REFERENCES Post(post_id)
 );
 
 -- Binding table
 CREATE TABLE IF NOT EXISTS Subreddit_Post(
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
-  postId TEXT CHECK(length(postId) > 0) NOT NULL,
+  post_id TEXT CHECK(length(post_id) > 0) NOT NULL,
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE,
-  FOREIGN KEY(postId) REFERENCES Post(postId)
+  FOREIGN KEY(post_id) REFERENCES Post(post_id)
 );
 
 CREATE TABLE IF NOT EXISTS Subreddit(
@@ -101,7 +102,7 @@ CREATE TABLE IF NOT EXISTS Subreddit(
     favourited = 0
     OR favourited = 1
   ) DEFAULT 0,
-  lastUpdated INTEGER CHECK(lastUpdated > 0) DEFAULT 1
+  last_updated INTEGER CHECK(last_updated > 0) DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS SubredditGroup(
