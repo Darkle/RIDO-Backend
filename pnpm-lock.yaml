@@ -6,6 +6,7 @@ specifiers:
   '@types/luxon': ^3.1.0
   '@types/node': ^18.11.10
   '@types/node-static': ^0.7.7
+  '@types/ramda': ^0.28.20
   '@types/sharp': ^0.31.0
   '@typescript-eslint/eslint-plugin': ^5.45.0
   '@typescript-eslint/parser': ^5.45.0
@@ -29,6 +30,7 @@ devDependencies:
   '@types/luxon': 3.1.0
   '@types/node': 18.11.10
   '@types/node-static': 0.7.7
+  '@types/ramda': 0.28.20
   '@types/sharp': 0.31.0
   '@typescript-eslint/eslint-plugin': 5.45.0_yjegg5cyoezm3fzsmuszzhetym
   '@typescript-eslint/parser': 5.45.0_s5ps7njkmjlaqajutnox5ntcla
@@ -216,6 +218,12 @@ packages:
 
   /@types/normalize-package-data/2.4.1:
     resolution: {integrity: sha512-Gj7cI7z+98M282Tqmp2K5EIsoouUEzbBJhQQzDE3jSIRk6r9gsz0oUokqIUR4u1R3dMHo0pDHM7sNOHyhulypw==}
+    dev: true
+
+  /@types/ramda/0.28.20:
+    resolution: {integrity: sha512-MeUhzGSXQTRsY19JGn5LIBTLxVEnyF6HDNr08KSJqybsm4DlfLIgK1jBHjhpiSyk252tXYmp+UOe0UFg0UiFsA==}
+    dependencies:
+      ts-toolbelt: 6.15.5
     dev: true
 
   /@types/semver/7.3.13:
@@ -2270,6 +2278,10 @@ packages:
       typescript: '>=4.1.0'
     dependencies:
       typescript: 4.9.3
+    dev: true
+
+  /ts-toolbelt/6.15.5:
+    resolution: {integrity: sha512-FZIXf1ksVyLcfr7M317jbB67XFJhOO1YqdTcuGaq9q5jLUoTikukZ+98TPjKiP2jC5CgmYdWWYs0s2nLSU0/1A==}
     dev: true
 
   /tsconfig-paths/3.14.1:
