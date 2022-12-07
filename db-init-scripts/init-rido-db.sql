@@ -1,33 +1,33 @@
 CREATE TABLE IF NOT EXISTS Settings(
   uniqueId TEXT NOT NULL,
-  numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) NOT NULL DEFAULT 2,
-  numberImagesProcessAtOnce INTEGER CHECK(numberImagesProcessAtOnce > 0) NOT NULL DEFAULT 2,
+  numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) DEFAULT 2,
+  numberImagesProcessAtOnce INTEGER CHECK(numberImagesProcessAtOnce > 0) DEFAULT 2,
   updateAllDay BOOLEAN CHECK(
     updateAllDay = 0
     OR updateAllDay = 1
-  ) NOT NULL DEFAULT 1,
+  ) DEFAULT 1,g
   -- between check is inclusive
   updateStartingHour INTEGER CHECK(
     updateStartingHour BETWEEN 0
     AND 23
-  ) NOT NULL DEFAULT 1,
+  ) DEFAULT 1,
   updateEndingHour INTEGER CHECK(
     updateEndingHour BETWEEN 0
     AND 23
-  ) NOT NULL DEFAULT 7,
+  ) DEFAULT 7,
   imageCompressionQuality INTEGER CHECK(
     imageCompressionQuality BETWEEN 1
     AND 100
-  ) NOT NULL DEFAULT 80,
+  ) DEFAULT 80,
   archiveImageCompressionQuality INTEGER CHECK(
     archiveImageCompressionQuality BETWEEN 1
     AND 100
-  ) NOT NULL DEFAULT 80,
-  maxImageWidthForNonArchiveImage INTEGER CHECK(maxImageWidthForNonArchiveImage > 0) NOT NULL DEFAULT 1400,
+  ) DEFAULT 80,
+  maxImageWidthForNonArchiveImage INTEGER CHECK(maxImageWidthForNonArchiveImage > 0) DEFAULT 1400,
   hasSeenWelcomeMessage BOOLEAN CHECK(
     updateAllDay = 0
     OR updateAllDay = 1
-  ) NOT NULL DEFAULT 0,
+  ) DEFAULT 0,
   UNIQUE(uniqueId)
 );
 
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS Tag(
   favourited BOOLEAN CHECK(
     favourited = 0
     OR favourited = 1
-  ) NOT NULL DEFAULT 0
+  ) DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS Post(
@@ -56,22 +56,22 @@ CREATE TABLE IF NOT EXISTS Post(
   mediaHasBeenDownloaded BOOLEAN CHECK(
     mediaHasBeenDownloaded = 0
     OR mediaHasBeenDownloaded = 1
-  ) NOT NULL DEFAULT 0,
+  ) DEFAULT 0,
   couldNotDownload BOOLEAN CHECK(
     couldNotDownload = 0
     OR couldNotDownload = 1
-  ) NOT NULL DEFAULT 0,
+  ) DEFAULT 0,
   postMediaImagesHaveBeenProcessed BOOLEAN CHECK(
     postMediaImagesHaveBeenProcessed = 0
     OR postMediaImagesHaveBeenProcessed = 1
-  ) NOT NULL DEFAULT 0,
+  ) DEFAULT 0,
   postMediaImagesProcessingError TEXT NULL,
   postThumbnailsCreated BOOLEAN CHECK(
     postThumbnailsCreated = 0
     OR postThumbnailsCreated = 1
-  ) NOT NULL DEFAULT 0,
-  mediaDownloadTries INTEGER CHECK(mediaDownloadTries > 0) NOT NULL DEFAULT 0,
-  downloadedMediaCount INTEGER CHECK(downloadedMediaCount > 0) NOT NULL DEFAULT 0,
+  ) DEFAULT 0,
+  mediaDownloadTries INTEGER CHECK(mediaDownloadTries > 0) DEFAULT 0,
+  downloadedMediaCount INTEGER CHECK(downloadedMediaCount > 0) DEFAULT 0,
   downloadError TEXT NULL,
   downloadedMedia JSON NULL,
   -- https://sqlite.org/foreignkeys.html
@@ -100,8 +100,8 @@ CREATE TABLE IF NOT EXISTS Subreddit(
   favourited BOOLEAN CHECK(
     favourited = 0
     OR favourited = 1
-  ) NOT NULL DEFAULT 0,
-  lastUpdated INTEGER CHECK(lastUpdated > 0) NOT NULL
+  ) DEFAULT 0,
+  lastUpdated INTEGER CHECK(lastUpdated > 0) DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS SubredditGroup(
