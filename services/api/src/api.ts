@@ -4,10 +4,6 @@ import { thing } from './db'
 initStaticFileServer()
 
 thing()
-  .then(() => {
-    console.log('completed db thing')
-  })
-  .catch(err => console.error(err))
 
 // setInterval(() => {
 //   console.log('hello2')

@@ -9,10 +9,6 @@ import type { SQLFileParserReturnType } from './types'
 const uJSONParse = R.unary(JSON.parse)
 const uJSONStringify = R.unary(JSON.stringify)
 
-/*****
-now that i think about it, it might be alright to auto json.parse here cause when will i be getting thousands of posts at once? That wont happen on the front-end, and even when i do need to do that for the services, I will not be getting the json data columns for that (eg getting all posts that need to be downloaded)
-*****/
-
 const ridoDBSqlFileData = readFileSync(path.resolve(process.cwd(), 'init-rido-db.sql')).toString()
 
 const ridoDBSQL = sqliteParser(ridoDBSqlFileData) as SQLFileParserReturnType
@@ -57,37 +53,48 @@ const inputTransformations = {
 }
 
 /*****
-  When using .pluck('foo') in knex and the pluck is getting either boolean values or json values, we use a query context
-   to tell our postProcessResponse to convert it (since pluck just returns an array of values with no key name, which would otherwise make it impossible to know when to convert it).
+From: https://github.com/Darkle/Roffline-Nodejs-Old/blob/main/server/db/db-output-value-conversions.js
+When using .pluck('foo') in knex and the pluck is getting either boolean values or json values, we
+use a query context to tell our postProcessResponse to convert it (since pluck just returns an array
+of values with no key name, which would otherwise make it impossible to know when need to convert it).
 *****/
-// [(_, queryContext) => queryContext?.plucking === 'boolean', R.map(Boolean)],
-// [(_, queryContext) => queryContext?.plucking === 'json', R.map(uJSONParse)],
-
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const dbValueCasting = (transforms: typeof outputTransformations | typeof inputTransformations) =>
   R.cond([
+    // @ts-expect-error bloody ramda and types again
+    [(_, queryContext): readonly boolean[] => queryContext?.plucking === 'boolean', R.map(Boolean)],
+    // @ts-expect-error bloody ramda and types again
+    [(_, queryContext): readonly unknown[] => queryContext?.plucking === 'json', R.map(uJSONParse)],
+    // @ts-expect-error bloody ramda and types again
     [Array.isArray, R.map(R.when(R.is(Object), R.evolve(transforms)))],
     // @ts-expect-error bloody ramda and types again
     [R.is(Object), R.evolve(transforms)],
+    // @ts-expect-error bloody ramda and types again
     [R.T, R.identity],
   ])
 
-const dbOutputValCasting = dbValueCasting(outputTransformations)
 const dbInputValCasting = dbValueCasting(inputTransformations)
+const dbOutputValCasting = dbValueCasting(outputTransformations)
 
-/* eslint-disable @typescript-eslint/ban-types,@typescript-eslint/no-unsafe-assignment,functional/immutable-data,@typescript-eslint/explicit-function-return-type,no-param-reassign,@typescript-eslint/no-explicit-any,functional/prefer-readonly-type,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/ban-ts-comment */
-// https://stackoverflow.com/a/52106109/2785644
-const castValuesForDB = (): MethodDecorator => {
-  return (_target: Object, _propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
-    const originalMethod = descriptor.value
-
-    descriptor.value = function (...args: any[]) {
-      return originalMethod.apply(this, args.map(dbInputValCasting))
-    }
-
-    return descriptor
+/*****
+ Alternate approach using a decorator: https://gist.github.com/Darkle/d3e2ab5292d7b08d48755acc1f458124
+ The main downside of using a decorator is that you have to manually decorate each method.
+ *****/
+/* eslint-disable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call,@typescript-eslint/restrict-plus-operands */
+// @ts-expect-error
+function castValuesForDB(classRef) {
+  const handler = {
+    // @ts-expect-error
+    get: (obj, prop) =>
+      typeof obj[prop] !== 'function'
+        ? obj[prop]
+        : // @ts-expect-error
+          (...args) => {
+            obj[prop].apply(obj, args.map(dbInputValCasting))
+          },
   }
+  return new Proxy(classRef, handler)
 }
-/* eslint-enable @typescript-eslint/ban-types,@typescript-eslint/no-unsafe-assignment,functional/immutable-data,@typescript-eslint/explicit-function-return-type,no-param-reassign,@typescript-eslint/no-explicit-any,functional/prefer-readonly-type,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/ban-ts-comment */
+/* eslint-enable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call */
 
-export { dbOutputValCasting, castValuesForDB }
+export { dbOutputValCasting, castValuesForDB, dbInputValCasting }
