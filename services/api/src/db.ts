@@ -1,6 +1,7 @@
 import path from 'path'
 
 import knex from 'knex'
+import type { Maybe } from 'pratica'
 
 import { getEnvFilePath, isDev, mainDBName } from './utils'
 import { autoCastValuesToFromDB } from './dbValueCasting'
@@ -30,8 +31,12 @@ class DBMethods {
     return autoCastValuesToFromDB(this)
   }
 
-  getAllPosts(): Promise<readonly Post[]> {
-    return ridoDB('Post').select('*')
+  getAllPosts(): Promise<Maybe<readonly Post[]>> {
+    return ridoDB('Post').select<Maybe<readonly Post[]>>('*')
+  }
+
+  getSinglePost(post_id: Post['post_id']): Promise<Maybe<Post>> {
+    return ridoDB('Post').select('*').where({ post_id }).first()
   }
 
   addPost(post: Post): Promise<void> {
@@ -55,25 +60,30 @@ type DBInstanceType = typeof DB
 // eslint-disable-next-line max-lines-per-function
 const thing = (): void => {
   // console.log(DB.thing2())
-  DB.getAllPosts()
-  //   // DB.addPost({
-  //   //   post_id: 'asd',
-  //   //   could_not_download: false,
-  //   //   downloaded_media: ['asd.png'],
-  //   //   downloaded_media_count: 0,
-  //   //   media_download_tries: 0,
-  //   //   media_has_been_downloaded: false,
-  //   //   media_url: 'http://asd.com',
-  //   //   post_media_images_have_been_processed: false,
-  //   //   post_thumbnails_created: false,
-  //   //   post_url: 'http://xcv.com',
-  //   //   score: 2,
-  //   //   subreddit: 'merp',
-  //   //   timestamp: 3,
-  //   //   title: 'hello',
-  //   // })
+  // DB.getAllPosts()
+  DB.getSinglePost('asd')
+    //   // DB.addPost({
+    //   //   post_id: 'asd',
+    //   //   could_not_download: false,
+    //   //   downloaded_media: ['asd.png'],
+    //   //   downloaded_media_count: 0,
+    //   //   media_download_tries: 0,
+    //   //   media_has_been_downloaded: false,
+    //   //   media_url: 'http://asd.com',
+    //   //   post_media_images_have_been_processed: false,
+    //   //   post_thumbnails_created: false,
+    //   //   post_url: 'http://xcv.com',
+    //   //   score: 2,
+    //   //   subreddit: 'merp',
+    //   //   timestamp: 3,
+    //   //   title: 'hello',
+    //   // })
     .then(result => {
-      console.log(result)
+      result.cata({
+        Just: data => console.log('got data', data),
+        Nothing: () => console.log('hit Nothing'),
+      })
+
       console.log('finished db')
     })
     .catch(err => {
