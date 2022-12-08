@@ -38,36 +38,40 @@ class DBMethods {
     return ridoDB('Post').insert(post)
   }
 
-  thing(): void {
+  thing2(): string {
+    return 'hello from thing2'
+  }
+
+  thing(): number {
     console.log('in thing')
+    return 5
   }
 }
 
 const DB = new DBMethods()
 
 type DBInstanceType = typeof DB
-type DBMethodsType = typeof DBMethods
 
 // eslint-disable-next-line max-lines-per-function
 const thing = (): void => {
-  DB.thing()
+  // console.log(DB.thing2())
   DB.getAllPosts()
-    // DB.addPost({
-    //   post_id: 'asd',
-    //   could_not_download: false,
-    //   downloaded_media: ['asd.png'],
-    //   downloaded_media_count: 0,
-    //   media_download_tries: 0,
-    //   media_has_been_downloaded: false,
-    //   media_url: 'http://asd.com',
-    //   post_media_images_have_been_processed: false,
-    //   post_thumbnails_created: false,
-    //   post_url: 'http://xcv.com',
-    //   score: 2,
-    //   subreddit: 'merp',
-    //   timestamp: 3,
-    //   title: 'hello',
-    // })
+  //   // DB.addPost({
+  //   //   post_id: 'asd',
+  //   //   could_not_download: false,
+  //   //   downloaded_media: ['asd.png'],
+  //   //   downloaded_media_count: 0,
+  //   //   media_download_tries: 0,
+  //   //   media_has_been_downloaded: false,
+  //   //   media_url: 'http://asd.com',
+  //   //   post_media_images_have_been_processed: false,
+  //   //   post_thumbnails_created: false,
+  //   //   post_url: 'http://xcv.com',
+  //   //   score: 2,
+  //   //   subreddit: 'merp',
+  //   //   timestamp: 3,
+  //   //   title: 'hello',
+  //   // })
     .then(result => {
       console.log(result)
       console.log('finished db')
@@ -128,4 +132,4 @@ const thing = (): void => {
 // )
 
 export { thing, DB }
-export type { DBInstanceType, DBMethodsType }
+export type { DBInstanceType }

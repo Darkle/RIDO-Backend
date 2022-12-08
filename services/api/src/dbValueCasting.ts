@@ -3,7 +3,6 @@ import path from 'path'
 
 import * as R from 'ramda'
 import { isPromise } from '@typed/is-promise'
-
 import sqliteParser from 'sqlite-parser'
 import type { SQLFileParserReturnType } from './types'
 import type { DBInstanceType } from './db'
@@ -89,11 +88,12 @@ function autoCastValuesToFromDB(classRef: DBInstanceType): DBInstanceType {
     get: (obj: DBInstanceType, prop: keyof DBInstanceType) =>
       typeof obj[prop] !== 'function'
         ? obj[prop]
-        : (...args: readonly unknown[]): Promise<unknown> | undefined => {
+        : // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+          (...args: readonly unknown[]) => {
             const castedArgs = args.map(dbInputValCasting)
             // @ts-expect-error I think this is fine. Typescript is complaining that we're not being specific (which is true)
             const func = obj[prop](...castedArgs)
-            return isPromise(func) ? func.then(dbOutputValCasting) : undefined
+            return isPromise(func) ? func.then(dbOutputValCasting) : func
           },
   }
   return new Proxy(classRef, handler)
