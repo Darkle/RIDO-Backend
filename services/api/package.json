@@ -19,7 +19,7 @@
     "@trpc/server": "^10.4.3",
     "@typed/is-promise": "^1.0.0",
     "dotenv-extended": "^2.9.0",
-    "esbuild": "^0.16.2",
+    "esbuild": "^0.16.3",
     "esbuild-register": "^3.4.1",
     "knex": "^2.3.0",
     "luxon": "^3.1.1",

@@ -1,6 +1,6 @@
 interface Log {
   readonly created_at: number
-  readonly level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly'
+  readonly level: 'error' | 'warn' | 'info' | 'http' | 'verbose' | 'debug' | 'silly' | 'trace'
   readonly message?: string
   readonly service?: string
   readonly stack?: string
