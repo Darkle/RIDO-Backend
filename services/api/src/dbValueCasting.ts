@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'path'
 
 import * as R from 'ramda'
+import { match, P } from 'ts-pattern'
 
 import sqliteParser from 'sqlite-parser'
 import type { SQLFileParserReturnType } from './types'

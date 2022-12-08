@@ -105,4 +105,4 @@ const thing = () => new Promise<void>(resolve => resolve)
 //     .values({ favourited: castBoolToSqliteBool(false), subreddit: 'merp', lastUpdated: 1 })
 //     .executeTakeFirst()
 
-export { thing }
+export { thing, DB }
