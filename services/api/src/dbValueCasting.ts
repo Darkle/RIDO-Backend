@@ -6,6 +6,7 @@ import { isPromise } from '@typed/is-promise'
 
 import sqliteParser from 'sqlite-parser'
 import type { SQLFileParserReturnType } from './types'
+import type { DBInstanceType } from './db'
 
 const uJSONParse = R.unary(JSON.parse)
 const uJSONStringify = R.unary(JSON.stringify)
@@ -82,23 +83,20 @@ const dbOutputValCasting = dbValueCasting(outputTransformations)
  The main downside of using a decorator is that you have to manually decorate each method.
  Although there is this: https://www.npmjs.com/package/decorate-all, but i couldnt get it to work.
  *****/
-/* eslint-disable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call,@typescript-eslint/restrict-plus-operands,@typescript-eslint/no-unsafe-assignment */
-// @ts-expect-error
-function castValues(classRef) {
+function autoCastValuesToFromDB(classRef: DBInstanceType): DBInstanceType {
   const handler = {
     // needs to return apply cause async func
-    // @ts-expect-error
-    get: (obj, prop) =>
+    get: (obj: DBInstanceType, prop: keyof DBInstanceType) =>
       typeof obj[prop] !== 'function'
         ? obj[prop]
-        : (...args: readonly unknown[]) => {
+        : (...args: readonly unknown[]): Promise<unknown> | undefined => {
             const castedArgs = args.map(dbInputValCasting)
-            const func = obj[prop].apply(obj, castedArgs)
+            // @ts-expect-error I think this is fine. Typescript is complaining that we're not being specific (which is true)
+            const func = obj[prop](...castedArgs)
             return isPromise(func) ? func.then(dbOutputValCasting) : undefined
           },
   }
   return new Proxy(classRef, handler)
 }
-/* eslint-enable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment */
 
-export { dbOutputValCasting, castValues, dbInputValCasting }
+export { dbOutputValCasting, autoCastValuesToFromDB, dbInputValCasting }

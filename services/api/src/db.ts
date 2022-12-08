@@ -3,7 +3,7 @@ import path from 'path'
 import knex from 'knex'
 
 import { getEnvFilePath, isDev, mainDBName } from './utils'
-import { castValues } from './dbValueCasting'
+import { autoCastValuesToFromDB } from './dbValueCasting'
 import type { Post } from './Entities/Post'
 
 const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
@@ -27,8 +27,7 @@ const ridoDB = knex({
 
 class DBMethods {
   constructor() {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return castValues(this)
+    return autoCastValuesToFromDB(this)
   }
 
   getAllPosts(): Promise<readonly Post[]> {
@@ -46,9 +45,12 @@ class DBMethods {
 
 const DB = new DBMethods()
 
+type DBInstanceType = typeof DB
+type DBMethodsType = typeof DBMethods
+
 // eslint-disable-next-line max-lines-per-function
 const thing = (): void => {
-  // DB.thing()
+  DB.thing()
   DB.getAllPosts()
     // DB.addPost({
     //   post_id: 'asd',
@@ -126,3 +128,4 @@ const thing = (): void => {
 // )
 
 export { thing, DB }
+export type { DBInstanceType, DBMethodsType }
