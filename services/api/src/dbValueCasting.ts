@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import path from 'path'
 
 import * as R from 'ramda'
+import { isPromise } from '@typed/is-promise'
 
 import sqliteParser from 'sqlite-parser'
 import type { SQLFileParserReturnType } from './types'
@@ -79,22 +80,25 @@ const dbOutputValCasting = dbValueCasting(outputTransformations)
 /*****
  Alternate approach using a decorator: https://gist.github.com/Darkle/d3e2ab5292d7b08d48755acc1f458124
  The main downside of using a decorator is that you have to manually decorate each method.
+ Although there is this: https://www.npmjs.com/package/decorate-all, but i couldnt get it to work.
  *****/
-/* eslint-disable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call,@typescript-eslint/restrict-plus-operands */
+/* eslint-disable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call,@typescript-eslint/restrict-plus-operands,@typescript-eslint/no-unsafe-assignment */
 // @ts-expect-error
-function castValuesForDB(classRef) {
+function castValues(classRef) {
   const handler = {
+    // needs to return apply cause async func
     // @ts-expect-error
     get: (obj, prop) =>
       typeof obj[prop] !== 'function'
         ? obj[prop]
-        : // @ts-expect-error
-          (...args) => {
-            obj[prop].apply(obj, args.map(dbInputValCasting))
+        : (...args: readonly unknown[]) => {
+            const castedArgs = args.map(dbInputValCasting)
+            const func = obj[prop].apply(obj, castedArgs)
+            return isPromise(func) ? func.then(dbOutputValCasting) : undefined
           },
   }
   return new Proxy(classRef, handler)
 }
-/* eslint-enable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call */
+/* eslint-enable @typescript-eslint/explicit-function-return-type,@typescript-eslint/ban-ts-comment,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,prefer-spread,@typescript-eslint/no-unsafe-call,@typescript-eslint/no-unsafe-assignment */
 
-export { dbOutputValCasting, castValuesForDB, dbInputValCasting }
+export { dbOutputValCasting, castValues, dbInputValCasting }
