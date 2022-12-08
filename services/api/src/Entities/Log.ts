@@ -4,11 +4,11 @@ interface Log {
   readonly message?: string
   readonly service?: string
   readonly stack?: string
-  readonly other?: Record<string, unknown>
+  readonly log_other?: Record<string, unknown>
 }
 
-interface LogReadyForDB extends Omit<Log, 'other'> {
-  readonly other: string
-}
+// interface LogReadyForDB extends Omit<Log, 'log_other'> {
+//   readonly log_other: string
+// }
 
-export type { Log, LogReadyForDB }
+export type { Log }

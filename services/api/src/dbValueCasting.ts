@@ -2,7 +2,6 @@ import { readFileSync } from 'node:fs'
 import path from 'path'
 
 import * as R from 'ramda'
-import { match, P } from 'ts-pattern'
 
 import sqliteParser from 'sqlite-parser'
 import type { SQLFileParserReturnType } from './types'
@@ -14,15 +13,8 @@ const uJSONStringify = R.unary(JSON.stringify)
 now that i think about it, it might be alright to auto json.parse here cause when will i be getting thousands of posts at once? That wont happen on the front-end, and even when i do need to do that for the services, I will not be getting the json data columns for that (eg getting all posts that need to be downloaded)
 *****/
 
-const ridoLogsDBSqlFileData = readFileSync(
-  path.resolve(process.cwd(), '..', '..', 'db-init-scripts', 'init-logging-db.sql')
-).toString()
+const ridoDBSqlFileData = readFileSync(path.resolve(process.cwd(), 'init-rido-db.sql')).toString()
 
-const ridoDBSqlFileData = readFileSync(
-  path.resolve(process.cwd(), '..', '..', 'db-init-scripts', 'init-rido-db.sql')
-).toString()
-
-const logsDBSQL = sqliteParser(ridoLogsDBSqlFileData) as SQLFileParserReturnType
 const ridoDBSQL = sqliteParser(ridoDBSqlFileData) as SQLFileParserReturnType
 
 const getAllDataColmnsOfCertainType = (dbSql: SQLFileParserReturnType, type: string): readonly string[] =>
@@ -34,15 +26,9 @@ const getAllDataColmnsOfCertainType = (dbSql: SQLFileParserReturnType, type: str
     )
     .map(definition => definition.name)
 
-const jsonColumnsForAllDBs = [
-  ...getAllDataColmnsOfCertainType(logsDBSQL, 'json'),
-  ...getAllDataColmnsOfCertainType(ridoDBSQL, 'json'),
-].flat()
+const jsonColumnsForAllDBs = [...getAllDataColmnsOfCertainType(ridoDBSQL, 'json')].flat()
 
-const booleanColumnsForAllDBs = [
-  ...getAllDataColmnsOfCertainType(logsDBSQL, 'boolean'),
-  ...getAllDataColmnsOfCertainType(ridoDBSQL, 'boolean'),
-].flat()
+const booleanColumnsForAllDBs = [...getAllDataColmnsOfCertainType(ridoDBSQL, 'boolean')].flat()
 
 type Transformer = ((jsonString: string) => unknown) | ((bool: boolean) => number) | BooleanConstructor
 
@@ -77,18 +63,31 @@ const inputTransformations = {
 // [(_, queryContext) => queryContext?.plucking === 'boolean', R.map(Boolean)],
 // [(_, queryContext) => queryContext?.plucking === 'json', R.map(uJSONParse)],
 
-const dbOutputValCasting = R.cond([
-  [Array.isArray, R.map(R.when(R.is(Object), R.evolve(outputTransformations)))],
-  // @ts-expect-error bloody ramda and types again
-  [R.is(Object), R.evolve(outputTransformations)],
-  [R.T, R.identity],
-])
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+const dbValueCasting = (transforms: typeof outputTransformations | typeof inputTransformations) =>
+  R.cond([
+    [Array.isArray, R.map(R.when(R.is(Object), R.evolve(transforms)))],
+    // @ts-expect-error bloody ramda and types again
+    [R.is(Object), R.evolve(transforms)],
+    [R.T, R.identity],
+  ])
 
-const dbInputValCasting = R.cond([
-  [Array.isArray, R.map(R.when(R.is(Object), R.evolve(inputTransformations)))],
-  // @ts-expect-error bloody ramda and types again
-  [R.is(Object), R.evolve(inputTransformations)],
-  [R.T, R.identity],
-])
+const dbOutputValCasting = dbValueCasting(outputTransformations)
+const dbInputValCasting = dbValueCasting(inputTransformations)
 
-export { dbOutputValCasting, dbInputValCasting }
+/* eslint-disable @typescript-eslint/ban-types,@typescript-eslint/no-unsafe-assignment,functional/immutable-data,@typescript-eslint/explicit-function-return-type,no-param-reassign,@typescript-eslint/no-explicit-any,functional/prefer-readonly-type,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/ban-ts-comment */
+// https://stackoverflow.com/a/52106109/2785644
+const castValuesForDB = (): MethodDecorator => {
+  return (_target: Object, _propertyKey: string | symbol, descriptor: PropertyDescriptor) => {
+    const originalMethod = descriptor.value
+
+    descriptor.value = function (...args: any[]) {
+      return originalMethod.apply(this, args.map(dbInputValCasting))
+    }
+
+    return descriptor
+  }
+}
+/* eslint-enable @typescript-eslint/ban-types,@typescript-eslint/no-unsafe-assignment,functional/immutable-data,@typescript-eslint/explicit-function-return-type,no-param-reassign,@typescript-eslint/no-explicit-any,functional/prefer-readonly-type,@typescript-eslint/no-unsafe-return,@typescript-eslint/no-unsafe-member-access,@typescript-eslint/no-unsafe-call,@typescript-eslint/ban-ts-comment */
+
+export { dbOutputValCasting, castValuesForDB }

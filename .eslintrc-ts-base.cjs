@@ -4,6 +4,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: './tsconfig.json',
     sourceType: 'module',
+    emitDecoratorMetadata: true,
     ecmaFeatures: {
       globalReturn: true,
       impliedStrict: true,

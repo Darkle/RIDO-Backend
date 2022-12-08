@@ -33,13 +33,10 @@ if (!dbDirExists) {
   fs.mkdirSync(dbDir, { recursive: true })
 }
 
-const loggingDBPath = path.join(dbDir, 'RIDO-logs.db')
 const ridoDBPath = path.join(dbDir, 'RIDO.db')
 
-const loggingDbInitSQLFilePath = path.join(ridoProjectRootFolder, 'db-init-scripts', 'init-logging-db.sql')
-const ridoDbInitSQLFilePath = path.join(ridoProjectRootFolder, 'db-init-scripts', 'init-rido-db.sql')
+const ridoDbInitSQLFilePath = path.join(process.cwd(), 'init-rido-db.sql')
 
-execFileSync('sqlite3', [loggingDBPath, `.read ${loggingDbInitSQLFilePath}`])
 execFileSync('sqlite3', [ridoDBPath, `.read ${ridoDbInitSQLFilePath}`])
 
 console.log(`RIDO DB's initialized`)

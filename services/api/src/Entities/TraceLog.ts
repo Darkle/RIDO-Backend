@@ -4,8 +4,8 @@ interface TraceLog extends Omit<Log, 'level'> {
   readonly level: 'trace'
 }
 
-interface TraceLogReadyForDB extends Omit<TraceLog, 'other'> {
-  readonly other: string
-}
+// interface TraceLogReadyForDB extends Omit<TraceLog, 'log_other'> {
+//   readonly log_other: string
+// }
 
-export type { TraceLog, TraceLogReadyForDB }
+export type { TraceLog }

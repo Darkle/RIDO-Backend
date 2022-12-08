@@ -17,8 +17,8 @@ interface Post {
   readonly downloaded_media?: readonly string[]
 }
 
-interface PostForReadyForDB extends Omit<Post, 'downloaded_media'> {
-  readonly downloaded_media: string
-}
+// interface PostForReadyForDB extends Omit<Post, 'downloaded_media'> {
+//   readonly downloaded_media: string
+// }
 
-export type { Post, PostForReadyForDB }
+export type { Post }
