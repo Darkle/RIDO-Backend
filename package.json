@@ -25,15 +25,14 @@
     "pnpm": ">=7.18.0"
   },
   "devDependencies": {
-    "@types/better-sqlite3": "^7.6.2",
     "@types/eventsource": "^1.1.10",
     "@types/luxon": "^3.1.0",
-    "@types/node": "^18.11.10",
+    "@types/node": "^18.11.11",
     "@types/node-static": "^0.7.7",
     "@types/ramda": "^0.28.20",
     "@types/sharp": "^0.31.0",
-    "@typescript-eslint/eslint-plugin": "^5.45.0",
-    "@typescript-eslint/parser": "^5.45.0",
+    "@typescript-eslint/eslint-plugin": "^5.45.1",
+    "@typescript-eslint/parser": "^5.45.1",
     "eslint": "^8.29.0",
     "eslint-config-airbnb-typescript": "^17.0.0",
     "eslint-plugin-eslint-comments": "^3.2.0",
@@ -45,7 +44,7 @@
     "npm-run-all": "^4.1.5",
     "trash-cli": "^5.0.0",
     "ts-essentials": "^9.3.0",
-    "typescript": "^4.9.3",
+    "typescript": "^4.9.4",
     "wait-on": "^6.0.1"
   }
 }
