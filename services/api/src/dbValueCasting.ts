@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'path'
 
-import { nullable } from 'pratica'
 import * as R from 'ramda'
 import { isPromise } from '@typed/is-promise'
 import sqliteParser from 'sqlite-parser'
@@ -93,7 +92,7 @@ function autoCastValuesToFromDB(classRef: DBInstanceType): DBInstanceType {
           (...args: readonly unknown[]) => {
             // @ts-expect-error I think this is fine. Typescript is complaining that we're not being specific (which is true)
             const func = obj[prop](...args.map(dbInputValCasting))
-            return isPromise(func) ? func.then(dbOutputValCasting).then(nullable) : func
+            return isPromise(func) ? func.then(dbOutputValCasting) : func
           },
   }
   return new Proxy(classRef, handler)

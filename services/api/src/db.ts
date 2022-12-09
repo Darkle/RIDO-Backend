@@ -1,7 +1,7 @@
 import path from 'path'
 
 import knex from 'knex'
-import type { Maybe } from 'pratica'
+import { nullable, type Maybe } from 'pratica'
 
 import { getEnvFilePath, isDev, mainDBName } from './utils'
 import { autoCastValuesToFromDB } from './dbValueCasting'
@@ -26,31 +26,33 @@ const ridoDB = knex({
   },
 })
 
+/*****
+  NOTE: if its a read query for a single item, return a Maybe (nullable)
+*****/
 class DBMethods {
   constructor() {
     return autoCastValuesToFromDB(this)
   }
 
-  getAllPosts(): Promise<Maybe<readonly Post[]>> {
-    return ridoDB('Post').select<Maybe<readonly Post[]>>('*')
+  getAllPosts(): Promise<readonly Post[]> {
+    return ridoDB<Post>('Post').select('*')
   }
 
   getSinglePost(post_id: Post['post_id']): Promise<Maybe<Post>> {
-    return ridoDB('Post').select('*').where({ post_id }).first()
+    return ridoDB<Post>('Post').select('*').where({ post_id }).first().then(nullable)
   }
 
   addPost(post: Post): Promise<void> {
     return ridoDB('Post').insert(post)
   }
 
-  thing2(): string {
-    return 'hello from thing2'
-  }
-
-  thing(): number {
-    console.log('in thing')
-    return 5
-  }
+  // thing(): Promise<ReadonlyArray<Pick<Post, 'post_id' | 'title'>>> {
+  //   return knex<Post>('users').select('post_id').select('title')
+  //   // .then(users => {
+  //   //   // Type of users is inferred as Pick<User, "id" | "age">[]
+  //   //   // Do something with users
+  //   // })
+  // }
 }
 
 const DB = new DBMethods()
@@ -90,56 +92,7 @@ const thing = (): void => {
       console.log('caught in catch:')
       console.error(err)
     })
-  // DB.getAllPosts({
-  //   post_id: 'asd',
-  //   could_not_download: false,
-  //   downloaded_media: ['asd.png'],
-  //   downloaded_media_count: 0,
-  //   media_download_tries: 0,
-  //   media_has_been_downloaded: false,
-  //   media_url: 'http://asd.com',
-  //   post_media_images_have_been_processed: false,
-  //   post_thumbnails_created: false,
-  //   post_url: 'http://xcv.com',
-  //   score: 2,
-  //   subreddit: 'merp',
-  //   timestamp: 3,
-  //   title: 'hello',
-  // })
-  //   .then(() => {
-  //     console.log('finished db')
-  //   })
-  //   .catch(err => {
-  //     console.log('caught in catch:')
-  //     console.error(err)
-  //   })
 }
-
-// ridoDB<Subreddit>('Subreddit')
-// .insert({ subreddit: 'merp' })
-// .then(result => console.log(result))
-// .catch(err => console.error(err))
-// .then(() =>
-// ridoDB<PostForReadyForDB>('Post')
-//   .insert({
-//     post_id: 'asd',
-//     could_not_download: false,
-//     downloaded_media: ['asd.png'],
-//     downloaded_media_count: 0,
-//     media_download_tries: 0,
-//     media_has_been_downloaded: false,
-//     media_url: 'http://asd.com',
-//     post_media_images_have_been_processed: false,
-//     post_thumbnails_created: false,
-//     post_url: 'http://xcv.com',
-//     score: 2,
-//     subreddit: 'merp',
-//     timestamp: 3,
-//     title: 'hello',
-//   })
-//   .then(result => console.log(result))
-//   .catch(err => console.error(err))
-// )
 
 export { thing, DB }
 export type { DBInstanceType }

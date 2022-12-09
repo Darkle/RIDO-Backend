@@ -1,6 +1,6 @@
 -- The column names need to be snake case as the sqlite-parse lib we use ignores casing for column names which makes it impossible to do the auto casting if using camel case.
 -- Dont want log table to be
--- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT table feature (https: / / sqlite.org / stricttables.html), sqlite wont complain. We need to specify BOOLEAN as we use that in the db values auto casting code to auto cast 1\0 to true\false and json string parsing and stringifying.
+-- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT table feature (https://sqlite.org/stricttables.html), sqlite wont complain. We need to specify BOOLEAN as we use that in the db values auto casting code to auto cast 1\0 to true\false.
 CREATE TABLE IF NOT EXISTS Log(
   created_at INTEGER NOT NULL,
   level TEXT COLLATE NOCASE CHECK(
