@@ -1,0 +1,103 @@
+/* eslint-disable @typescript-eslint/no-magic-numbers,functional/no-conditional-statement,complexity */
+import errorToJson from '@stdlib/error-to-json'
+import { G } from '@mobily/ts-belt'
+
+import type { Log } from '@services/api/src/Entities/Log'
+
+enum LogLevel {
+  error = 0,
+  warn = 1,
+  info = 2,
+  debug = 3,
+  trace = 4,
+}
+
+type LogLevelKey = keyof typeof LogLevel
+type LogLevelVal = typeof LogLevel[LogLevelKey]
+
+const logLevelToString = {
+  '0': 'error',
+  '1': 'warn',
+  '2': 'info',
+  '3': 'debug',
+  '4': 'trace',
+}
+
+type LogLevelToStringKey = keyof typeof logLevelToString
+
+const globalLoggingLevel = (process.env['LOG_LEVEL'] || 'error').toLowerCase() as LogLevelKey
+
+const logLevelIsNotHighEnough = (logLevel: LogLevelVal): boolean => logLevel > LogLevel[globalLoggingLevel]
+
+class Logger {
+  private static logToConsole(logLevel: LogLevelVal, logArgs: readonly unknown[]): void {
+    if (logLevelIsNotHighEnough(logLevel)) return
+
+    // Way too noisy if log trace logs
+    if (logLevel === LogLevel.trace) return
+
+    if (logLevel === LogLevel.error) {
+      console.error(logArgs)
+    }
+    if (logLevel === LogLevel.warn) {
+      console.warn(logArgs)
+    }
+    if (logLevel === LogLevel.info) {
+      console.info(logArgs)
+    }
+    if (logLevel === LogLevel.debug) {
+      console.debug(logArgs)
+    }
+  }
+
+  private static logToDB(logLevel: typeof LogLevel[LogLevelKey], logArgs: readonly unknown[]): void {
+    // Always allow trace logs through to be saved to db regargless of global log level
+    if (logLevel !== LogLevel.trace && logLevelIsNotHighEnough(logLevel)) return
+
+    const logLevelAsString = logLevelToString[logLevel.toString() as LogLevelToStringKey]
+
+    // I figure you wouldnt send more than one error through
+    const error = logArgs.find(G.isError)
+
+    const message = logArgs.filter(G.isString).join(' ')
+
+    const misc_data = logArgs.filter((arg: unknown) => !G.isError(arg) && !G.isString(arg))
+
+    const logPreparedForDb = {
+      created_at: Date.now(),
+      level: logLevelAsString,
+      service: 'api',
+      ...(message.length ? { message } : {}),
+      ...(error ? { error: JSON.stringify(errorToJson(error)) } : {}),
+      ...(misc_data ? { misc_data } : {}),
+    } as Log
+    //TODO: for here, use that tRPC thing for calling the server from its own process.
+  }
+
+  static error(...logArgs: readonly unknown[]): void {
+    Logger.logToConsole(LogLevel.error, logArgs)
+    Logger.logToDB(LogLevel.error, logArgs)
+  }
+
+  static warn(...logArgs: readonly unknown[]): void {
+    Logger.logToConsole(LogLevel.warn, logArgs)
+    Logger.logToDB(LogLevel.warn, logArgs)
+  }
+
+  static info(...logArgs: readonly unknown[]): void {
+    Logger.logToConsole(LogLevel.info, logArgs)
+    Logger.logToDB(LogLevel.info, logArgs)
+  }
+
+  static debug(...logArgs: readonly unknown[]): void {
+    Logger.logToConsole(LogLevel.debug, logArgs)
+    Logger.logToDB(LogLevel.debug, logArgs)
+  }
+
+  static trace(...logArgs: readonly unknown[]): void {
+    Logger.logToConsole(LogLevel.trace, logArgs)
+    Logger.logToDB(LogLevel.trace, logArgs)
+  }
+}
+
+export { Logger }

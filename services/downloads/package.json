@@ -9,7 +9,7 @@
     "node": ">=18.2.0",
     "pnpm": ">=7.18.0"
   },
-  "devDependencies": {
+  "dependencies": {
     "@swc-node/register": "^1.5.4",
     "@swc/core": "^1.3.21",
     "@trpc/client": "^10.4.3",

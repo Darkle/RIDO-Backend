@@ -1,12 +1,28 @@
+import { initTRPC } from '@trpc/server'
+import { createHTTPServer } from '@trpc/server/adapters/standalone'
+
 import { initStaticFileServer } from './static-file-server'
-import { thing } from './db'
 
 initStaticFileServer()
 
-thing()
+const t = initTRPC.create()
 
-// setInterval(() => {
-//   console.log('hello2')
-// }, 2000)
+const appRouter = t.router({
+  healthcheck: t.procedure.query(() => ({
+    uptime: process.uptime(),
+    message: 'OK',
+    timestamp: Date.now(),
+  })),
+})
+
+createHTTPServer({
+  router: appRouter,
+  createContext() {
+    return {}
+  },
+}).listen(Number(process.env['API_SERVICE_PORT']))
+
+type AppRouter = typeof appRouter
 
 export {}
+export type { AppRouter }

@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS Log(
   ) NOT NULL,
   message TEXT NULL,
   service TEXT NULL,
-  stack TEXT NULL,
-  log_other JSON NULL
+  error TEXT NULL,
+  misc_data JSON NULL
 );
 
 CREATE TABLE IF NOT EXISTS Settings(
