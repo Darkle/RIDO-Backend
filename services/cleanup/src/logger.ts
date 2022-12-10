@@ -4,7 +4,7 @@ import { G } from '@mobily/ts-belt'
 import microtime from 'microtime'
 
 import type { Log } from '@services/api/src/Entities/Log'
-import { trpcRouterCaller } from './api'
+import { apiRPCClient } from './utils'
 
 enum LogLevel {
   error = 0,
@@ -78,14 +78,13 @@ class Logger {
       *****/
       created_at: microtime.nowDouble(),
       level: logLevelAsString,
-      service: 'api-service',
+      service: 'cleanup-service',
       ...(message.length ? { message } : {}),
       ...(error ? { error: JSON.stringify(errorToJson(error)) } : {}),
       ...(misc_data.length ? { misc_data } : {}),
     } as Log
 
-    //NOTE: if you are copying this code, createCaller is only for use when used in the same process that the tRPC server is running.
-    trpcRouterCaller.log.saveLog(logPreparedForDb).catch(err => console.error(err))
+    apiRPCClient.log.saveLog.mutate(logPreparedForDb).catch(err => console.error(err))
   }
 
   static error(...logArgs: readonly unknown[]): void {

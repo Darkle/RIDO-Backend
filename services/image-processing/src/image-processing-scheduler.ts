@@ -7,7 +7,11 @@ apiRPCClient.healthcheck
     console.log(`res from healthcheck:`, res)
   })
   .then(() => {
-    Logger.error('this is an error from the cleanup service', new Error('this is an error from the cleanup service'), { meta: { thing: 3 } })
+    Logger.error(
+      'this is an error from the image-processing service',
+      new Error('this is an error from the image-processing service'),
+      { meta: { thing: 3 } }
+    )
   })
   .catch(err => {
     console.error(err)
