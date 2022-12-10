@@ -2,11 +2,14 @@ import path from 'path'
 
 import knex from 'knex'
 import { nullable, type Maybe } from 'pratica'
+import { D } from '@mobily/ts-belt'
 
 import { getEnvFilePath, isDev, mainDBName } from './utils'
 import { autoCastValuesToFromDB } from './dbValueCasting'
 import type { Post } from './Entities/Post'
 import type { Log } from './Entities/Log'
+import type { Settings, SettingsSansId } from './Entities/Settings'
+import { EE } from './events'
 
 const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
 
@@ -28,11 +31,28 @@ const ridoDB = knex({
 })
 
 /*****
-  NOTE: if its a read query for a single item, return a Maybe (nullable)
+  NOTE: return a Maybe (nullable) if its a read query for a single item
 *****/
 class DBMethods {
   constructor() {
     return autoCastValuesToFromDB(this)
+  }
+
+  // eslint-disable-next-line extra-rules/potential-point-free
+  close(): Promise<void> {
+    return ridoDB.destroy()
+  }
+
+  updateSettings(setting: Partial<Settings>): Promise<SettingsSansId> {
+    return ridoDB<Settings>('Settings')
+      .returning('*')
+      .where({ unique_id: 'admin-settings' })
+      .update<readonly [Settings]>(setting)
+      .then(results => D.deleteKey(results[0], 'unique_id'))
+      .then(updatedSettings => {
+        EE.emit('settingsUpdate', updatedSettings)
+        return updatedSettings
+      })
   }
 
   saveLog(log: Log): Promise<void> {

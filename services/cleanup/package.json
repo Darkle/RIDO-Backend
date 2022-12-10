@@ -17,6 +17,7 @@
     "@trpc/client": "^10.4.3",
     "@trpc/server": "^10.4.3",
     "dotenv-extended": "^2.9.0",
+    "eventsource": "^2.0.2",
     "microtime": "^3.1.1",
     "prray": "^0.8.2",
     "superjson": "^1.12.0",

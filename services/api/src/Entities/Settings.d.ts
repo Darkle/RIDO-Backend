@@ -11,4 +11,6 @@ interface Settings {
   readonly has_seen_welcome_message: boolean
 }
 
-export type { Settings }
+type SettingsSansId = Omit<Settings, 'unique_id'>
+
+export type { Settings, SettingsSansId }

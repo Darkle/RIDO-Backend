@@ -1,12 +1,17 @@
 import { createHTTPServer } from '@trpc/server/adapters/standalone'
 import { initTRPC } from '@trpc/server'
 import superjson from 'superjson'
+import { onShutdown } from 'node-graceful-shutdown'
 
-// import { Logger } from './logger'
 import { logRoutes } from './routes/log-routes'
 import { initStaticFileServer } from './static-file-server'
+import { settingsRoutes } from './routes/settings-routes'
+import { DB } from './db'
+import { startSubscriptionsServer } from './routes/sse-subscriptions'
 
 initStaticFileServer()
+
+const apiPort = Number(process.env['API_SERVICE_PORT'])
 
 const trpc = initTRPC.create({ transformer: superjson })
 
@@ -16,23 +21,27 @@ const appRouter = trpc.router({
     message: 'OK',
     timestamp: Date.now(),
   })),
+  settings: settingsRoutes(),
   log: logRoutes(),
 })
 
 const trpcRouterCaller = appRouter.createCaller({})
 
-createHTTPServer({
-  router: appRouter,
-  createContext() {
-    return {}
-  },
-}).listen(Number(process.env['API_SERVICE_PORT']))
+createHTTPServer({ router: appRouter }).listen(apiPort)
 
-// Logger.error('text before error arg', new Error('this is new error'))
-// Logger.info('this is info log1', { extra: { foo: 'bar' } })
-// Logger.warn('this is a warn log')
-// Logger.info('this is info log2')
-// Logger.error('text before error arg 2', new Error('this is new error 2'), { thing: { merp: 'derp' } })
+onShutdown('api-service', () => DB.close())
+
+console.log(`API Running on port ${apiPort} `)
+
+startSubscriptionsServer().catch(err => console.error(err))
+
+// setTimeout(() => {
+//   DB.updateSettings({ number_media_downloads_at_once: 333 })
+//     .then(() => {
+//       console.log('finished updating settings')
+//     })
+//     .catch(err => console.error(err))
+// }, 6000)
 
 type AppRouter = typeof appRouter
 
