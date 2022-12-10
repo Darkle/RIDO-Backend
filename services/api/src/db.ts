@@ -13,22 +13,19 @@ const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
 const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
 
 const ridoDB = knex({
-  client: 'better-sqlite3',
-  connection: { filename: ridoDBFilePath, supportBigNumbers: true },
+  client: 'sqlite3',
+  connection: { filename: ridoDBFilePath },
   debug: enableDBLogging,
   asyncStackTraces: isDev(),
   // This is mostly to silence knex warning. We set defaults in the .sql files.
   useNullAsDefault: true,
   pool: {
     // https://github.com/knex/knex/issues/453
-    afterCreate(conn: { readonly pragma: (sql: string) => void }, cb: () => void) {
-      conn.pragma('foreign_keys = ON') // sync call, cause better-sqlite3 is sync when not going through knex
-      cb()
+    afterCreate(conn: { readonly run: (sql: string, cb: () => void) => void }, cb: () => void) {
+      conn.run('PRAGMA foreign_keys = ON', cb)
     },
   },
 })
-
-// ridoDB.exec('PRAGMA foreign_keys = ON', cb)
 
 /*****
   NOTE: if its a read query for a single item, return a Maybe (nullable)
