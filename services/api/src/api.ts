@@ -8,6 +8,9 @@ import { initStaticFileServer } from './static-file-server'
 import { settingsRoutes } from './routes/settings-routes'
 import { DB } from './db'
 import { startSubscriptionsServer } from './routes/sse-subscriptions'
+import { cleanupRoutes } from './routes/cleanup-routes'
+import { downloadRoutes } from './routes/download-routes'
+import { updateRoutes } from './routes/update-routes'
 
 initStaticFileServer()
 
@@ -23,6 +26,9 @@ const appRouter = trpc.router({
   })),
   settings: settingsRoutes(),
   log: logRoutes(),
+  cleanup: cleanupRoutes(),
+  download: downloadRoutes(),
+  update: updateRoutes(),
 })
 
 const trpcRouterCaller = appRouter.createCaller({})

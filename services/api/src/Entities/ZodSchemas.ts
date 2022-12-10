@@ -48,6 +48,7 @@ const SettingsZSchema = z
     max_image_width_for_non_archive_image: z.number().positive(),
     has_seen_welcome_message: z.boolean(),
   })
+  // will never be adding new one, so can all be partial
   .partial()
 /* eslint-enable @typescript-eslint/no-magic-numbers */
 

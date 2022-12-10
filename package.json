@@ -18,6 +18,7 @@
     "test": "pnpm -r run test",
     "outdated": "pnpm -r outdated",
     "update": "pnpm -r update -L -i",
+    "audit": "pnpm audit || true && cd test && pnpm audit || true && cd ../services/api && pnpm audit || true && cd ../downloads && pnpm audit || true && cd ../cleanup && pnpm audit || true && cd ../updates && pnpm audit || true && cd ../image-processing && pnpm audit || true",
     "reinstall-modules": "trash '**/node_modules' '**/pnpm-lock.yaml' && pnpm i && cd test && pnpm i && cd ../services/api && pnpm i && cd ../downloads && pnpm i && cd ../cleanup && pnpm i && cd ../updates && pnpm i && cd ../image-processing && pnpm i"
   },
   "engines": {

@@ -2,7 +2,7 @@ import path from 'path'
 
 import knex from 'knex'
 import { nullable, type Maybe } from 'pratica'
-import { D } from '@mobily/ts-belt'
+import { F } from '@mobily/ts-belt'
 
 import { getEnvFilePath, isDev, mainDBName } from './utils'
 import { autoCastValuesToFromDB } from './dbValueCasting'
@@ -10,6 +10,7 @@ import type { Post } from './Entities/Post'
 import type { Log } from './Entities/Log'
 import type { Settings, SettingsSansId } from './Entities/Settings'
 import { EE } from './events'
+import type { Subreddit } from './Entities/Subreddit'
 
 const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
 
@@ -30,6 +31,18 @@ const ridoDB = knex({
   },
 })
 
+const settingsColumnsToReturn = [
+  'number_media_downloads_at_once',
+  'number_images_process_at_once',
+  'update_all_day',
+  'update_starting_hour',
+  'update_ending_hour',
+  'image_compression_quality',
+  'archive_image_compression_quality',
+  'max_image_width_for_non_archive_image',
+  'has_seen_welcome_message',
+]
+
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
 *****/
@@ -43,12 +56,18 @@ class DBMethods {
     return ridoDB.destroy()
   }
 
+  getSettings(): Promise<SettingsSansId> {
+    return ridoDB<Settings>('Settings')
+      .select(settingsColumnsToReturn)
+      .where({ unique_id: 'admin-settings' })
+      .first<SettingsSansId>()
+  }
+
   updateSettings(setting: Partial<Settings>): Promise<SettingsSansId> {
     return ridoDB<Settings>('Settings')
-      .returning('*')
+      .returning(settingsColumnsToReturn)
       .where({ unique_id: 'admin-settings' })
-      .update<readonly [Settings]>(setting)
-      .then(results => D.deleteKey(results[0], 'unique_id'))
+      .update<SettingsSansId>(setting)
       .then(updatedSettings => {
         EE.emit('settingsUpdate', updatedSettings)
         return updatedSettings
@@ -56,7 +75,7 @@ class DBMethods {
   }
 
   saveLog(log: Log): Promise<void> {
-    return ridoDB<Log>('Log').insert(log)
+    return ridoDB<Log>('Log').insert(log).then(F.ignore)
   }
 
   getAllPosts(): Promise<readonly Post[]> {
@@ -68,7 +87,72 @@ class DBMethods {
   }
 
   addPost(post: Post): Promise<void> {
-    return ridoDB('Post').insert(post)
+    return ridoDB<Post>('Post').insert(post).then(F.ignore)
+  }
+
+  batchAddPosts(posts: readonly Post[]): Promise<void> {
+    return ridoDB.batchInsert('Post', posts).then(F.ignore)
+  }
+
+  fetchAllPostIds(): Promise<readonly Post['post_id'][]> {
+    return ridoDB<Post>('Post').pluck('post_id')
+  }
+
+  getPostsThatNeedMediaToBeDownloaded(): Promise<
+    readonly Pick<Post, 'post_id' | 'media_url' | 'media_download_tries'>[]
+  > {
+    return ridoDB<Post>('Post')
+      .select(['post_id', 'media_url', 'media_download_tries'])
+      .where({ media_has_been_downloaded: false, could_not_download: false })
+  }
+
+  updatePostDownloadInfoOnSuccess(
+    postDataUpdates: Pick<
+      Post,
+      | 'post_id'
+      | 'media_has_been_downloaded'
+      | 'could_not_download'
+      | 'downloaded_media'
+      | 'downloaded_media_count'
+    >
+  ): Promise<void> {
+    return ridoDB<Post>('Post')
+      .where({ post_id: postDataUpdates.post_id })
+      .update(postDataUpdates)
+      .then(F.ignore)
+  }
+
+  updatePostDownloadInfoOnError(
+    postDataUpdates: Pick<
+      Post,
+      | 'post_id'
+      | 'media_has_been_downloaded'
+      | 'could_not_download'
+      | 'download_error'
+      | 'media_download_tries'
+    >
+  ): Promise<void> {
+    return ridoDB<Post>('Post')
+      .where({ post_id: postDataUpdates.post_id })
+      .update(postDataUpdates)
+      .then(F.ignore)
+  }
+
+  addSubreddit(subreddit: Subreddit): Promise<void> {
+    return ridoDB<Subreddit>('Subreddit').insert(subreddit).then(F.ignore)
+  }
+
+  getSubsThatNeedToBeUpdated(): Promise<readonly Subreddit[]> {
+    const oneHourInMillisecs = 3_600_000
+    const anHourAgo = (): number => Date.now() - oneHourInMillisecs
+    return ridoDB<Subreddit>('Subreddit').where('last_updated', '<', anHourAgo())
+  }
+
+  updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']): Promise<void> {
+    return ridoDB<Subreddit>('Subreddit')
+      .where({ subreddit })
+      .update({ last_updated: Date.now() })
+      .then(F.ignore)
   }
 
   // thing(): Promise<ReadonlyArray<Pick<Post, 'post_id' | 'title'>>> {
