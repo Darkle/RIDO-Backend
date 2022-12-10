@@ -1,5 +1,9 @@
 interface Log {
-  readonly created_at: number
+  /*****
+   Using bigint so can have more resolution. Otherwise logs that are called at the exact same time (in the same process)
+   can have the exact same time if use Date.now(), which makes it hard to trace which log came first. 
+  *****/
+  readonly created_at: bigint
   readonly level: 'error' | 'warn' | 'info' | 'debug' | 'trace'
   readonly message?: string
   readonly service?: string

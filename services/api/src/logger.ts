@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers,functional/no-conditional-statement,complexity */
 import errorToJson from '@stdlib/error-to-json'
 import { G } from '@mobily/ts-belt'
+import microtime from 'microtime'
 
 import type { Log } from '@services/api/src/Entities/Log'
+import { trpcRouterCaller } from './api'
 
 enum LogLevel {
   error = 0,
@@ -25,6 +27,12 @@ const logLevelToString = {
 
 type LogLevelToStringKey = keyof typeof logLevelToString
 
+const Color = {
+  Reset: '\x1b[0m',
+  FgRed: '\x1b[31m',
+  FgYellow: '\x1b[33m',
+}
+
 const globalLoggingLevel = (process.env['LOG_LEVEL'] || 'error').toLowerCase() as LogLevelKey
 
 const logLevelIsNotHighEnough = (logLevel: LogLevelVal): boolean => logLevel > LogLevel[globalLoggingLevel]
@@ -37,16 +45,16 @@ class Logger {
     if (logLevel === LogLevel.trace) return
 
     if (logLevel === LogLevel.error) {
-      console.error(logArgs)
+      console.error('⛔', Color.FgRed, ...logArgs, Color.Reset)
     }
     if (logLevel === LogLevel.warn) {
-      console.warn(logArgs)
+      console.warn('⚠️', Color.FgYellow, ...logArgs, Color.Reset)
     }
     if (logLevel === LogLevel.info) {
-      console.info(logArgs)
+      console.info(...logArgs)
     }
     if (logLevel === LogLevel.debug) {
-      console.debug(logArgs)
+      console.debug(...logArgs)
     }
   }
 
@@ -64,14 +72,20 @@ class Logger {
     const misc_data = logArgs.filter((arg: unknown) => !G.isError(arg) && !G.isString(arg))
 
     const logPreparedForDb = {
-      created_at: Date.now(),
+      /*****
+       Using microtime so can have more resolution. Otherwise logs that are called at the exact same time (in the same process)
+        can have the exact same time if use Date.now(), which makes it hard to trace which log came first. 
+      *****/
+      created_at: microtime.nowDouble(),
       level: logLevelAsString,
       service: 'api',
       ...(message.length ? { message } : {}),
       ...(error ? { error: JSON.stringify(errorToJson(error)) } : {}),
-      ...(misc_data ? { misc_data } : {}),
+      ...(misc_data.length ? { misc_data } : {}),
     } as Log
-    //TODO: for here, use that tRPC thing for calling the server from its own process.
+
+    //NOTE: if you are copying this code, createCaller is only for use when used in the same process that the tRPC server is running.
+    trpcRouterCaller.log.saveLog(logPreparedForDb).catch(err => console.error(err))
   }
 
   static error(...logArgs: readonly unknown[]): void {

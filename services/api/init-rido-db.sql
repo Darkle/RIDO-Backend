@@ -50,7 +50,8 @@ CREATE TABLE IF NOT EXISTS Settings(
     OR has_seen_welcome_message = 1
   ) DEFAULT 0,
   UNIQUE(unique_id)
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 -- Set up default admin settings
 INSERT
   OR IGNORE INTO Settings(unique_id)
@@ -63,7 +64,8 @@ CREATE TABLE IF NOT EXISTS Tag(
     favourited = 0
     OR favourited = 1
   ) DEFAULT 0
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 CREATE TABLE IF NOT EXISTS Post(
   post_id TEXT PRIMARY KEY CHECK(length(post_id) > 0) NOT NULL,
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
@@ -95,21 +97,24 @@ CREATE TABLE IF NOT EXISTS Post(
   downloaded_media JSON NULL,
   -- https://sqlite.org/foreignkeys.html
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 -- Binding table
 CREATE TABLE IF NOT EXISTS Tag_Post(
   tag TEXT COLLATE NOCASE CHECK(length(tag) > 0) NOT NULL,
   post_id TEXT CHECK(length(post_id) > 0) NOT NULL,
   FOREIGN KEY(tag) REFERENCES Tag(tag) ON DELETE CASCADE,
   FOREIGN KEY(post_id) REFERENCES Post(post_id)
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 -- Binding table
 CREATE TABLE IF NOT EXISTS Subreddit_Post(
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
   post_id TEXT CHECK(length(post_id) > 0) NOT NULL,
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE,
   FOREIGN KEY(post_id) REFERENCES Post(post_id)
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 CREATE TABLE IF NOT EXISTS Subreddit(
   -- case insensitive so user cant accidentally create same subreddit twice with different casing
   subreddit TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(subreddit) > 0) NOT NULL,
@@ -118,18 +123,20 @@ CREATE TABLE IF NOT EXISTS Subreddit(
     OR favourited = 1
   ) DEFAULT 0,
   last_updated INTEGER CHECK(last_updated > 0) DEFAULT 1
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 CREATE TABLE IF NOT EXISTS SubredditGroup(
   sub_group TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(sub_group) > 0) NOT NULL,
   favourited BOOLEAN CHECK(
     favourited = 0
     OR favourited = 1
   ) NOT NULL DEFAULT 0
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);
+
 -- Binding table
 CREATE TABLE IF NOT EXISTS Subreddit_SubGroup(
   subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
   sub_group TEXT COLLATE NOCASE CHECK(length(sub_group) > 0) NOT NULL,
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit),
   FOREIGN KEY(sub_group) REFERENCES SubredditGroup(sub_group) ON DELETE CASCADE
-) -- Also note that BOOLEAN isnt technically a valid type for sqlite as it stores bools as int 1 or 0. However, as long as you dont use the new STRICT;
+);

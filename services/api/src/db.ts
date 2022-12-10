@@ -6,25 +6,29 @@ import { nullable, type Maybe } from 'pratica'
 import { getEnvFilePath, isDev, mainDBName } from './utils'
 import { autoCastValuesToFromDB } from './dbValueCasting'
 import type { Post } from './Entities/Post'
+import type { Log } from './Entities/Log'
 
 const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
 
 const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
 
 const ridoDB = knex({
-  client: 'sqlite3',
-  connection: { filename: ridoDBFilePath },
+  client: 'better-sqlite3',
+  connection: { filename: ridoDBFilePath, supportBigNumbers: true },
   debug: enableDBLogging,
   asyncStackTraces: isDev(),
   // This is mostly to silence knex warning. We set defaults in the .sql files.
   useNullAsDefault: true,
   pool: {
     // https://github.com/knex/knex/issues/453
-    afterCreate(conn: { readonly run: (sql: string, cb: () => void) => void }, cb: () => void) {
-      conn.run('PRAGMA foreign_keys = ON', cb)
+    afterCreate(conn: { readonly pragma: (sql: string) => void }, cb: () => void) {
+      conn.pragma('foreign_keys = ON') // sync call, cause better-sqlite3 is sync when not going through knex
+      cb()
     },
   },
 })
+
+// ridoDB.exec('PRAGMA foreign_keys = ON', cb)
 
 /*****
   NOTE: if its a read query for a single item, return a Maybe (nullable)
@@ -32,6 +36,10 @@ const ridoDB = knex({
 class DBMethods {
   constructor() {
     return autoCastValuesToFromDB(this)
+  }
+
+  saveLog(log: Log): Promise<void> {
+    return ridoDB<Log>('Log').insert(log)
   }
 
   getAllPosts(): Promise<readonly Post[]> {

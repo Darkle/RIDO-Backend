@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 const LogZSchema = z.object({
-  created_at: z.number().positive(),
+  created_at: z.bigint(),
   level: z.union([
     z.literal('error'),
     z.literal('warn'),

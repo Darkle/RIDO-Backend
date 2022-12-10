@@ -27,6 +27,7 @@
   "devDependencies": {
     "@types/eventsource": "^1.1.10",
     "@types/luxon": "^3.1.0",
+    "@types/microtime": "^2.1.0",
     "@types/node": "^18.11.11",
     "@types/node-static": "^0.7.7",
     "@types/ramda": "^0.28.20",
