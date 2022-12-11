@@ -7,8 +7,19 @@ interface Log {
   readonly misc_data?: unknown
 }
 
+/* eslint-disable functional/prefer-readonly-type */
+interface LogTable {
+  created_at: number
+  level: 'error' | 'warn' | 'info' | 'debug' | 'trace'
+  message: string | null
+  service: string | null
+  error: string | null
+  misc_data: unknown
+}
+/* eslint-enable functional/prefer-readonly-type */
+
 // interface LogReadyForDB extends Omit<Log, 'misc_data'> {
 //   readonly misc_data: string
 // }
 
-export type { Log }
+export type { Log, LogTable }

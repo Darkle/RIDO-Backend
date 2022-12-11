@@ -3,4 +3,11 @@ interface Tag_Post {
   readonly post_id: string
 }
 
-export type { Tag_Post }
+/* eslint-disable functional/prefer-readonly-type */
+interface Tag_PostTable {
+  tag: string
+  post_id: string
+}
+/* eslint-enable functional/prefer-readonly-type */
+
+export type { Tag_Post, Tag_PostTable }

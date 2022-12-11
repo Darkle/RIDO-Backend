@@ -17,7 +17,7 @@ const downloadRoutes = () =>
           downloaded_media_count: z.number().gt(-1),
         })
       )
-      .mutation(({ input }) => DB.updatePostDownloadInfoOnSuccess(input)),
+      .mutation(({ input }) => DB.updatePostInfo(input)),
     updatePostDownloadInfoOnError: trpc.procedure
       .input(
         z.object({
@@ -28,7 +28,7 @@ const downloadRoutes = () =>
           media_download_tries: z.number().gt(-1),
         })
       )
-      .mutation(({ input }) => DB.updatePostDownloadInfoOnError(input)),
+      .mutation(({ input }) => DB.updatePostInfo(input)),
   })
 
 export { downloadRoutes }

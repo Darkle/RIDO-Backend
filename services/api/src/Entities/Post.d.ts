@@ -17,8 +17,29 @@ interface Post {
   readonly downloaded_media?: readonly string[]
 }
 
+/* eslint-disable functional/prefer-readonly-type */
+interface PostTable {
+  post_id: string
+  subreddit: string
+  title: string
+  post_url: string
+  score: number
+  timestamp: number
+  media_url: string
+  media_has_been_downloaded: boolean
+  could_not_download: boolean
+  post_media_images_have_been_processed: boolean
+  post_media_images_processing_eError: string | null
+  post_thumbnails_created: boolean
+  media_download_tries: number
+  downloaded_media_count: number
+  download_error: string | null
+  downloaded_media: readonly string[] | null
+}
+/* eslint-enable functional/prefer-readonly-type */
+
 // interface PostForReadyForDB extends Omit<Post, 'downloaded_media'> {
 //   readonly downloaded_media: string
 // }
 
-export type { Post }
+export type { Post, PostTable }

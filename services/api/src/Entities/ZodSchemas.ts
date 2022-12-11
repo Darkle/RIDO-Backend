@@ -37,7 +37,7 @@ const PostZSchema = z.object({
 
 const SettingsZSchema = z
   .object({
-    unique_id: z.literal('admin-settings').optional(),
+    unique_id: z.literal('settings').optional(),
     number_media_downloads_at_once: z.number().positive(),
     number_images_process_at_once: z.number().positive(),
     update_all_day: z.boolean(),

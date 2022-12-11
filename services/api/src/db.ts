@@ -1,34 +1,56 @@
 import path from 'path'
 
-import knex from 'knex'
-import { nullable, type Maybe } from 'pratica'
+import {
+  Kysely,
+  sql,
+  SqliteDialect,
+  compileQuery,
+  type Selection,
+  type From,
+  type Selectable,
+  SqliteQueryCompiler,
+} from 'kysely'
+import Sqlite3Database from 'better-sqlite3'
+import { nullable } from 'pratica'
 import { F } from '@mobily/ts-belt'
+import type { MarkRequired } from 'ts-essentials'
 
 import { getEnvFilePath, isDev, mainDBName } from './utils'
 import { autoCastValuesToFromDB } from './dbValueCasting'
 import type { Post } from './Entities/Post'
 import type { Log } from './Entities/Log'
-import type { Settings, SettingsSansId } from './Entities/Settings'
+import type { Settings } from './Entities/Settings'
 import { EE } from './events'
 import type { Subreddit } from './Entities/Subreddit'
+import type { Database } from './Entities/AllDBTableTypes'
 
 const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
 
 const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
 
-const ridoDB = knex({
-  client: 'sqlite3',
-  connection: { filename: ridoDBFilePath },
-  debug: enableDBLogging,
-  asyncStackTraces: isDev(),
-  // This is mostly to silence knex warning. We set defaults in the .sql files.
-  useNullAsDefault: true,
-  pool: {
-    // https://github.com/knex/knex/issues/453
-    afterCreate(conn: { readonly run: (sql: string, cb: () => void) => void }, cb: () => void) {
-      conn.run('PRAGMA foreign_keys = ON', cb)
-    },
-  },
+// const ridoDB = knex({
+//   client: 'sqlite3',
+//   connection: { filename: ridoDBFilePath },
+//   debug: enableDBLogging,
+//   asyncStackTraces: isDev(),
+//   // This is mostly to silence knex warning. We set defaults in the .sql files.
+//   useNullAsDefault: true,
+//   pool: {
+//     // https://github.com/knex/knex/issues/453
+//     afterCreate(conn: { readonly run: (sql: string, cb: () => void) => void }, cb: () => void) {
+//       conn.run('PRAGMA foreign_keys = ON', cb)
+//     },
+//   },
+// })
+
+const ridoDB = new Kysely<Database>({
+  // Use MysqlDialect for MySQL and SqliteDialect for SQLite.
+  dialect: new SqliteDialect({
+    database: new Sqlite3Database(ridoDBFilePath),
+    //TODO:
+    // onCreateConnection: (conn): Promise<void> =>
+    // conn.executeQuery(new SqliteQueryCompiler().compileQuery(sql`PRAGMA foreign_keys = ON`)).then(F.ignore),
+  }),
 })
 
 const settingsColumnsToReturn = [
@@ -41,128 +63,115 @@ const settingsColumnsToReturn = [
   'archive_image_compression_quality',
   'max_image_width_for_non_archive_image',
   'has_seen_welcome_message',
-]
+] as const
 
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
 *****/
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 class DBMethods {
   constructor() {
     return autoCastValuesToFromDB(this)
   }
 
-  // eslint-disable-next-line extra-rules/potential-point-free
-  close(): Promise<void> {
-    return ridoDB.destroy()
+  readonly close = ridoDB.destroy
+
+  getSettings() {
+    return (
+      ridoDB
+        .selectFrom('Settings')
+        .select(settingsColumnsToReturn)
+        .where('Settings.unique_id', '=', 'settings')
+        .executeTakeFirst()
+        // dont need Maybe here as settings will always be there
+        .then(settings => settings as Settings)
+    )
   }
 
-  getSettings(): Promise<SettingsSansId> {
-    return ridoDB<Settings>('Settings')
-      .select(settingsColumnsToReturn)
-      .where({ unique_id: 'admin-settings' })
-      .first<SettingsSansId>()
-  }
-
-  updateSettings(setting: Partial<Settings>): Promise<SettingsSansId> {
-    return ridoDB<Settings>('Settings')
+  updateSettings(setting: Partial<Settings>) {
+    return ridoDB
+      .updateTable('Settings')
+      .set(setting)
+      .where('unique_id', '=', 'settings')
       .returning(settingsColumnsToReturn)
-      .where({ unique_id: 'admin-settings' })
-      .update<SettingsSansId>(setting)
+      .executeTakeFirst()
       .then(updatedSettings => {
+        if (!updatedSettings) return
         EE.emit('settingsUpdate', updatedSettings)
-        return updatedSettings
       })
   }
 
-  saveLog(log: Log): Promise<void> {
-    return ridoDB<Log>('Log').insert(log).then(F.ignore)
+  saveLog(log: Log) {
+    return ridoDB.insertInto('Log').values(log).execute().then(F.ignore)
   }
 
-  getAllPosts(): Promise<readonly Post[]> {
-    return ridoDB<Post>('Post').select('*')
+  getAllPosts() {
+    return ridoDB.selectFrom('Post').selectAll().execute()
   }
 
-  getSinglePost(post_id: Post['post_id']): Promise<Maybe<Post>> {
-    return ridoDB<Post>('Post').select('*').where({ post_id }).first().then(nullable)
+  getSinglePost(post_id: Post['post_id']) {
+    return ridoDB
+      .selectFrom('Post')
+      .selectAll()
+      .where('post_id', '=', post_id)
+      .executeTakeFirst()
+      .then(nullable)
   }
 
-  addPost(post: Post): Promise<void> {
-    return ridoDB<Post>('Post').insert(post).then(F.ignore)
+  addPost(post: Post) {
+    return ridoDB.insertInto('Post').values(post).execute().then(F.ignore)
   }
 
-  batchAddPosts(posts: readonly Post[]): Promise<void> {
-    return ridoDB.batchInsert('Post', posts).then(F.ignore)
+  batchAddPosts(posts: readonly Post[]) {
+    return ridoDB.insertInto('Post').values(posts).execute().then(F.ignore)
   }
 
-  fetchAllPostIds(): Promise<readonly Post['post_id'][]> {
-    return ridoDB<Post>('Post').pluck('post_id')
+  fetchAllPostIds() {
+    return ridoDB
+      .selectFrom('Post')
+      .select('post_id')
+      .execute()
+      .then(results => results.map(result => result.post_id))
   }
 
-  getPostsThatNeedMediaToBeDownloaded(): Promise<
-    readonly Pick<Post, 'post_id' | 'media_url' | 'media_download_tries'>[]
-  > {
-    return ridoDB<Post>('Post')
+  getPostsThatNeedMediaToBeDownloaded() {
+    return ridoDB
+      .selectFrom('Post')
       .select(['post_id', 'media_url', 'media_download_tries'])
-      .where({ media_has_been_downloaded: false, could_not_download: false })
+      .where('media_has_been_downloaded', '=', false)
+      .where('could_not_download', '=', false)
+      .execute()
   }
 
-  updatePostDownloadInfoOnSuccess(
-    postDataUpdates: Pick<
-      Post,
-      | 'post_id'
-      | 'media_has_been_downloaded'
-      | 'could_not_download'
-      | 'downloaded_media'
-      | 'downloaded_media_count'
-    >
-  ): Promise<void> {
-    return ridoDB<Post>('Post')
-      .where({ post_id: postDataUpdates.post_id })
-      .update(postDataUpdates)
+  updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'post_id'>) {
+    return ridoDB
+      .updateTable('Post')
+      .where('post_id', '=', postDataUpdates.post_id)
+      .set(postDataUpdates)
+      .execute()
       .then(F.ignore)
   }
 
-  updatePostDownloadInfoOnError(
-    postDataUpdates: Pick<
-      Post,
-      | 'post_id'
-      | 'media_has_been_downloaded'
-      | 'could_not_download'
-      | 'download_error'
-      | 'media_download_tries'
-    >
-  ): Promise<void> {
-    return ridoDB<Post>('Post')
-      .where({ post_id: postDataUpdates.post_id })
-      .update(postDataUpdates)
-      .then(F.ignore)
+  addSubreddit(subreddit: Subreddit) {
+    return ridoDB.insertInto('Subreddit').values(subreddit).execute().then(F.ignore)
   }
 
-  addSubreddit(subreddit: Subreddit): Promise<void> {
-    return ridoDB<Subreddit>('Subreddit').insert(subreddit).then(F.ignore)
-  }
-
-  getSubsThatNeedToBeUpdated(): Promise<readonly Subreddit[]> {
+  getSubsThatNeedToBeUpdated() {
     const oneHourInMillisecs = 3_600_000
     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
-    return ridoDB<Subreddit>('Subreddit').where('last_updated', '<', anHourAgo())
+    return ridoDB.selectFrom('Subreddit').selectAll().where('last_updated', '<', anHourAgo()).execute()
   }
 
-  updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']): Promise<void> {
-    return ridoDB<Subreddit>('Subreddit')
-      .where({ subreddit })
-      .update({ last_updated: Date.now() })
+  updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']) {
+    return ridoDB
+      .updateTable('Subreddit')
+      .where('subreddit', '=', subreddit)
+      .set({ last_updated: Date.now() })
+      .execute()
       .then(F.ignore)
   }
-
-  // thing(): Promise<ReadonlyArray<Pick<Post, 'post_id' | 'title'>>> {
-  //   return knex<Post>('users').select('post_id').select('title')
-  //   // .then(users => {
-  //   //   // Type of users is inferred as Pick<User, "id" | "age">[]
-  //   //   // Do something with users
-  //   // })
-  // }
 }
+/* eslint-enable @typescript-eslint/explicit-function-return-type */
 
 const DB = new DBMethods()
 

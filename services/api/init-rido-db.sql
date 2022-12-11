@@ -52,11 +52,11 @@ CREATE TABLE IF NOT EXISTS Settings(
   UNIQUE(unique_id)
 );
 
--- Set up default admin settings
+-- Set up default settings
 INSERT
   OR IGNORE INTO Settings(unique_id)
 VALUES
-  ("admin-settings");
+  ("settings");
 
 CREATE TABLE IF NOT EXISTS Tag(
   tag TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(tag) > 0) NOT NULL,

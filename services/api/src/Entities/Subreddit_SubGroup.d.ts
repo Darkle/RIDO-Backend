@@ -3,4 +3,11 @@ interface Subreddit_SubGroup {
   readonly sub_group: string
 }
 
-export type { Subreddit_SubGroup }
+/* eslint-disable functional/prefer-readonly-type */
+interface Subreddit_SubGroupTable {
+  subreddit: string
+  sub_group: string
+}
+/* eslint-enable functional/prefer-readonly-type */
+
+export type { Subreddit_SubGroup, Subreddit_SubGroupTable }

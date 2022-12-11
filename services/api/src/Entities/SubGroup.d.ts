@@ -3,4 +3,11 @@ interface SubGroup {
   readonly favourited: boolean
 }
 
-export type { SubGroup }
+/* eslint-disable functional/prefer-readonly-type */
+interface SubGroupTable {
+  sub_group: string
+  favourited: boolean
+}
+/* eslint-enable functional/prefer-readonly-type */
+
+export type { SubGroup, SubGroupTable }

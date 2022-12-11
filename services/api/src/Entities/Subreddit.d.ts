@@ -4,4 +4,12 @@ interface Subreddit {
   readonly last_updated: number
 }
 
-export type { Subreddit }
+/* eslint-disable functional/prefer-readonly-type */
+interface SubredditTable {
+  subreddit: string
+  favourited: boolean
+  last_updated: number
+}
+/* eslint-enable functional/prefer-readonly-type */
+
+export type { Subreddit, SubredditTable }
