@@ -101,10 +101,10 @@ class DBMethods {
     level filter with no search
   *****/
 
-  findLogs_AllLevels_NoSearch_Paginated() {}
-  findLogs_AllLevels_WithSearch_Paginated() {}
-  findLogs_LevelFilter_WithSearch_Paginated() {}
-  findLogs_LevelFilter_NoSearch_Paginated() {}
+  // findLogs_AllLevels_NoSearch_Paginated() {}
+  // findLogs_AllLevels_WithSearch_Paginated() {}
+  // findLogs_LevelFilter_WithSearch_Paginated() {}
+  // findLogs_LevelFilter_NoSearch_Paginated() {}
 
   // eslint-disable-next-line max-lines-per-function,complexity
   findLogs_Paginated({ page, limit, searchQuery, logLevelFilter }: z.infer<typeof logSearchZSchema>) {
@@ -163,35 +163,52 @@ class DBMethods {
     //     .execute()
     // )
     // eslint-disable-next-line functional/no-let,prefer-const
-    let query = sql<
-      readonly Log[]
-    >`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
+    // let query = sql<
+    //   readonly Log[]
+    // >`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
 
-    // eslint-disable-next-line functional/no-conditional-statement
-    if (logLevelFilter === 'all' && searchQuery) {
-      query = sql<
-        readonly Log[]
-      >`select * from "Log" WHERE "message" LIKE %${searchQuery}% OR WHERE "service" LIKE %${searchQuery}% or WHERE "error" LIKE %${searchQuery} or WHERE "misc_data" LIKE %${searchQuery}% ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-    }
+    // // eslint-disable-next-line functional/no-conditional-statement
+    // if (logLevelFilter === 'all' && searchQuery) {
+    //   query = sql<
+    //     readonly Log[]
+    //   >`select * from "Log" WHERE "message" LIKE %${searchQuery}% OR WHERE "service" LIKE %${searchQuery}% or WHERE "error" LIKE %${searchQuery} or WHERE "misc_data" LIKE %${searchQuery}% ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
+    // }
 
-    // eslint-disable-next-line functional/no-conditional-statement
-    if (logLevelFilter !== 'all' && !searchQuery) {
-      query = sql<
-        readonly Log[]
-      >`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-    }
+    // // eslint-disable-next-line functional/no-conditional-statement
+    // if (logLevelFilter !== 'all' && !searchQuery) {
+    //   query = sql<
+    //     readonly Log[]
+    //   >`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
+    // }
 
-    // eslint-disable-next-line functional/no-conditional-statement
-    if (logLevelFilter !== 'all' && searchQuery) {
-      return DB.findLogs_LevelFilter_WithSearch_Paginated(
-        input.page,
-        input.limit,
-        input.searchQuery,
-        input.logLevelFilter
+    // // eslint-disable-next-line functional/no-conditional-statement
+    // if (logLevelFilter !== 'all' && searchQuery) {
+    //   return DB.findLogs_LevelFilter_WithSearch_Paginated(
+    //     input.page,
+    //     input.limit,
+    //     input.searchQuery,
+    //     input.logLevelFilter
+    //   )
+    // }
+
+    // return query.execute(ridoDB)
+
+    const isSearchTerm = !!searchQuery
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .offset(skip)
+      .limit(limit)
+      .if(logLevelFilter !== 'all', qb =>
+        qb.where('level', '=', logLevelFilter as Exclude<typeof logLevelFilter, 'all'>)
       )
-    }
-
-    return query.execute(ridoDB)
+      .if(isSearchTerm, qb => qb.where('message', 'like', `%${searchQuery as string}%`))
+      .if(isSearchTerm, qb => qb.orWhere('service', 'like', `%${searchQuery as string}%`))
+      .if(isSearchTerm, qb => qb.orWhere('error', 'like', `%${searchQuery as string}%`))
+      .if(isSearchTerm, qb => qb.orWhere('misc_data', 'like', `%${searchQuery as string}%`))
+      .orderBy('created_at', 'desc')
+      .compile()
   }
 
   getAllPosts() {
