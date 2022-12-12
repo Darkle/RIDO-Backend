@@ -1,5 +1,3 @@
-import type { Brand } from 'ts-brand'
-
 interface Post {
   readonly post_id: string
   readonly subreddit: string
@@ -11,7 +9,7 @@ interface Post {
   readonly media_has_been_downloaded: boolean
   readonly could_not_download: boolean
   readonly post_media_images_have_been_processed: boolean
-  readonly post_media_images_processing_Error?: string
+  readonly post_media_images_processing_eError?: string
   readonly post_thumbnails_created: boolean
   readonly media_download_tries: number
   readonly downloaded_media_count: number
@@ -28,11 +26,11 @@ interface PostTable {
   score: number
   timestamp: number
   media_url: string
-  media_has_been_downloaded: Brand<number, 'SQLiteBool'>
-  could_not_download: Brand<number, 'SQLiteBool'>
-  post_media_images_have_been_processed: Brand<number, 'SQLiteBool'>
-  post_media_images_processing_Error: string | null
-  post_thumbnails_created: Brand<number, 'SQLiteBool'>
+  media_has_been_downloaded: boolean
+  could_not_download: boolean
+  post_media_images_have_been_processed: boolean
+  post_media_images_processing_eError: string | null
+  post_thumbnails_created: boolean
   media_download_tries: number
   downloaded_media_count: number
   download_error: string | null

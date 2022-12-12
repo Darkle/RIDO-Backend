@@ -11,6 +11,7 @@ import { startSubscriptionsServer } from './routes/sse-subscriptions'
 import { cleanupRoutes } from './routes/cleanup-routes'
 import { downloadRoutes } from './routes/download-routes'
 import { updateRoutes } from './routes/update-routes'
+import { Logger } from './logger'
 
 initStaticFileServer()
 
@@ -45,13 +46,26 @@ startSubscriptionsServer().catch(err => console.error(err))
 
 // Logger.error('this is an error', new Error('new error'))
 
-trpcRouterCaller.download
-  .getPostsThatNeedMediaToBeDownloaded()
-  //   .get()
-  .then(settings => console.log(settings))
-  //   .then(() => trpcRouterCaller.settings.update({ number_media_downloads_at_once: 666 }))
-  //   .then(() => trpcRouterCaller.settings.get())
-  //   .then(settings => console.log(settings))
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-magic-numbers
+// ;[...Array(130)].forEach((_, idx) => Logger.info(`thing-${idx}`))
+// ;[...Array(130)].forEach((_, idx) => Logger.info(`cat-${idx}`))
+// ;[...Array(130)].forEach((_, idx) => Logger.info(`dog-${idx}`))
+
+trpcRouterCaller.log
+  .searchLogs({ page: 1 })
+  //   .updateSubredditLastUpdatedTime({ subreddit: 'merp' })
+  //   // trpcRouterCaller.download
+  //   //   .updatePostDownloadInfoOnError({
+  //   //     post_id: 'asd-1',
+  //   //     media_has_been_downloaded: false,
+  //   //     could_not_download: true,
+  //   //     download_error: 'error',
+  //   //     media_download_tries: 1,
+  //   //   })
+  .then(results => console.log(results))
+  //   // .then(() => trpcRouterCaller.settings.update({ number_media_downloads_at_once: 666 }))
+  //   // .then(() => trpcRouterCaller.settings.get())
+  //   // .then(settings => console.log(settings))
   .catch(err => console.error(err))
 
 // DB.getSettings().then(settings => console.log(settings)).catch(err => console.error(err))

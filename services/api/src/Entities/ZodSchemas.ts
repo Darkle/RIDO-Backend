@@ -15,6 +15,15 @@ const LogZSchema = z.object({
   misc_data: z.unknown().optional(),
 })
 
+const defaultSearchResultLimit = 100
+
+const logSearchZSchema = z.object({
+  page: z.number().default(1),
+  limit: z.number().optional().default(defaultSearchResultLimit),
+  searchQuery: z.string().optional(),
+  logLevelFilter: z.enum(['all', 'error', 'warn', 'info', 'debug', 'trace']).default('all'),
+})
+
 const PostZSchema = z.object({
   post_id: z.string().min(2),
   subreddit: z.string().min(2),
@@ -91,4 +100,5 @@ export {
   SubredditZSchema,
   Tag_PostZSchema,
   TagZSchema,
+  logSearchZSchema,
 }

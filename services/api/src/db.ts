@@ -5,16 +5,17 @@ import Sqlite3Database from 'better-sqlite3'
 import { nullable } from 'pratica'
 import { F } from '@mobily/ts-belt'
 import type { MarkRequired } from 'ts-essentials'
-import type { Brand } from 'ts-brand'
 
 import { getEnvFilePath, mainDBName } from './utils'
 import { autoCastValuesToFromDB, dbOutputValCasting } from './dbValueCasting'
-import type { Post, PostTable } from './Entities/Post'
+import type { Post } from './Entities/Post'
 import type { Log } from './Entities/Log'
-import type { Settings, SettingsTable } from './Entities/Settings'
+import type { Settings } from './Entities/Settings'
 import { EE } from './events'
 import type { Subreddit } from './Entities/Subreddit'
 import type { Database } from './Entities/AllDBTableTypes'
+import type { logSearchZSchema } from './Entities/ZodSchemas'
+import type { z } from 'zod'
 
 const sqliteOptions = process.env['LOG_DB_QUERIES'] === 'true' ? { verbose: console.log } : {}
 
@@ -45,8 +46,10 @@ const settingsColumnsToReturn = [
   'has_seen_welcome_message',
 ] as const
 
-const SQLiteBoolTrue = 1 as Brand<number, 'SQLiteBool'>
-const SQLiteBoolFalse = 0 as Brand<number, 'SQLiteBool'>
+// @ts-expect-error We are lying to Typescript here so the orm doesnt complain. Booleans need to be ints for sqlite.
+const SQLiteBoolTrue = 1 as boolean
+// @ts-expect-error We are lying to Typescript here so the orm doesnt complain. Booleans need to be ints for sqlite.
+const SQLiteBoolFalse = 0 as boolean
 
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
@@ -65,26 +68,93 @@ class DBMethods {
         .selectFrom('Settings')
         .select(settingsColumnsToReturn)
         .where('Settings.unique_id', '=', 'settings')
-        // dont need Maybe here as settings will always be there
         .executeTakeFirst()
+        // dont need Maybe here as settings will always be there
+        .then(settings => settings as Settings)
     )
   }
 
-  updateSettings(setting: Partial<SettingsTable>) {
-    return ridoDB
-      .updateTable('Settings')
-      .set(setting)
-      .where('unique_id', '=', 'settings')
-      .returning(settingsColumnsToReturn)
-      .executeTakeFirst()
-      .then(updatedSettings => {
-        if (!updatedSettings) return
-        EE.emit('settingsUpdate', dbOutputValCasting(updatedSettings) as Settings)
-      })
+  updateSettings(setting: Partial<Settings>) {
+    return (
+      ridoDB
+        .updateTable('Settings')
+        .set(setting)
+        .where('unique_id', '=', 'settings')
+        .returning(settingsColumnsToReturn)
+        .executeTakeFirst()
+        // because we are doing some thing here in the db method, the normal dbOutputValCasting would not be run untill after the EE.emit, do need to call manually
+        .then(updatedSettings => dbOutputValCasting(updatedSettings) as Settings)
+        .then((updatedSettings: Settings) => {
+          EE.emit('settingsUpdate', updatedSettings)
+        })
+    )
   }
 
   saveLog(log: Log) {
     return ridoDB.insertInto('Log').values(log).execute().then(F.ignore)
+  }
+
+  getAllLogs_Paginated(page: number, limit: number) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
+  }
+
+  findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .where('message', 'like', `%${searchQuery}%`)
+      .orWhere('service', 'like', `%${searchQuery}%`)
+      .orWhere('error', 'like', `%${searchQuery}%`)
+      .orWhere('misc_data', 'like', `%${searchQuery}%`)
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
+  }
+
+  findLogs_LevelFilter_NoSearch_Paginated(page: number, limit: number, logLevel: Log['level']) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .where('level', '=', logLevel)
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
+  }
+
+  findLogs_LevelFilter_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string,
+    logLevel: Log['level']
+  ) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .where('level', '=', logLevel)
+      .orWhere('message', 'like', `%${searchQuery}%`)
+      .orWhere('service', 'like', `%${searchQuery}%`)
+      .orWhere('error', 'like', `%${searchQuery}%`)
+      .orWhere('misc_data', 'like', `%${searchQuery}%`)
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
   }
 
   getAllPosts() {
@@ -100,12 +170,23 @@ class DBMethods {
       .then(nullable)
   }
 
-  addPost(post: PostTable) {
-    return ridoDB.insertInto('Post').values(post).execute().then(F.ignore)
+  addPost(post: Post) {
+    return Promise.all([
+      ridoDB.insertInto('Post').values(post).execute(),
+      ridoDB
+        .insertInto('Subreddit_Post')
+        .values({ subreddit: post.subreddit, post_id: post.post_id })
+        .execute(),
+    ]).then(F.ignore)
   }
 
-  batchAddPosts(posts: readonly PostTable[]) {
-    return ridoDB.insertInto('Post').values(posts).execute().then(F.ignore)
+  batchAddPosts(posts: readonly Post[]) {
+    const postsSubMapping = posts.map(post => ({ subreddit: post.subreddit, post_id: post.post_id }))
+
+    return Promise.all([
+      ridoDB.insertInto('Post').values(posts).execute(),
+      ridoDB.insertInto('Subreddit_Post').values(postsSubMapping).execute(),
+    ]).then(F.ignore)
   }
 
   fetchAllPostIds() {
@@ -135,7 +216,7 @@ class DBMethods {
       .execute()
   }
 
-  updatePostInfo(postDataUpdates: MarkRequired<Partial<PostTable>, 'post_id'>) {
+  updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'post_id'>) {
     return ridoDB
       .updateTable('Post')
       .where('post_id', '=', postDataUpdates.post_id)
@@ -169,7 +250,7 @@ const DB = new DBMethods()
 
 type DBInstanceType = typeof DB
 
-let delay = () =>
+const delay = (): Promise<unknown> =>
   new Promise(resolve => {
     setTimeout(resolve)
   })
@@ -179,29 +260,25 @@ const thing = (): Promise<void | readonly void[]> =>
   // console.log(DB.thing2())
   // DB.getAllPosts()
   DB.addSubreddit('merp')
-    // eslint-disable-next-line max-lines-per-function
     .then(() =>
       Promise.all(
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-magic-numbers
         [...Array(30)].map((_, idx) =>
           delay().then(() =>
             DB.addPost({
               post_id: `asd-${idx}`,
-              could_not_download: SQLiteBoolFalse,
-              downloaded_media: ['asd.png'],
+              could_not_download: false,
               downloaded_media_count: 0,
               media_download_tries: 0,
-              media_has_been_downloaded: SQLiteBoolFalse,
+              media_has_been_downloaded: false,
               media_url: 'http://asd.com',
-              post_media_images_have_been_processed: SQLiteBoolFalse,
-              post_thumbnails_created: SQLiteBoolFalse,
+              post_media_images_have_been_processed: false,
+              post_thumbnails_created: false,
               post_url: 'http://xcv.com',
               score: 2,
               subreddit: 'merp',
               timestamp: Date.now(),
               title: 'hello',
-              download_error: null,
-              downloaded_media: null,
-              post_media_images_processing_Error: null,
             })
           )
         )

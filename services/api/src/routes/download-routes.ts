@@ -11,8 +11,8 @@ const downloadRoutes = () =>
       .input(
         z.object({
           post_id: z.string().min(2),
-          media_has_been_downloaded: z.boolean(),
-          could_not_download: z.boolean(),
+          media_has_been_downloaded: z.literal(true),
+          could_not_download: z.literal(false),
           downloaded_media: z.array(z.string()),
           downloaded_media_count: z.number().gt(-1),
         })
@@ -22,8 +22,8 @@ const downloadRoutes = () =>
       .input(
         z.object({
           post_id: z.string().min(2),
-          media_has_been_downloaded: z.boolean(),
-          could_not_download: z.boolean(),
+          media_has_been_downloaded: z.literal(false),
+          could_not_download: z.literal(true),
           download_error: z.string(),
           media_download_tries: z.number().gt(-1),
         })
