@@ -26,7 +26,7 @@ const PostZSchema = z.object({
   media_has_been_downloaded: z.boolean(),
   could_not_download: z.boolean(),
   post_media_images_have_been_processed: z.boolean(),
-  post_media_images_processing_eError: z.string().optional(),
+  post_media_images_processing_Error: z.string().optional(),
   post_thumbnails_created: z.boolean(),
   media_download_tries: z.number().gt(-1).default(0),
   downloaded_media_count: z.number().gt(-1).default(0),

@@ -6,7 +6,7 @@ import { trpc } from '../api'
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,max-lines-per-function
 const downloadRoutes = () =>
   trpc.router({
-    getPostsThatNeedMediaToBeDownloaded: trpc.procedure.query(() => DB.fetchAllPostIds()),
+    getPostsThatNeedMediaToBeDownloaded: trpc.procedure.query(() => DB.getPostsThatNeedMediaToBeDownloaded()),
     updatePostDownloadInfoOnSuccess: trpc.procedure
       .input(
         z.object({

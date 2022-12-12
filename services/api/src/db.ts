@@ -1,57 +1,37 @@
 import path from 'path'
 
-import {
-  Kysely,
-  sql,
-  SqliteDialect,
-  compileQuery,
-  type Selection,
-  type From,
-  type Selectable,
-  SqliteQueryCompiler,
-} from 'kysely'
+import { Kysely, sql, SqliteDialect, SqliteQueryCompiler } from 'kysely'
 import Sqlite3Database from 'better-sqlite3'
 import { nullable } from 'pratica'
 import { F } from '@mobily/ts-belt'
 import type { MarkRequired } from 'ts-essentials'
+import type { Brand } from 'ts-brand'
 
-import { getEnvFilePath, isDev, mainDBName } from './utils'
-import { autoCastValuesToFromDB } from './dbValueCasting'
-import type { Post } from './Entities/Post'
+import { getEnvFilePath, mainDBName } from './utils'
+import { autoCastValuesToFromDB, dbOutputValCasting } from './dbValueCasting'
+import type { Post, PostTable } from './Entities/Post'
 import type { Log } from './Entities/Log'
-import type { Settings } from './Entities/Settings'
+import type { Settings, SettingsTable } from './Entities/Settings'
 import { EE } from './events'
 import type { Subreddit } from './Entities/Subreddit'
 import type { Database } from './Entities/AllDBTableTypes'
 
-const enableDBLogging = process.env['LOG_DB_QUERIES'] === 'true'
+const sqliteOptions = process.env['LOG_DB_QUERIES'] === 'true' ? { verbose: console.log } : {}
 
 const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
 
-// const ridoDB = knex({
-//   client: 'sqlite3',
-//   connection: { filename: ridoDBFilePath },
-//   debug: enableDBLogging,
-//   asyncStackTraces: isDev(),
-//   // This is mostly to silence knex warning. We set defaults in the .sql files.
-//   useNullAsDefault: true,
-//   pool: {
-//     // https://github.com/knex/knex/issues/453
-//     afterCreate(conn: { readonly run: (sql: string, cb: () => void) => void }, cb: () => void) {
-//       conn.run('PRAGMA foreign_keys = ON', cb)
-//     },
-//   },
-// })
+const enableForeignKeys = new SqliteQueryCompiler().compileQuery(
+  sql`PRAGMA foreign_keys = ON`.toOperationNode()
+)
 
 const ridoDB = new Kysely<Database>({
-  // Use MysqlDialect for MySQL and SqliteDialect for SQLite.
   dialect: new SqliteDialect({
-    database: new Sqlite3Database(ridoDBFilePath),
-    //TODO:
-    // onCreateConnection: (conn): Promise<void> =>
-    // conn.executeQuery(new SqliteQueryCompiler().compileQuery(sql`PRAGMA foreign_keys = ON`)).then(F.ignore),
+    database: new Sqlite3Database(ridoDBFilePath, sqliteOptions),
+    onCreateConnection: (conn): Promise<void> => conn.executeQuery(enableForeignKeys).then(F.ignore),
   }),
 })
+
+ridoDB.selectFrom('Log').compile()
 
 const settingsColumnsToReturn = [
   'number_media_downloads_at_once',
@@ -64,6 +44,9 @@ const settingsColumnsToReturn = [
   'max_image_width_for_non_archive_image',
   'has_seen_welcome_message',
 ] as const
+
+const SQLiteBoolTrue = 1 as Brand<number, 'SQLiteBool'>
+const SQLiteBoolFalse = 0 as Brand<number, 'SQLiteBool'>
 
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
@@ -82,13 +65,12 @@ class DBMethods {
         .selectFrom('Settings')
         .select(settingsColumnsToReturn)
         .where('Settings.unique_id', '=', 'settings')
-        .executeTakeFirst()
         // dont need Maybe here as settings will always be there
-        .then(settings => settings as Settings)
+        .executeTakeFirst()
     )
   }
 
-  updateSettings(setting: Partial<Settings>) {
+  updateSettings(setting: Partial<SettingsTable>) {
     return ridoDB
       .updateTable('Settings')
       .set(setting)
@@ -97,7 +79,7 @@ class DBMethods {
       .executeTakeFirst()
       .then(updatedSettings => {
         if (!updatedSettings) return
-        EE.emit('settingsUpdate', updatedSettings)
+        EE.emit('settingsUpdate', dbOutputValCasting(updatedSettings) as Settings)
       })
   }
 
@@ -118,11 +100,11 @@ class DBMethods {
       .then(nullable)
   }
 
-  addPost(post: Post) {
+  addPost(post: PostTable) {
     return ridoDB.insertInto('Post').values(post).execute().then(F.ignore)
   }
 
-  batchAddPosts(posts: readonly Post[]) {
+  batchAddPosts(posts: readonly PostTable[]) {
     return ridoDB.insertInto('Post').values(posts).execute().then(F.ignore)
   }
 
@@ -138,12 +120,22 @@ class DBMethods {
     return ridoDB
       .selectFrom('Post')
       .select(['post_id', 'media_url', 'media_download_tries'])
-      .where('media_has_been_downloaded', '=', false)
-      .where('could_not_download', '=', false)
+      .where('media_has_been_downloaded', '=', SQLiteBoolFalse)
+      .where('could_not_download', '=', SQLiteBoolFalse)
       .execute()
   }
 
-  updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'post_id'>) {
+  getPostsWhereImagesNeedToBeOptimized() {
+    return ridoDB
+      .selectFrom('Post')
+      .selectAll()
+      .where('media_has_been_downloaded', '=', SQLiteBoolTrue)
+      .where('could_not_download', '=', SQLiteBoolFalse)
+      .where('post_media_images_have_been_processed', '=', SQLiteBoolFalse)
+      .execute()
+  }
+
+  updatePostInfo(postDataUpdates: MarkRequired<Partial<PostTable>, 'post_id'>) {
     return ridoDB
       .updateTable('Post')
       .where('post_id', '=', postDataUpdates.post_id)
@@ -152,8 +144,8 @@ class DBMethods {
       .then(F.ignore)
   }
 
-  addSubreddit(subreddit: Subreddit) {
-    return ridoDB.insertInto('Subreddit').values(subreddit).execute().then(F.ignore)
+  addSubreddit(subreddit: Subreddit['subreddit']) {
+    return ridoDB.insertInto('Subreddit').values({ subreddit }).execute().then(F.ignore)
   }
 
   getSubsThatNeedToBeUpdated() {
@@ -177,40 +169,48 @@ const DB = new DBMethods()
 
 type DBInstanceType = typeof DB
 
+let delay = () =>
+  new Promise(resolve => {
+    setTimeout(resolve)
+  })
+
 // eslint-disable-next-line max-lines-per-function
-const thing = (): void => {
+const thing = (): Promise<void | readonly void[]> =>
   // console.log(DB.thing2())
   // DB.getAllPosts()
-  DB.getSinglePost('asd')
-    //   // DB.addPost({
-    //   //   post_id: 'asd',
-    //   //   could_not_download: false,
-    //   //   downloaded_media: ['asd.png'],
-    //   //   downloaded_media_count: 0,
-    //   //   media_download_tries: 0,
-    //   //   media_has_been_downloaded: false,
-    //   //   media_url: 'http://asd.com',
-    //   //   post_media_images_have_been_processed: false,
-    //   //   post_thumbnails_created: false,
-    //   //   post_url: 'http://xcv.com',
-    //   //   score: 2,
-    //   //   subreddit: 'merp',
-    //   //   timestamp: 3,
-    //   //   title: 'hello',
-    //   // })
-    .then(result => {
-      result.cata({
-        Just: data => console.log('got data', data),
-        Nothing: () => console.log('hit Nothing'),
-      })
-
-      console.log('finished db')
-    })
+  DB.addSubreddit('merp')
+    // eslint-disable-next-line max-lines-per-function
+    .then(() =>
+      Promise.all(
+        [...Array(30)].map((_, idx) =>
+          delay().then(() =>
+            DB.addPost({
+              post_id: `asd-${idx}`,
+              could_not_download: SQLiteBoolFalse,
+              downloaded_media: ['asd.png'],
+              downloaded_media_count: 0,
+              media_download_tries: 0,
+              media_has_been_downloaded: SQLiteBoolFalse,
+              media_url: 'http://asd.com',
+              post_media_images_have_been_processed: SQLiteBoolFalse,
+              post_thumbnails_created: SQLiteBoolFalse,
+              post_url: 'http://xcv.com',
+              score: 2,
+              subreddit: 'merp',
+              timestamp: Date.now(),
+              title: 'hello',
+              download_error: null,
+              downloaded_media: null,
+              post_media_images_processing_Error: null,
+            })
+          )
+        )
+      )
+    )
     .catch(err => {
       console.log('caught in catch:')
       console.error(err)
     })
-}
 
 export { thing, DB }
 export type { DBInstanceType }

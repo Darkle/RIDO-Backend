@@ -3,14 +3,14 @@ import { initTRPC } from '@trpc/server'
 import superjson from 'superjson'
 import { onShutdown } from 'node-graceful-shutdown'
 
-// import { logRoutes } from './routes/log-routes'
+import { logRoutes } from './routes/log-routes'
 import { initStaticFileServer } from './static-file-server'
 import { settingsRoutes } from './routes/settings-routes'
-import { DB } from './db'
+import { DB, thing } from './db'
 import { startSubscriptionsServer } from './routes/sse-subscriptions'
-// import { cleanupRoutes } from './routes/cleanup-routes'
-// import { downloadRoutes } from './routes/download-routes'
-// import { updateRoutes } from './routes/update-routes'
+import { cleanupRoutes } from './routes/cleanup-routes'
+import { downloadRoutes } from './routes/download-routes'
+import { updateRoutes } from './routes/update-routes'
 
 initStaticFileServer()
 
@@ -25,10 +25,10 @@ const appRouter = trpc.router({
     timestamp: Date.now(),
   })),
   settings: settingsRoutes(),
-  // log: logRoutes(),
-  // cleanup: cleanupRoutes(),
-  // download: downloadRoutes(),
-  // update: updateRoutes(),
+  log: logRoutes(),
+  cleanup: cleanupRoutes(),
+  download: downloadRoutes(),
+  update: updateRoutes(),
 })
 
 const trpcRouterCaller = appRouter.createCaller({})
@@ -40,6 +40,19 @@ onShutdown('api-service', () => DB.close())
 console.log(`API Running on port ${apiPort} `)
 
 startSubscriptionsServer().catch(err => console.error(err))
+
+// thing().catch(err => console.error(err))
+
+// Logger.error('this is an error', new Error('new error'))
+
+trpcRouterCaller.download
+  .getPostsThatNeedMediaToBeDownloaded()
+  //   .get()
+  .then(settings => console.log(settings))
+  //   .then(() => trpcRouterCaller.settings.update({ number_media_downloads_at_once: 666 }))
+  //   .then(() => trpcRouterCaller.settings.get())
+  //   .then(settings => console.log(settings))
+  .catch(err => console.error(err))
 
 // DB.getSettings().then(settings => console.log(settings)).catch(err => console.error(err))
 

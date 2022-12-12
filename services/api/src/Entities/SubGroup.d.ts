@@ -1,3 +1,5 @@
+import type { Brand } from 'ts-brand'
+
 interface SubGroup {
   readonly sub_group: string
   readonly favourited: boolean
@@ -6,7 +8,7 @@ interface SubGroup {
 /* eslint-disable functional/prefer-readonly-type */
 interface SubGroupTable {
   sub_group: string
-  favourited: boolean
+  favourited: Brand<number, 'SQLiteBool'>
 }
 /* eslint-enable functional/prefer-readonly-type */
 

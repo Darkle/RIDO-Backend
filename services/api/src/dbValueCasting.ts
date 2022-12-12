@@ -53,24 +53,12 @@ const inputTransformations = {
   ...convertColumnNamesToTransforms(booleanColumnsForAllDBs, boolToSQLiteBool),
 }
 
-/*****
-From: https://github.com/Darkle/Roffline-Nodejs-Old/blob/main/server/db/db-output-value-conversions.js
-When using .pluck('foo') in knex and the pluck is getting either boolean values or json values, we
-use a query context to tell our postProcessResponse to convert it (since pluck just returns an array
-of values with no key name, which would otherwise make it impossible to know when need to convert it).
-*****/
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const dbValueCasting = (transforms: typeof outputTransformations | typeof inputTransformations) =>
   R.cond([
-    // @ts-expect-error bloody ramda and types again
-    [(_, queryContext): readonly boolean[] => queryContext?.plucking === 'boolean', R.map(Boolean)],
-    // @ts-expect-error bloody ramda and types again
-    [(_, queryContext): readonly unknown[] => queryContext?.plucking === 'json', R.map(uJSONParse)],
-    // @ts-expect-error bloody ramda and types again
     [Array.isArray, R.map(R.when(R.is(Object), R.evolve(transforms)))],
     // @ts-expect-error bloody ramda and types again
     [R.is(Object), R.evolve(transforms)],
-    // @ts-expect-error bloody ramda and types again
     [R.T, R.identity],
   ])
 
@@ -84,7 +72,6 @@ const dbOutputValCasting = dbValueCasting(outputTransformations)
  *****/
 function autoCastValuesToFromDB(classRef: DBInstanceType): DBInstanceType {
   const handler = {
-    // needs to return apply cause async func
     get: (obj: DBInstanceType, prop: keyof DBInstanceType) =>
       typeof obj[prop] !== 'function'
         ? obj[prop]

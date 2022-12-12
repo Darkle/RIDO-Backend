@@ -86,7 +86,7 @@ CREATE TABLE IF NOT EXISTS Post(
     post_media_images_have_been_processed = 0
     OR post_media_images_have_been_processed = 1
   ) DEFAULT 0,
-  post_media_images_processing_eError TEXT NULL,
+  post_media_images_processing_Error TEXT NULL,
   post_thumbnails_created BOOLEAN CHECK(
     post_thumbnails_created = 0
     OR post_thumbnails_created = 1
