@@ -7,27 +7,26 @@ const logRoutes = () =>
   trpc.router({
     saveLog: trpc.procedure.input(LogZSchema).mutation(({ input: log }) => DB.saveLog(log)),
     // eslint-disable-next-line complexity
-    // searchLogs: trpc.procedure.input(logSearchZSchema).query(({ input }) => {
-    //   if (input.logLevelFilter === 'all' && input.searchQuery) {
-    //     return DB.findLogs_AllLevels_WithSearch_Paginated(input.page, input.limit, input.searchQuery)
-    //   }
+    searchLogs: trpc.procedure.input(logSearchZSchema).query(({ input }) => {
+      if (input.logLevelFilter === 'all' && input.searchQuery) {
+        return DB.findLogs_AllLevels_WithSearch_Paginated(input.page, input.limit, input.searchQuery)
+      }
 
-    //   if (input.logLevelFilter !== 'all' && !input.searchQuery) {
-    //     return DB.findLogs_LevelFilter_NoSearch_Paginated(input.page, input.limit, input.logLevelFilter)
-    //   }
+      if (input.logLevelFilter !== 'all' && !input.searchQuery) {
+        return DB.findLogs_LevelFilter_NoSearch_Paginated(input.page, input.limit, input.logLevelFilter)
+      }
 
-    //   if (input.logLevelFilter !== 'all' && input.searchQuery) {
-    //     return DB.findLogs_LevelFilter_WithSearch_Paginated(
-    //       input.page,
-    //       input.limit,
-    //       input.searchQuery,
-    //       input.logLevelFilter
-    //     )
-    //   }
+      if (input.logLevelFilter !== 'all' && input.searchQuery) {
+        return DB.findLogs_LevelFilter_WithSearch_Paginated(
+          input.page,
+          input.limit,
+          input.searchQuery,
+          input.logLevelFilter
+        )
+      }
 
-    //   return DB.getAllLogs_Paginated(input.page, input.limit)
-    // }),
-    searchLogs: trpc.procedure.input(logSearchZSchema).query(({ input }) => DB.findLogs_Paginated(input)),
+      return DB.getAllLogs_Paginated(input.page, input.limit)
+    }),
   })
 
 export { logRoutes }

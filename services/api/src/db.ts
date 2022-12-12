@@ -14,8 +14,6 @@ import type { Settings } from './Entities/Settings'
 import { EE } from './events'
 import type { Subreddit } from './Entities/Subreddit'
 import type { Database } from './Entities/AllDBTableTypes'
-import type { logSearchZSchema } from './Entities/ZodSchemas'
-import type { z } from 'zod'
 
 const sqliteOptions = process.env['LOG_DB_QUERIES'] === 'true' ? { verbose: console.log } : {}
 
@@ -94,121 +92,67 @@ class DBMethods {
     return ridoDB.insertInto('Log').values(log).execute().then(F.ignore)
   }
 
-  /*****
-    no level filter with no search
-    no level filter with search
-    level filter with search
-    level filter with no search
-  *****/
-
-  // findLogs_AllLevels_NoSearch_Paginated() {}
-  // findLogs_AllLevels_WithSearch_Paginated() {}
-  // findLogs_LevelFilter_WithSearch_Paginated() {}
-  // findLogs_LevelFilter_NoSearch_Paginated() {}
-
-  // eslint-disable-next-line max-lines-per-function,complexity
-  findLogs_Paginated({ page, limit, searchQuery, logLevelFilter }: z.infer<typeof logSearchZSchema>) {
-    //TODO:return total count too
-    //TODO: check level filter too - only checked all atm
+  getAllLogs_Paginated(page: number, limit: number) {
     const skip = page === 1 ? 0 : (page - 1) * limit
-    // const levelWhere = logLevelFilter === 'all' ? '' : `WHERE "level" = ${logLevelFilter}`
-    // const searchWhere = !searchQuery
-    //   ? ''
-    //   : `WHERE "message" LIKE %${searchQuery as string}% OR WHERE "service" LIKE %${
-    //       searchQuery as string
-    //     }% or WHERE "error" LIKE %${searchQuery as string} or WHERE "misc_data" LIKE %${
-    //       searchQuery as string
-    //     }%`
-    // const whereClauses =
-    //   logLevelFilter === 'all' ? ` ${searchWhere}` : searchWhere.length ?`${levelWhere} AND (${searchWhere})`
-
-    // console.log('whereClauses', whereClauses)
-    // ridoDB.selectFrom('Log').select(thing => sql<
-    //   readonly Log[]
-    // >`select * from Log ${levelWhere} ${searchWhere} LIMIT ${limit} OFFSET ${skip} ORDER BY created_at DESC`)
-
-    // return sql<
-    //   readonly Log[]
-    // >`select * from Log ${levelWhere} ${searchWhere} LIMIT ${limit} OFFSET ${skip} ORDER BY created_at DESC`.execute(ridoDB)
-    // console.log('levelWhere', levelWhere)
-    // console.log('searchWhere', searchWhere)
-    // console.log('limit', limit)
-    // console.log('skip', skip)
-    // console.log(
-    //   sql<
-    //     readonly Log[]
-    //   >`select * from Log ${levelWhere} ${searchWhere} LIMIT ${limit} OFFSET ${skip} ORDER BY created_at DESC`.toString()
-    // )
-
-    // const sqlString = whereClauses.length
-    //   ? sql<
-    //       readonly Log[]
-    //     >`select * from "Log" ${whereClauses} ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-    //   : sql<readonly Log[]>`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-
-    // console.log('sqlString', sqlString)
-    // return sqlString.execute(ridoDB)
-    // return (
-    //   ridoDB
-    //     .selectFrom('Log')
-    //     .selectAll()
-    //     .offset(skip)
-    //     // .where('level', '=', 'info')
-    //     .orWhere('message', 'like', `%foobar%`)
-    //     .orWhere('service', 'like', `%foobar%`)
-    //     .orWhere('error', 'like', `%foobar%`)
-    //     .orWhere('misc_data', 'like', `%foobar%`)
-    //     .limit(limit)
-    //     .orderBy('created_at', 'desc')
-    //     .execute()
-    // )
-    // eslint-disable-next-line functional/no-let,prefer-const
-    // let query = sql<
-    //   readonly Log[]
-    // >`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-
-    // // eslint-disable-next-line functional/no-conditional-statement
-    // if (logLevelFilter === 'all' && searchQuery) {
-    //   query = sql<
-    //     readonly Log[]
-    //   >`select * from "Log" WHERE "message" LIKE %${searchQuery}% OR WHERE "service" LIKE %${searchQuery}% or WHERE "error" LIKE %${searchQuery} or WHERE "misc_data" LIKE %${searchQuery}% ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-    // }
-
-    // // eslint-disable-next-line functional/no-conditional-statement
-    // if (logLevelFilter !== 'all' && !searchQuery) {
-    //   query = sql<
-    //     readonly Log[]
-    //   >`select * from "Log" ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
-    // }
-
-    // // eslint-disable-next-line functional/no-conditional-statement
-    // if (logLevelFilter !== 'all' && searchQuery) {
-    //   return DB.findLogs_LevelFilter_WithSearch_Paginated(
-    //     input.page,
-    //     input.limit,
-    //     input.searchQuery,
-    //     input.logLevelFilter
-    //   )
-    // }
-
-    // return query.execute(ridoDB)
-
-    const isSearchTerm = !!searchQuery
 
     return ridoDB
       .selectFrom('Log')
       .selectAll()
       .offset(skip)
       .limit(limit)
-      .if(logLevelFilter !== 'all', qb =>
-        qb.where('level', '=', logLevelFilter as Exclude<typeof logLevelFilter, 'all'>)
-      )
-      .if(isSearchTerm, qb => qb.where('message', 'like', `%${searchQuery as string}%`))
-      .if(isSearchTerm, qb => qb.orWhere('service', 'like', `%${searchQuery as string}%`))
-      .if(isSearchTerm, qb => qb.orWhere('error', 'like', `%${searchQuery as string}%`))
-      .if(isSearchTerm, qb => qb.orWhere('misc_data', 'like', `%${searchQuery as string}%`))
       .orderBy('created_at', 'desc')
-      .compile()
+      .execute()
+  }
+
+  findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .where('message', 'like', `%${searchQuery}%`)
+      .orWhere('service', 'like', `%${searchQuery}%`)
+      .orWhere('error', 'like', `%${searchQuery}%`)
+      .orWhere('misc_data', 'like', `%${searchQuery}%`)
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
+  }
+
+  findLogs_LevelFilter_NoSearch_Paginated(page: number, limit: number, logLevel: Log['level']) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .where('level', '=', logLevel)
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
+  }
+
+  findLogs_LevelFilter_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string,
+    logLevel: Log['level']
+  ) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return ridoDB
+      .selectFrom('Log')
+      .selectAll()
+      .where('level', '=', logLevel)
+      .orWhere('message', 'like', `%${searchQuery}%`)
+      .orWhere('service', 'like', `%${searchQuery}%`)
+      .orWhere('error', 'like', `%${searchQuery}%`)
+      .orWhere('misc_data', 'like', `%${searchQuery}%`)
+      .offset(skip)
+      .limit(limit)
+      .orderBy('created_at', 'desc')
+      .execute()
   }
 
   getAllPosts() {
