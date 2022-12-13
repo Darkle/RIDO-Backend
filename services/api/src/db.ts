@@ -139,7 +139,6 @@ class DBMethods {
     searchQuery: string,
     logLevel: Log['level']
   ) {
-    console.log('findLogs_LevelFilter_WithSearch_Paginated')
     const skip = page === 1 ? 0 : (page - 1) * limit
     //NOTE: kysely doesnt seem to have an andWhere method like knex to put multiple wheres in parenthesis. e.g. https://knexjs.org/faq/recipes.html#using-parentheses-with-and-operator, so gotta use sql function
 

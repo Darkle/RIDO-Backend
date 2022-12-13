@@ -6,12 +6,11 @@ import { onShutdown } from 'node-graceful-shutdown'
 import { logRoutes } from './routes/log-routes'
 import { initStaticFileServer } from './static-file-server'
 import { settingsRoutes } from './routes/settings-routes'
-import { DB, thing } from './db'
+import { DB } from './db'
 import { startSubscriptionsServer } from './routes/sse-subscriptions'
-import { cleanupRoutes } from './routes/cleanup-routes'
-import { downloadRoutes } from './routes/download-routes'
-import { updateRoutes } from './routes/update-routes'
-import { Logger } from './logger'
+import { postRoutes } from './routes/post-routes'
+import { subredditRoutes } from './routes/subreddit-routes'
+import { tagRoutes } from './routes/tag-routes'
 
 initStaticFileServer()
 
@@ -27,9 +26,9 @@ const appRouter = trpc.router({
   })),
   settings: settingsRoutes(),
   log: logRoutes(),
-  cleanup: cleanupRoutes(),
-  download: downloadRoutes(),
-  update: updateRoutes(),
+  post: postRoutes(),
+  subreddit: subredditRoutes(),
+  tag: tagRoutes(),
 })
 
 const trpcRouterCaller = appRouter.createCaller({})
