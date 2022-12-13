@@ -9,7 +9,7 @@ import type { MarkRequired } from 'ts-essentials'
 import { getEnvFilePath, mainDBName } from './utils'
 import { autoCastValuesToFromDB, dbOutputValCasting } from './dbValueCasting'
 import type { Post } from './Entities/Post'
-import type { Log } from './Entities/Log'
+import type { Log, LogTable } from './Entities/Log'
 import type { Settings } from './Entities/Settings'
 import { EE } from './events'
 import type { Subreddit } from './Entities/Subreddit'
@@ -139,20 +139,16 @@ class DBMethods {
     searchQuery: string,
     logLevel: Log['level']
   ) {
+    console.log('findLogs_LevelFilter_WithSearch_Paginated')
     const skip = page === 1 ? 0 : (page - 1) * limit
+    //NOTE: kysely doesnt seem to have an andWhere method like knex to put multiple wheres in parenthesis. e.g. https://knexjs.org/faq/recipes.html#using-parentheses-with-and-operator, so gotta use sql function
 
-    return ridoDB
-      .selectFrom('Log')
-      .selectAll()
-      .where('level', '=', logLevel)
-      .orWhere('message', 'like', `%${searchQuery}%`)
-      .orWhere('service', 'like', `%${searchQuery}%`)
-      .orWhere('error', 'like', `%${searchQuery}%`)
-      .orWhere('misc_data', 'like', `%${searchQuery}%`)
-      .offset(skip)
-      .limit(limit)
-      .orderBy('created_at', 'desc')
-      .execute()
+    // This needs to be like this as kysely will wrap in quotes (dont want it to wrap inside the %)
+    const sq = `%${searchQuery}%`
+
+    return sql<LogTable>`select * from "Log" WHERE "level" = ${logLevel} AND ("message" LIKE ${sq} OR "service" LIKE ${sq} or "error" LIKE ${sq} or "misc_data" LIKE ${sq}) ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
+      .execute(ridoDB)
+      .then(results => results.rows)
   }
 
   getAllPosts() {

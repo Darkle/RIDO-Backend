@@ -52,7 +52,7 @@ startSubscriptionsServer().catch(err => console.error(err))
 // ;[...Array(130)].forEach((_, idx) => Logger.info(`dog-${idx}`))
 
 trpcRouterCaller.log
-  .searchLogs({ page: 1, logLevelFilter: 'info', searchQuery: 'foobar' })
+  .searchLogs({ page: 1, logLevelFilter: 'error', searchQuery: 'foobar' })
   //   .updateSubredditLastUpdatedTime({ subreddit: 'merp' })
   //   // trpcRouterCaller.download
   //   //   .updatePostDownloadInfoOnError({
