@@ -15,8 +15,8 @@
     "@stdlib/error-to-json": "^0.0.7",
     "@swc-node/register": "^1.5.4",
     "@swc/core": "^1.3.21",
-    "@trpc/client": "^10.4.3",
-    "@trpc/server": "^10.4.3",
+    "@trpc/client": "^10.5.0",
+    "@trpc/server": "^10.5.0",
     "@typed/is-promise": "^1.0.0",
     "better-sqlite3": "^8.0.1",
     "dotenv-extended": "^2.9.0",
@@ -38,7 +38,7 @@
     "typescript": "^4.9.4",
     "winston": "^3.8.2",
     "winston-transport": "^4.5.0",
-    "zod": "^3.19.1"
+    "zod": "^3.20.2"
   },
   "devDependencies": {
     "ts-essentials": "^9.3.0"
