@@ -222,6 +222,34 @@ class DBMethods {
     return ridoDB.insertInto('Subreddit').values({ subreddit }).execute().then(F.ignore)
   }
 
+  getAllSubreddits() {
+    return ridoDB.selectFrom('Subreddit').selectAll().execute()
+  }
+
+  getSingleSubreddit({ subreddit }: { readonly subreddit: string }) {
+    return ridoDB.selectFrom('Subreddit').selectAll().where('subreddit', '=', subreddit).execute()
+  }
+
+  getFavouriteSubreddits() {
+    return ridoDB.selectFrom('Subreddit').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
+  }
+
+  getAllSubredditGroups() {
+    return ridoDB.selectFrom('SubGroup').selectAll().execute()
+  }
+
+  getSingleSubredditGroup({ sub_group }: { readonly sub_group: string }) {
+    return ridoDB.selectFrom('SubGroup').selectAll().where('sub_group', '=', sub_group).execute()
+  }
+
+  getFavouriteSubredditGroups() {
+    return ridoDB.selectFrom('SubGroup').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
+  }
+
+  getSubredditGroupsAssociatedWithSubreddit() {
+    return ridoDB.selectFrom('Subreddit_SubGroup').innerJoin()
+  }
+
   getSubsThatNeedToBeUpdated() {
     const oneHourInMillisecs = 3_600_000
     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
@@ -235,6 +263,18 @@ class DBMethods {
       .set({ last_updated: Date.now() })
       .execute()
       .then(F.ignore)
+  }
+
+  getAllTags() {
+    return ridoDB.selectFrom('Tag').selectAll().execute()
+  }
+
+  getSingleTag({ tag }: { readonly tag: string }) {
+    return ridoDB.selectFrom('Tag').selectAll().where('tag', '=', tag).execute()
+  }
+
+  getFavouriteTags() {
+    return ridoDB.selectFrom('Tag').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
   }
 }
 /* eslint-enable @typescript-eslint/explicit-function-return-type */

@@ -13,7 +13,7 @@
     "@mobily/ts-belt": "^3.13.1",
     "@stdlib/error-to-json": "^0.0.7",
     "@swc-node/register": "^1.5.4",
-    "@swc/core": "^1.3.22",
+    "@swc/core": "^1.3.23",
     "@trpc/client": "^10.5.0",
     "@trpc/server": "^10.5.0",
     "dotenv-extended": "^2.9.0",

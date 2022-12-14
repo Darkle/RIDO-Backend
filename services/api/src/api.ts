@@ -11,6 +11,7 @@ import { startSubscriptionsServer } from './routes/sse-subscriptions'
 import { postRoutes } from './routes/post-routes'
 import { subredditRoutes } from './routes/subreddit-routes'
 import { tagRoutes } from './routes/tag-routes'
+import { subredditGroupRoutes } from './routes/subreddit-group-routes'
 
 initStaticFileServer()
 
@@ -28,6 +29,7 @@ const appRouter = trpc.router({
   log: logRoutes(),
   post: postRoutes(),
   subreddit: subredditRoutes(),
+  subredditGroup: subredditGroupRoutes(),
   tag: tagRoutes(),
 })
 
