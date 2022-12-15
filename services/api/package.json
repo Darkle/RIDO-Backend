@@ -3,10 +3,11 @@
   "scripts": {
     "//": "NOTE: NODE_ENV=\"${NODE_ENV:-development}\" assigns NODE_ENV if it exist (eg test), else defaults to development",
     "dev": "NODE_ENV=\"${NODE_ENV:-development}\" node --require ./src/pre-boot.cjs --require @swc-node/register --watch ./src/api.ts",
-    "db-init": "dotenv-extended --path=../../.env --defaults=../../.env.defaults edgedb project init --non-interactive && dotenv-extended edgedb database create RIDOdb",
+    "db-init": "dotenv-extended --path=../../.env --defaults=../../.env.defaults edgedb project init --non-interactive && edgedb database create RIDOdb",
     "db-destroy": "edgedb instance destroy -I api",
     "inspect": "NODE_ENV=development node --require ./src/pre-boot.cjs --require @swc-node/register --inspect ./src/api.ts",
-    "start": "pnpm run db-init && NODE_ENV=production node --require ./src/pre-boot.cjs --require @swc-node/register ./src/api.ts"
+    "///": "NOTE: in the docker file, run db-init before start",
+    "start": "NODE_ENV=production node --require ./src/pre-boot.cjs --require @swc-node/register ./src/api.ts"
   },
   "engines": {
     "node": ">=18.2.0",
