@@ -1,3 +1,3 @@
 namespace RIDOTypes
 
-type SubGroup = { sub_group: string; favourited: bool }
+type SubGroup = { subGroup: string; favourited: bool }

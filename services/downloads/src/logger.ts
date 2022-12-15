@@ -69,19 +69,19 @@ class Logger {
 
     const message = logArgs.filter(G.isString).join(' ')
 
-    const misc_data = logArgs.filter((arg: unknown) => !G.isError(arg) && !G.isString(arg))
+    const other = logArgs.filter((arg: unknown) => !G.isError(arg) && !G.isString(arg))
 
     const logPreparedForDb = {
       /*****
        Using microtime so can have more resolution. Otherwise logs that are called at the exact same time (in the same process)
         can have the exact same time if use Date.now(), which makes it hard to trace which log came first. 
       *****/
-      created_at: microtime.nowDouble(),
+      createdAt: microtime.nowDouble(),
       level: logLevelAsString,
       service: 'downloads-service',
       ...(message.length ? { message } : {}),
       ...(error ? { error: JSON.stringify(errorToJson(error)) } : {}),
-      ...(misc_data.length ? { misc_data } : {}),
+      ...(other.length ? { other } : {}),
     } as Log
 
     apiRPCClient.log.saveLog.mutate(logPreparedForDb).catch(err => console.error(err))

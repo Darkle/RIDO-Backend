@@ -8,7 +8,7 @@ const subredditGroupRoutes = () =>
   trpc.router({
     getAllSubredditGroups: trpc.procedure.query(() => DB.getAllSubredditGroups()),
     getSingleSubredditGroup: trpc.procedure
-      .input(z.object({ sub_group: z.string().min(2) }))
+      .input(z.object({ subGroup: z.string().min(2) }))
       .query(({ input }) => DB.getSingleSubredditGroup(input)),
     getFavouriteSubredditGroups: trpc.procedure.query(() => DB.getFavouriteSubredditGroups()),
   })

@@ -1,31 +1,29 @@
 interface Settings {
-  readonly unique_id: string
-  readonly number_media_downloads_at_once: number
-  readonly number_images_process_at_once: number
-  readonly update_all_day: boolean
-  readonly update_starting_hour: number
-  readonly update_ending_hour: number
-  readonly image_compression_quality: number
-  readonly archive_image_compression_quality: number
-  readonly max_image_width_for_non_archive_image: number
-  readonly has_seen_welcome_message: boolean
+  readonly uniqueId: string
+  readonly numberMediaDownloadsAtOnce: number
+  readonly numberImagesProcessAtOnce: number
+  readonly updateAllDay: boolean
+  readonly updateStartingHour: number
+  readonly updateEndingHour: number
+  readonly imageCompressionQuality: number
+  readonly archiveImageCompressionQuality: number
+  readonly maxImageWidthForNonArchiveImage: number
 }
 
 /* eslint-disable functional/prefer-readonly-type */
 interface SettingsTable {
-  unique_id: string
-  number_media_downloads_at_once: number
-  number_images_process_at_once: number
-  update_all_day: boolean
-  update_starting_hour: number
-  update_ending_hour: number
-  image_compression_quality: number
-  archive_image_compression_quality: number
-  max_image_width_for_non_archive_image: number
-  has_seen_welcome_message: boolean
+  uniqueId: string
+  numberMediaDownloadsAtOnce: number
+  numberImagesProcessAtOnce: number
+  updateAllDay: boolean
+  updateStartingHour: number
+  updateEndingHour: number
+  imageCompressionQuality: number
+  archiveImageCompressionQuality: number
+  maxImageWidthForNonArchiveImage: number
 }
 /* eslint-enable functional/prefer-readonly-type */
 
-type SettingsSansId = Omit<Settings, 'unique_id'>
+type SettingsSansId = Omit<Settings, 'uniqueId'>
 
 export type { Settings, SettingsSansId, SettingsTable }

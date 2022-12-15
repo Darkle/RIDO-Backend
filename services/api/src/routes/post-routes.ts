@@ -15,31 +15,31 @@ const postRoutes = () =>
     updatePostImageProcessingStatus: trpc.procedure
       .input(
         z.object({
-          post_id: z.string().min(2),
-          post_media_images_have_been_processed: z.boolean(),
-          post_media_images_processing_Error: z.string().optional(),
+          postId: z.string().min(2),
+          postMediaImagesHaveBeenProcessed: z.boolean(),
+          postMediaImagesProcessingError: z.string().optional(),
         })
       )
       .mutation(({ input }) => DB.updatePostInfo(input)),
     updatePostDownloadInfoOnSuccess: trpc.procedure
       .input(
         z.object({
-          post_id: z.string().min(2),
-          media_has_been_downloaded: z.literal(true),
-          could_not_download: z.literal(false),
-          downloaded_media: z.array(z.string()),
-          downloaded_media_count: z.number().gt(-1),
+          postId: z.string().min(2),
+          mediaHasBeenDownloaded: z.literal(true),
+          couldNotDownload: z.literal(false),
+          downloadedMedia: z.array(z.string()),
+          downloadedMediaCount: z.number().gt(-1),
         })
       )
       .mutation(({ input }) => DB.updatePostInfo(input)),
     updatePostDownloadInfoOnError: trpc.procedure
       .input(
         z.object({
-          post_id: z.string().min(2),
-          media_has_been_downloaded: z.literal(false),
-          could_not_download: z.literal(true),
-          download_error: z.string(),
-          media_download_tries: z.number().gt(-1),
+          postId: z.string().min(2),
+          mediaHasBeenDownloaded: z.literal(false),
+          couldNotDownload: z.literal(true),
+          downloadError: z.string(),
+          mediaDownloadTries: z.number().gt(-1),
         })
       )
       .mutation(({ input }) => DB.updatePostInfo(input)),

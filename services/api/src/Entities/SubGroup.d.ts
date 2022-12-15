@@ -1,11 +1,11 @@
 interface SubGroup {
-  readonly sub_group: string
+  readonly subGroup: string
   readonly favourited: boolean
 }
 
 /* eslint-disable functional/prefer-readonly-type */
 interface SubGroupTable {
-  sub_group: string
+  subGroup: string
   favourited: boolean
 }
 /* eslint-enable functional/prefer-readonly-type */

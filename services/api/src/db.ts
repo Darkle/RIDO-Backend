@@ -17,15 +17,15 @@ const sqliteOptions = process.env['LOG_DB_QUERIES'] === 'true' ? { verbose: cons
 const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
 
 const settingsColumnsToReturn = [
-  'number_media_downloads_at_once',
-  'number_images_process_at_once',
-  'update_all_day',
-  'update_starting_hour',
-  'update_ending_hour',
-  'image_compression_quality',
-  'archive_image_compression_quality',
-  'max_image_width_for_non_archive_image',
-  'has_seen_welcome_message',
+  'numberMediaDownloadsAtOnce',
+  'numberImagesProcessAtOnce',
+  'updateAllDay',
+  'updateStartingHour',
+  'updateEndingHour',
+  'imageCompressionQuality',
+  'archiveImageCompressionQuality',
+  'maxImageWidthForNonArchiveImage',
+  'hasSeenWelcomeMessage',
 ] as const
 
 // @ts-expect-error We are lying to Typescript here so the orm doesnt complain. Booleans need to be ints for sqlite.
@@ -44,7 +44,7 @@ class DB {
       ridoDB
         .selectFrom('Settings')
         .select(settingsColumnsToReturn)
-        .where('Settings.unique_id', '=', 'settings')
+        .where('Settings.uniqueId', '=', 'settings')
         .executeTakeFirst()
         // dont need Maybe here as settings will always be there
         .then(settings => settings as Settings)
@@ -56,7 +56,7 @@ class DB {
       ridoDB
         .updateTable('Settings')
         .set(setting)
-        .where('unique_id', '=', 'settings')
+        .where('uniqueId', '=', 'settings')
         .returning(settingsColumnsToReturn)
         .executeTakeFirst()
         // because we are doing some thing here in the db method, the normal dbOutputValCasting would not be run untill after the EE.emit, do need to call manually
@@ -79,7 +79,7 @@ class DB {
       .selectAll()
       .offset(skip)
       .limit(limit)
-      .orderBy('created_at', 'desc')
+      .orderBy('createdAt', 'desc')
       .execute()
   }
 
@@ -92,10 +92,10 @@ class DB {
       .where('message', 'like', `%${searchQuery}%`)
       .orWhere('service', 'like', `%${searchQuery}%`)
       .orWhere('error', 'like', `%${searchQuery}%`)
-      .orWhere('misc_data', 'like', `%${searchQuery}%`)
+      .orWhere('other', 'like', `%${searchQuery}%`)
       .offset(skip)
       .limit(limit)
-      .orderBy('created_at', 'desc')
+      .orderBy('createdAt', 'desc')
       .execute()
   }
 
@@ -108,7 +108,7 @@ class DB {
       .where('level', '=', logLevel)
       .offset(skip)
       .limit(limit)
-      .orderBy('created_at', 'desc')
+      .orderBy('createdAt', 'desc')
       .execute()
   }
 
@@ -124,7 +124,7 @@ class DB {
     // This needs to be like this as kysely will wrap in quotes (dont want it to wrap inside the %)
     const sq = `%${searchQuery}%`
 
-    return sql<LogTable>`select * from "Log" WHERE "level" = ${logLevel} AND ("message" LIKE ${sq} OR "service" LIKE ${sq} or "error" LIKE ${sq} or "misc_data" LIKE ${sq}) ORDER BY "created_at" DESC LIMIT ${limit} OFFSET ${skip}`
+    return sql<LogTable>`select * from "Log" WHERE "level" = ${logLevel} AND ("message" LIKE ${sq} OR "service" LIKE ${sq} or "error" LIKE ${sq} or "other" LIKE ${sq}) ORDER BY "createdAt" DESC LIMIT ${limit} OFFSET ${skip}`
       .execute(ridoDB)
       .then(results => results.rows)
   }
@@ -133,11 +133,11 @@ class DB {
     return ridoDB.selectFrom('Post').selectAll().execute()
   }
 
-  getSinglePost(post_id: Post['post_id']) {
+  getSinglePost(postId: Post['postId']) {
     return ridoDB
       .selectFrom('Post')
       .selectAll()
-      .where('post_id', '=', post_id)
+      .where('postId', '=', postId)
       .executeTakeFirst()
       .then(nullable)
   }
@@ -147,13 +147,13 @@ class DB {
       ridoDB.insertInto('Post').values(post).execute(),
       ridoDB
         .insertInto('Subreddit_Post')
-        .values({ subreddit: post.subreddit, post_id: post.post_id })
+        .values({ subreddit: post.subreddit, postId: post.postId })
         .execute(),
     ]).then(F.ignore)
   }
 
   batchAddPosts(posts: readonly Post[]) {
-    const postsSubMapping = posts.map(post => ({ subreddit: post.subreddit, post_id: post.post_id }))
+    const postsSubMapping = posts.map(post => ({ subreddit: post.subreddit, postId: post.postId }))
 
     return Promise.all([
       ridoDB.insertInto('Post').values(posts).execute(),
@@ -164,17 +164,17 @@ class DB {
   fetchAllPostIds() {
     return ridoDB
       .selectFrom('Post')
-      .select('post_id')
+      .select('postId')
       .execute()
-      .then(results => results.map(result => result.post_id))
+      .then(results => results.map(result => result.postId))
   }
 
   getPostsThatNeedMediaToBeDownloaded() {
     return ridoDB
       .selectFrom('Post')
-      .select(['post_id', 'media_url', 'media_download_tries'])
-      .where('media_has_been_downloaded', '=', SQLiteBoolFalse)
-      .where('could_not_download', '=', SQLiteBoolFalse)
+      .select(['postId', 'mediaUrl', 'mediaDownloadTries'])
+      .where('mediaHasBeenDownloaded', '=', SQLiteBoolFalse)
+      .where('couldNotDownload', '=', SQLiteBoolFalse)
       .execute()
   }
 
@@ -182,16 +182,16 @@ class DB {
     return ridoDB
       .selectFrom('Post')
       .selectAll()
-      .where('media_has_been_downloaded', '=', SQLiteBoolTrue)
-      .where('could_not_download', '=', SQLiteBoolFalse)
-      .where('post_media_images_have_been_processed', '=', SQLiteBoolFalse)
+      .where('mediaHasBeenDownloaded', '=', SQLiteBoolTrue)
+      .where('couldNotDownload', '=', SQLiteBoolFalse)
+      .where('postMediaImagesHaveBeenProcessed', '=', SQLiteBoolFalse)
       .execute()
   }
 
-  updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'post_id'>) {
+  updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'postId'>) {
     return ridoDB
       .updateTable('Post')
-      .where('post_id', '=', postDataUpdates.post_id)
+      .where('postId', '=', postDataUpdates.postId)
       .set(postDataUpdates)
       .execute()
       .then(F.ignore)
@@ -217,8 +217,8 @@ class DB {
     return ridoDB.selectFrom('SubGroup').selectAll().execute()
   }
 
-  getSingleSubredditGroup({ sub_group }: { readonly sub_group: string }) {
-    return ridoDB.selectFrom('SubGroup').selectAll().where('sub_group', '=', sub_group).execute()
+  getSingleSubredditGroup({ subGroup }: { readonly subGroup: string }) {
+    return ridoDB.selectFrom('SubGroup').selectAll().where('subGroup', '=', subGroup).execute()
   }
 
   getFavouriteSubredditGroups() {
@@ -232,14 +232,14 @@ class DB {
   getSubsThatNeedToBeUpdated() {
     const oneHourInMillisecs = 3_600_000
     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
-    return ridoDB.selectFrom('Subreddit').selectAll().where('last_updated', '<', anHourAgo()).execute()
+    return ridoDB.selectFrom('Subreddit').selectAll().where('lastUpdated', '<', anHourAgo()).execute()
   }
 
   updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']) {
     return ridoDB
       .updateTable('Subreddit')
       .where('subreddit', '=', subreddit)
-      .set({ last_updated: Date.now() })
+      .set({ lastUpdated: Date.now() })
       .execute()
       .then(F.ignore)
   }
@@ -273,15 +273,15 @@ const thing = (): Promise<void | readonly void[]> =>
         [...Array(30)].map((_, idx) =>
           delay().then(() =>
             DB.addPost({
-              post_id: `asd-${idx}`,
-              could_not_download: false,
-              downloaded_media_count: 0,
-              media_download_tries: 0,
-              media_has_been_downloaded: false,
-              media_url: 'http://asd.com',
-              post_media_images_have_been_processed: false,
-              post_thumbnails_created: false,
-              post_url: 'http://xcv.com',
+              postId: `asd-${idx}`,
+              couldNotDownload: false,
+              downloadedMediaCount: 0,
+              mediaDownloadTries: 0,
+              mediaHasBeenDownloaded: false,
+              mediaUrl: 'http://asd.com',
+              postMediaImagesHaveBeenProcessed: false,
+              postThumbnailsCreated: false,
+              postUrl: 'http://xcv.com',
               score: 2,
               subreddit: 'merp',
               timestamp: Date.now(),

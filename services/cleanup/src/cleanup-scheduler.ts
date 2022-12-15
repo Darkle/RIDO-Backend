@@ -18,8 +18,8 @@ apiRPCClient.healthcheck
   // .then(
   //   () =>
   //     apiRPCClient.settings.update.mutate({
-  //       number_media_downloads_at_once: 43,
-  //       number_images_process_at_once: 55,
+  //       numberMediaDownloadsAtOnce: 43,
+  //       numberImagesProcessAtOnce: 55,
   //     })
   //   // Logger.error('this is an error from the cleanup service', new Error('this is an error from the cleanup service'), { meta: { thing: 3 } })
   // )

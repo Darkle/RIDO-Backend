@@ -57,14 +57,14 @@ trpcRouterCaller.log
   //   .updateSubredditLastUpdatedTime({ subreddit: 'merp' })
   //   // trpcRouterCaller.download
   //   //   .updatePostDownloadInfoOnError({
-  //   //     post_id: 'asd-1',
-  //   //     media_has_been_downloaded: false,
-  //   //     could_not_download: true,
-  //   //     download_error: 'error',
-  //   //     media_download_tries: 1,
+  //   //     postId: 'asd-1',
+  //   //     mediaHasBeenDownloaded: false,
+  //   //     couldNotDownload: true,
+  //   //     downloadError: 'error',
+  //   //     mediaDownloadTries: 1,
   //   //   })
   .then(results => console.log(results))
-  //   // .then(() => trpcRouterCaller.settings.update({ number_media_downloads_at_once: 666 }))
+  //   // .then(() => trpcRouterCaller.settings.update({ numberMediaDownloadsAtOnce: 666 }))
   //   // .then(() => trpcRouterCaller.settings.get())
   //   // .then(settings => console.log(settings))
   .catch(err => console.error(err))
@@ -72,7 +72,7 @@ trpcRouterCaller.log
 // DB.getSettings().then(settings => console.log(settings)).catch(err => console.error(err))
 
 // setTimeout(() => {
-//   DB.updateSettings({ number_media_downloads_at_once: 333 })
+//   DB.updateSettings({ numberMediaDownloadsAtOnce: 333 })
 //     .then(() => {
 //       console.log('finished updating settings')
 //     })
