@@ -11,13 +11,10 @@ import type { Log, LogTable } from './Entities/Log'
 import type { Settings } from './Entities/Settings'
 import { EE } from './events'
 import type { Subreddit } from './Entities/Subreddit'
+import { getDbName } from './utils'
 // import type { Database } from './Entities/AllDBTableTypes'
 
-// const sqliteOptions = process.env['LOG_DB_QUERIES'] === 'true' ? { verbose: console.log } : {}
-
-// const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
-
-const client = createClient()
+const client = createClient({ database: getDbName() })
 
 const settingsColumnsToReturn = [
   'numberMediaDownloadsAtOnce',

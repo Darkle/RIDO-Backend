@@ -12,9 +12,7 @@ const getEnvFilePath = (pth = ''): string =>
 
 const isInTesting = process.env['NODE_ENV'] === 'test'
 
-const mainDBName = (): string => (isInTesting ? 'RIDO-Test' : 'RIDO')
-
-// const logsDBName = (): string => (isInTesting ? 'RIDO-Test-logs' : 'RIDO-logs')
+const getDbName = (): string => (isInTesting ? 'RIDOdb-Test' : 'RIDOdb')
 
 /*****
   The posts timestamp is in seconds since the epoch and is UTC 0. So we need to convert
@@ -23,4 +21,4 @@ const mainDBName = (): string => (isInTesting ? 'RIDO-Test' : 'RIDO')
 *****/
 const localDateToGMTEpoch = (d: Date): number => DateTime.fromJSDate(d).setZone('GMT').toSeconds()
 
-export { isDev, getEnvFilePath, mainDBName, isInTesting, localDateToGMTEpoch }
+export { isDev, getEnvFilePath, getDbName, isInTesting, localDateToGMTEpoch }
