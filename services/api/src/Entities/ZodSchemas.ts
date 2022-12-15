@@ -66,24 +66,10 @@ const SubGroupZSchema = z.object({
   favourited: z.boolean(),
 })
 
-const Subreddit_PostZSchema = z.object({
-  subreddit: z.string().min(1),
-  post_id: z.string().min(1),
-})
-const Subreddit_SubGroupZSchema = z.object({
-  subreddit: z.string().min(1),
-  sub_group: z.string().min(1),
-})
-
 const SubredditZSchema = z.object({
   subreddit: z.string().min(1),
   favourited: z.boolean(),
   last_updated: z.number().gt(-1),
-})
-
-const Tag_PostZSchema = z.object({
-  tag: z.string().min(1),
-  post_id: z.string().min(1),
 })
 
 const TagZSchema = z.object({
@@ -95,10 +81,7 @@ export {
   PostZSchema,
   SettingsZSchema,
   SubGroupZSchema,
-  Subreddit_PostZSchema,
-  Subreddit_SubGroupZSchema,
   SubredditZSchema,
-  Tag_PostZSchema,
   TagZSchema,
   logSearchZSchema,
 }

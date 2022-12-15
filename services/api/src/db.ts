@@ -1,13 +1,10 @@
 import path from 'path'
 
-import { Kysely, sql, SqliteDialect, SqliteQueryCompiler } from 'kysely'
-import Sqlite3Database from 'better-sqlite3'
 import { nullable } from 'pratica'
 import { F } from '@mobily/ts-belt'
 import type { MarkRequired } from 'ts-essentials'
 
 import { getEnvFilePath, mainDBName } from './utils'
-import { autoCastValuesToFromDB, dbOutputValCasting } from './dbValueCasting'
 import type { Post } from './Entities/Post'
 import type { Log, LogTable } from './Entities/Log'
 import type { Settings } from './Entities/Settings'
@@ -18,19 +15,6 @@ import type { Database } from './Entities/AllDBTableTypes'
 const sqliteOptions = process.env['LOG_DB_QUERIES'] === 'true' ? { verbose: console.log } : {}
 
 const ridoDBFilePath = path.join(getEnvFilePath(process.env['DATA_FOLDER']), `${mainDBName()}.db`)
-
-const enableForeignKeys = new SqliteQueryCompiler().compileQuery(
-  sql`PRAGMA foreign_keys = ON`.toOperationNode()
-)
-
-const ridoDB = new Kysely<Database>({
-  dialect: new SqliteDialect({
-    database: new Sqlite3Database(ridoDBFilePath, sqliteOptions),
-    onCreateConnection: (conn): Promise<void> => conn.executeQuery(enableForeignKeys).then(F.ignore),
-  }),
-})
-
-ridoDB.selectFrom('Log').compile()
 
 const settingsColumnsToReturn = [
   'number_media_downloads_at_once',
@@ -52,12 +36,7 @@ const SQLiteBoolFalse = 0 as boolean
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
 *****/
-/* eslint-disable @typescript-eslint/explicit-function-return-type */
-class DBMethods {
-  constructor() {
-    return autoCastValuesToFromDB(this)
-  }
-
+class DB {
   readonly close = ridoDB.destroy
 
   getSettings() {
@@ -277,11 +256,6 @@ class DBMethods {
     return ridoDB.selectFrom('Tag').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
   }
 }
-/* eslint-enable @typescript-eslint/explicit-function-return-type */
-
-const DB = new DBMethods()
-
-type DBInstanceType = typeof DB
 
 const delay = (): Promise<unknown> =>
   new Promise(resolve => {
@@ -323,4 +297,3 @@ const thing = (): Promise<void | readonly void[]> =>
     })
 
 export { thing, DB }
-export type { DBInstanceType }

@@ -99,22 +99,6 @@ CREATE TABLE IF NOT EXISTS Post(
   FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE
 );
 
--- Binding table
-CREATE TABLE IF NOT EXISTS Tag_Post(
-  tag TEXT COLLATE NOCASE CHECK(length(tag) > 0) NOT NULL,
-  post_id TEXT CHECK(length(post_id) > 0) NOT NULL,
-  FOREIGN KEY(tag) REFERENCES Tag(tag) ON DELETE CASCADE,
-  FOREIGN KEY(post_id) REFERENCES Post(post_id)
-);
-
--- Binding table
-CREATE TABLE IF NOT EXISTS Subreddit_Post(
-  subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
-  post_id TEXT CHECK(length(post_id) > 0) NOT NULL,
-  FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit) ON DELETE CASCADE,
-  FOREIGN KEY(post_id) REFERENCES Post(post_id)
-);
-
 CREATE TABLE IF NOT EXISTS Subreddit(
   -- case insensitive so user cant accidentally create same subreddit twice with different casing
   subreddit TEXT COLLATE NOCASE PRIMARY KEY CHECK(length(subreddit) > 0) NOT NULL,
@@ -131,12 +115,4 @@ CREATE TABLE IF NOT EXISTS SubredditGroup(
     favourited = 0
     OR favourited = 1
   ) NOT NULL DEFAULT 0
-);
-
--- Binding table
-CREATE TABLE IF NOT EXISTS Subreddit_SubGroup(
-  subreddit TEXT COLLATE NOCASE CHECK(length(subreddit) > 0) NOT NULL,
-  sub_group TEXT COLLATE NOCASE CHECK(length(sub_group) > 0) NOT NULL,
-  FOREIGN KEY(subreddit) REFERENCES Subreddit(subreddit),
-  FOREIGN KEY(sub_group) REFERENCES SubredditGroup(sub_group) ON DELETE CASCADE
 );
