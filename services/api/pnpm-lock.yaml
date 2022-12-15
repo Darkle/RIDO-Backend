@@ -8,6 +8,7 @@ specifiers:
   '@trpc/client': ^10.5.0
   '@trpc/server': ^10.5.0
   dotenv-extended: ^2.9.0
+  edgedb: ^1.0.2
   http-status-codes: ^2.2.0
   knex: ^2.3.0
   koa: ^2.14.1
@@ -35,6 +36,7 @@ dependencies:
   '@trpc/client': 10.5.0_@trpc+server@10.5.0
   '@trpc/server': 10.5.0
   dotenv-extended: 2.9.0
+  edgedb: 1.0.2
   http-status-codes: 2.2.0
   knex: 2.3.0
   koa: 2.14.1
@@ -1541,6 +1543,12 @@ packages:
   /dotenv/8.6.0:
     resolution: {integrity: sha512-IrPdXQsk2BbzvCBGBOTmmSH5SodmqZNt4ERAZDmW4CT+tL8VtvinqywuANaFu4bOMWki16nqf0e4oC0QIaDr/g==}
     engines: {node: '>=10'}
+    dev: false
+
+  /edgedb/1.0.2:
+    resolution: {integrity: sha512-p5thPFs6LVZVTvofyh6ZLef2cuvZTr1F8hRFQACwb9DvKjQErUQrmPWCRtcdJpfTSqpTd69RYJxcwr3t7T6ISg==}
+    engines: {node: '>= 12.0.0'}
+    hasBin: true
     dev: false
 
   /ee-first/1.1.1:

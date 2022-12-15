@@ -34,9 +34,24 @@ if (!dbDirExists) {
 }
 
 const ridoDBPath = path.join(dbDir, 'RIDO.db')
-
-const ridoDbInitSQLFilePath = path.join(process.cwd(), 'init-rido-db.sql')
-
-execFileSync('sqlite3', [ridoDBPath, `.read ${ridoDbInitSQLFilePath}`])
+/*****
+  EDGEDB_SERVER_DATADIR="./data"
+EDGEDB_DATABASE="RIDOdb"
+*****/
+try {
+  // execFileSync(`edgedb instance create ${process.env['EDGEDB_DATABASE'] || 'RIDOdb'}`)
+  // execFileSync(`instance start -I ${process.env['EDGEDB_DATABASE'] || 'RIDOdb'}`)
+  // execFileSync(`edgedb database create ${process.env['EDGEDB_DATABASE'] || 'RIDOdb'}`)
+  // execFileSync(`edgedb migrate`)
+  execFileSync(
+    `EDGEDB_SERVER_DATADIR="${process.env['EDGEDB_SERVER_DATADIR'] || './data'}" EDGEDB_DATABASE="${
+      process.env['EDGEDB_DATABASE'] || 'RIDOdb'
+    }" edgedb project init --non-interactive`
+  )
+} catch (error) {
+  if (!error.message.includes('already exists')) {
+    console.error(error)
+  }
+}
 
 console.log(`RIDO DB's initialized`)
