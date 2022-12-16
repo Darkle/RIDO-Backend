@@ -1,20 +1,15 @@
 // import path from 'path'
 
-import { nullable } from 'pratica'
+import { nullable, type Maybe } from 'pratica'
 import { F } from '@mobily/ts-belt'
 import type { MarkRequired } from 'ts-essentials'
 import { createClient } from 'edgedb'
 
-// import { getEnvFilePath, mainDBName } from './utils'
-import type { Post } from './Entities/Post'
-import type { Log, LogTable } from './Entities/Log'
-import type { Settings } from './Entities/Settings'
 import { EE } from './events'
-import type { Subreddit } from './Entities/Subreddit'
-import { getDbName } from './utils'
-// import type { Database } from './Entities/AllDBTableTypes'
+import e from '../dbschema/edgeql-js'
+import type { Settings, Log, Post, Subreddit, SubredditGroup, Tag } from '../dbschema/interfaces'
 
-const client = createClient({ database: getDbName() })
+const client = createClient()
 
 const settingsColumnsToReturn = [
   'numberMediaDownloadsAtOnce',
@@ -25,232 +20,294 @@ const settingsColumnsToReturn = [
   'imageCompressionQuality',
   'archiveImageCompressionQuality',
   'maxImageWidthForNonArchiveImage',
-  'hasSeenWelcomeMessage',
 ] as const
+
+type PostSansDBLinks = Omit<Post, 'subreddit' | 'tags'>
+type SubredditSansDBLinks = Omit<Subreddit, 'posts' | 'groups'>
+type SubredditGroupSansDBLinks = Omit<SubredditGroup, 'subreddits'>
+type TagSansDBLinks = Omit<Tag, 'posts'>
 
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
 *****/
-// class DB {
-//   readonly close = ridoDB.destroy
+class DB {
+  readonly close = client.close
 
-//   getSettings() {
-//     return (
-//       ridoDB
-//         .selectFrom('Settings')
-//         .select(settingsColumnsToReturn)
-//         .where('Settings.uniqueId', '=', 'settings')
-//         .executeTakeFirst()
-//         // dont need Maybe here as settings will always be there
-//         .then(settings => settings as Settings)
-//     )
-//   }
+  static async init(): Promise<void> {
+    const settings = await DB.getSettings()
 
-//   updateSettings(setting: Partial<Settings>) {
-//     return (
-//       ridoDB
-//         .updateTable('Settings')
-//         .set(setting)
-//         .where('uniqueId', '=', 'settings')
-//         .returning(settingsColumnsToReturn)
-//         .executeTakeFirst()
-//         // because we are doing some thing here in the db method, the normal dbOutputValCasting would not be run untill after the EE.emit, do need to call manually
-//         .then(updatedSettings => dbOutputValCasting(updatedSettings) as Settings)
-//         .then((updatedSettings: Settings) => {
-//           EE.emit('settingsUpdate', updatedSettings)
-//         })
-//     )
-//   }
+    return settings ? Promise.resolve() : DB.createInitialSettings()
+  }
 
-//   saveLog(log: Log) {
-//     return ridoDB.insertInto('Log').values(log).execute().then(F.ignore)
-//   }
+  static createInitialSettings(): Promise<void> {
+    return e.insert(e.Settings, { uniqueId: 'settings' }).run(client).then(F.ignore)
+  }
 
-//   getAllLogs_Paginated(page: number, limit: number) {
-//     const skip = page === 1 ? 0 : (page - 1) * limit
+  static getSettings(): Promise<Settings> {
+    return (
+      e
+        .select(e.Settings, () => ({
+          ...e.Settings['*'],
+          filter_single: { uniqueId: 'settings' },
+        }))
+        // dont need Maybe here as settings will always be there
+        .run(client) as Promise<Settings>
+    )
+  }
 
-//     return ridoDB
-//       .selectFrom('Log')
-//       .selectAll()
-//       .offset(skip)
-//       .limit(limit)
-//       .orderBy('createdAt', 'desc')
-//       .execute()
-//   }
+  // eslint-disable-next-line max-lines-per-function
+  static updateSettings(setting: Partial<Settings>): Promise<void> {
+    return e
+      .update(e.Settings, () => ({
+        filter_single: { uniqueId: 'settings' },
+        set: { ...setting },
+      }))
+      .run(client)
+      .then(() =>
+        e
+          .select(e.Settings, () => ({
+            numberMediaDownloadsAtOnce: true,
+            numberImagesProcessAtOnce: true,
+            updateAllDay: true,
+            updateStartingHour: true,
+            updateEndingHour: true,
+            imageCompressionQuality: true,
+            archiveImageCompressionQuality: true,
+            maxImageWidthForNonArchiveImage: true,
+            filter_single: { uniqueId: 'settings' },
+          }))
+          .run(client)
+      )
+      .then(updatedSettings => {
+        // We know that settings will be there
+        EE.emit('settingsUpdate', updatedSettings as Settings)
+      })
+  }
 
-//   findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
-//     const skip = page === 1 ? 0 : (page - 1) * limit
+  static saveLog(log: Log): Promise<void> {
+    return e
+      .insert(e.Log, { ...log })
+      .run(client)
+      .then(F.ignore)
+  }
 
-//     return ridoDB
-//       .selectFrom('Log')
-//       .selectAll()
-//       .where('message', 'like', `%${searchQuery}%`)
-//       .orWhere('service', 'like', `%${searchQuery}%`)
-//       .orWhere('error', 'like', `%${searchQuery}%`)
-//       .orWhere('other', 'like', `%${searchQuery}%`)
-//       .offset(skip)
-//       .limit(limit)
-//       .orderBy('createdAt', 'desc')
-//       .execute()
-//   }
+  static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
 
-//   findLogs_LevelFilter_NoSearch_Paginated(page: number, limit: number, logLevel: Log['level']) {
-//     const skip = page === 1 ? 0 : (page - 1) * limit
+    return e
+      .select(e.Log, log => ({
+        ...e.Log['*'],
+        limit,
+        offset: skip,
+        order_by: {
+          expression: log.createdAt,
+          direction: e.DESC,
+        },
+      }))
+      .run(client)
+  }
 
-//     return ridoDB
-//       .selectFrom('Log')
-//       .selectAll()
-//       .where('level', '=', logLevel)
-//       .offset(skip)
-//       .limit(limit)
-//       .orderBy('createdAt', 'desc')
-//       .execute()
-//   }
+  // static findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
 
-//   findLogs_LevelFilter_WithSearch_Paginated(
-//     page: number,
-//     limit: number,
-//     searchQuery: string,
-//     logLevel: Log['level']
-//   ) {
-//     const skip = page === 1 ? 0 : (page - 1) * limit
-//     //NOTE: kysely doesnt seem to have an andWhere method like knex to put multiple wheres in parenthesis. e.g. https://knexjs.org/faq/recipes.html#using-parentheses-with-and-operator, so gotta use sql function
+  //   return ridoDB
+  //     .selectFrom('Log')
+  //     .selectAll()
+  //     .where('message', 'like', `%${searchQuery}%`)
+  //     .orWhere('service', 'like', `%${searchQuery}%`)
+  //     .orWhere('error', 'like', `%${searchQuery}%`)
+  //     .orWhere('other', 'like', `%${searchQuery}%`)
+  //     .offset(skip)
+  //     .limit(limit)
+  //     .orderBy('createdAt', 'desc')
+  //     .execute()
+  // }
 
-//     // This needs to be like this as kysely will wrap in quotes (dont want it to wrap inside the %)
-//     const sq = `%${searchQuery}%`
+  // static findLogs_LevelFilter_NoSearch_Paginated(page: number, limit: number, logLevel: Log['level']) {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
 
-//     return sql<LogTable>`select * from "Log" WHERE "level" = ${logLevel} AND ("message" LIKE ${sq} OR "service" LIKE ${sq} or "error" LIKE ${sq} or "other" LIKE ${sq}) ORDER BY "createdAt" DESC LIMIT ${limit} OFFSET ${skip}`
-//       .execute(ridoDB)
-//       .then(results => results.rows)
-//   }
+  //   return ridoDB
+  //     .selectFrom('Log')
+  //     .selectAll()
+  //     .where('level', '=', logLevel)
+  //     .offset(skip)
+  //     .limit(limit)
+  //     .orderBy('createdAt', 'desc')
+  //     .execute()
+  // }
 
-//   getAllPosts() {
-//     return ridoDB.selectFrom('Post').selectAll().execute()
-//   }
+  // static findLogs_LevelFilter_WithSearch_Paginated(
+  //   page: number,
+  //   limit: number,
+  //   searchQuery: string,
+  //   logLevel: Log['level']
+  // ) {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
+  //   //NOTE: kysely doesnt seem to have an andWhere method like knex to put multiple wheres in parenthesis. e.g. https://knexjs.org/faq/recipes.html#using-parentheses-with-and-operator, so gotta use sql function
 
-//   getSinglePost(postId: Post['postId']) {
-//     return ridoDB
-//       .selectFrom('Post')
-//       .selectAll()
-//       .where('postId', '=', postId)
-//       .executeTakeFirst()
-//       .then(nullable)
-//   }
+  //   // This needs to be like this as kysely will wrap in quotes (dont want it to wrap inside the %)
+  //   const sq = `%${searchQuery}%`
 
-//   addPost(post: Post) {
-//     return Promise.all([
-//       ridoDB.insertInto('Post').values(post).execute(),
-//       ridoDB
-//         .insertInto('Subreddit_Post')
-//         .values({ subreddit: post.subreddit, postId: post.postId })
-//         .execute(),
-//     ]).then(F.ignore)
-//   }
+  //   return sql<LogTable>`select * from "Log" WHERE "level" = ${logLevel} AND ("message" LIKE ${sq} OR "service" LIKE ${sq} or "error" LIKE ${sq} or "other" LIKE ${sq}) ORDER BY "createdAt" DESC LIMIT ${limit} OFFSET ${skip}`
+  //     .execute(ridoDB)
+  //     .then(results => results.rows)
+  // }
 
-//   batchAddPosts(posts: readonly Post[]) {
-//     const postsSubMapping = posts.map(post => ({ subreddit: post.subreddit, postId: post.postId }))
+  static getAllPosts(): Promise<readonly PostSansDBLinks[]> {
+    return e.select(e.Post, () => ({ ...e.Post['*'] })).run(client)
+  }
 
-//     return Promise.all([
-//       ridoDB.insertInto('Post').values(posts).execute(),
-//       ridoDB.insertInto('Subreddit_Post').values(postsSubMapping).execute(),
-//     ]).then(F.ignore)
-//   }
+  static getSinglePost(postId: Post['postId']): Promise<Maybe<PostSansDBLinks>> {
+    return e
+      .select(e.Post, () => ({ ...e.Post['*'], filter_single: { postId } }))
+      .run(client)
+      .then(nullable)
+  }
 
-//   fetchAllPostIds() {
-//     return ridoDB
-//       .selectFrom('Post')
-//       .select('postId')
-//       .execute()
-//       .then(results => results.map(result => result.postId))
-//   }
+  static addPost(post: PostSansDBLinks): Promise<void> {
+    return e.insert(e.Post, post).run(client).then(F.ignore)
+  }
 
-//   getPostsThatNeedMediaToBeDownloaded() {
-//     return ridoDB
-//       .selectFrom('Post')
-//       .select(['postId', 'mediaUrl', 'mediaDownloadTries'])
-//       .where('mediaHasBeenDownloaded', '=', SQLiteBoolFalse)
-//       .where('couldNotDownload', '=', SQLiteBoolFalse)
-//       .execute()
-//   }
+  // static batchAddPosts(posts: readonly Post[]) {
+  //   const postsSubMapping = posts.map(post => ({ subreddit: post.subreddit, postId: post.postId }))
 
-//   getPostsWhereImagesNeedToBeOptimized() {
-//     return ridoDB
-//       .selectFrom('Post')
-//       .selectAll()
-//       .where('mediaHasBeenDownloaded', '=', SQLiteBoolTrue)
-//       .where('couldNotDownload', '=', SQLiteBoolFalse)
-//       .where('postMediaImagesHaveBeenProcessed', '=', SQLiteBoolFalse)
-//       .execute()
-//   }
+  //   return Promise.all([
+  //     ridoDB.insertInto('Post').values(posts).execute(),
+  //     ridoDB.insertInto('Subreddit_Post').values(postsSubMapping).execute(),
+  //   ]).then(F.ignore)
+  // }
 
-//   updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'postId'>) {
-//     return ridoDB
-//       .updateTable('Post')
-//       .where('postId', '=', postDataUpdates.postId)
-//       .set(postDataUpdates)
-//       .execute()
-//       .then(F.ignore)
-//   }
+  static fetchAllPostIds(): Promise<readonly Post['postId'][]> {
+    return e
+      .select(e.Post, () => ({ postId: true }))
+      .run(client)
+      .then(results => results.map(result => result.postId))
+  }
 
-//   addSubreddit(subreddit: Subreddit['subreddit']) {
-//     return ridoDB.insertInto('Subreddit').values({ subreddit }).execute().then(F.ignore)
-//   }
+  static getPostsThatNeedMediaToBeDownloaded() {
+    return e
+      .select(e.Post, post => ({
+        postId: true,
+        mediaUrl: true,
+        mediaDownloadTries: true,
+        filter: e.op(post.mediaHasBeenDownloaded, '=', false, 'and', post.couldNotDownload, '=', false),
+        filter: e.op(post.couldNotDownload, '=', false),
+        // filter: { mediaHasBeenDownloaded: false, couldNotDownload: false },
+      }))
+      .run(client)
+  }
 
-//   getAllSubreddits() {
-//     return ridoDB.selectFrom('Subreddit').selectAll().execute()
-//   }
+  // static getPostsWhereImagesNeedToBeOptimized() {
+  //   return ridoDB
+  //     .selectFrom('Post')
+  //     .selectAll()
+  //     .where('mediaHasBeenDownloaded', '=', SQLiteBoolTrue)
+  //     .where('couldNotDownload', '=', SQLiteBoolFalse)
+  //     .where('postMediaImagesHaveBeenProcessed', '=', SQLiteBoolFalse)
+  //     .execute()
+  // }
 
-//   getSingleSubreddit({ subreddit }: { readonly subreddit: string }) {
-//     return ridoDB.selectFrom('Subreddit').selectAll().where('subreddit', '=', subreddit).execute()
-//   }
+  static updatePostInfo(postDataUpdates: MarkRequired<Partial<PostSansDBLinks>, 'postId'>): Promise<void> {
+    return e
+      .update(e.Post, () => ({
+        filter_single: { postId: postDataUpdates.postId },
+        set: { ...postDataUpdates },
+      }))
+      .run(client)
+      .then(F.ignore)
+  }
 
-//   getFavouriteSubreddits() {
-//     return ridoDB.selectFrom('Subreddit').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
-//   }
+  static addSubreddit(subreddit: SubredditSansDBLinks['subreddit']): Promise<void> {
+    return e.insert(e.Subreddit, { subreddit }).run(client).then(F.ignore)
+  }
 
-//   getAllSubredditGroups() {
-//     return ridoDB.selectFrom('SubGroup').selectAll().execute()
-//   }
+  static getAllSubreddits(): Promise<readonly SubredditSansDBLinks[]> {
+    return e.select(e.Subreddit, () => ({ ...e.Subreddit['*'] })).run(client)
+  }
 
-//   getSingleSubredditGroup({ subGroup }: { readonly subGroup: string }) {
-//     return ridoDB.selectFrom('SubGroup').selectAll().where('subGroup', '=', subGroup).execute()
-//   }
+  static getSingleSubreddit({
+    subreddit,
+  }: {
+    readonly subreddit: string
+  }): Promise<Maybe<SubredditSansDBLinks>> {
+    return e
+      .select(e.Subreddit, () => ({ ...e.Subreddit['*'], filter_single: { subreddit } }))
+      .run(client)
+      .then(nullable)
+  }
 
-//   getFavouriteSubredditGroups() {
-//     return ridoDB.selectFrom('SubGroup').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
-//   }
+  static getFavouriteSubreddits(): Promise<readonly SubredditSansDBLinks[]> {
+    return e
+      .select(e.Subreddit, sub => ({
+        ...e.Subreddit['*'],
+        filter: e.op(sub.favourited, '=', true),
+      }))
+      .run(client)
+  }
 
-//   getSubredditGroupsAssociatedWithSubreddit() {
-//     return ridoDB.selectFrom('Subreddit_SubGroup').innerJoin()
-//   }
+  static getAllSubredditGroups(): Promise<readonly SubredditGroupSansDBLinks[]> {
+    return e.select(e.SubredditGroup, () => ({ ...e.SubredditGroup['*'] })).run(client)
+  }
 
-//   getSubsThatNeedToBeUpdated() {
-//     const oneHourInMillisecs = 3_600_000
-//     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
-//     return ridoDB.selectFrom('Subreddit').selectAll().where('lastUpdated', '<', anHourAgo()).execute()
-//   }
+  static getSingleSubredditGroup({
+    subGroup,
+  }: {
+    readonly subGroup: string
+  }): Promise<Maybe<SubredditGroupSansDBLinks>> {
+    return e
+      .select(e.SubredditGroup, () => ({ ...e.SubredditGroup['*'], filter_single: { subGroup } }))
+      .run(client)
+      .then(nullable)
+  }
 
-//   updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']) {
-//     return ridoDB
-//       .updateTable('Subreddit')
-//       .where('subreddit', '=', subreddit)
-//       .set({ lastUpdated: Date.now() })
-//       .execute()
-//       .then(F.ignore)
-//   }
+  static getFavouriteSubredditGroups(): Promise<readonly SubredditGroupSansDBLinks[]> {
+    return e
+      .select(e.SubredditGroup, sg => ({
+        ...e.SubredditGroup['*'],
+        filter: e.op(sg.favourited, '=', true),
+      }))
+      .run(client)
+  }
 
-//   getAllTags() {
-//     return ridoDB.selectFrom('Tag').selectAll().execute()
-//   }
+  // static getSubredditGroupsAssociatedWithSubreddit() {
+  //
+  // }
 
-//   getSingleTag({ tag }: { readonly tag: string }) {
-//     return ridoDB.selectFrom('Tag').selectAll().where('tag', '=', tag).execute()
-//   }
+  // static getSubsThatNeedToBeUpdated() {
+  //   const oneHourInMillisecs = 3_600_000
+  //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
+  //   return ridoDB.selectFrom('Subreddit').selectAll().where('lastUpdated', '<', anHourAgo()).execute()
+  // }
 
-//   getFavouriteTags() {
-//     return ridoDB.selectFrom('Tag').selectAll().where('favourited', '=', SQLiteBoolTrue).execute()
-//   }
-// }
+  // static updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']) {
+  //   return ridoDB
+  //     .updateTable('Subreddit')
+  //     .where('subreddit', '=', subreddit)
+  //     .set({ lastUpdated: Date.now() })
+  //     .execute()
+  //     .then(F.ignore)
+  // }
+
+  static getAllTags(): Promise<readonly TagSansDBLinks[]> {
+    return e.select(e.Tag, () => ({ ...e.Tag['*'] })).run(client)
+  }
+
+  static getSingleTag({ tag }: { readonly tag: string }): Promise<Maybe<TagSansDBLinks>> {
+    return e
+      .select(e.Tag, () => ({ ...e.Tag['*'], filter_single: { tag } }))
+      .run(client)
+      .then(nullable)
+  }
+
+  static getFavouriteTags(): Promise<readonly TagSansDBLinks[]> {
+    return e
+      .select(e.Tag, tag => ({
+        ...e.Tag['*'],
+        filter: e.op(tag.favourited, '=', true),
+      }))
+      .run(client)
+  }
+}
 
 const delay = (): Promise<unknown> =>
   new Promise(resolve => {
@@ -262,7 +319,7 @@ const thing = (): Promise<void | readonly void[]> =>
   // console.log(DB.thing2())
   // DB.getAllPosts()
   client
-    .querySingle(`select random()`)
+    .query(`select {1, 2, 3};`)
     .then(result => {
       console.log(result)
     })
@@ -296,4 +353,4 @@ const thing = (): Promise<void | readonly void[]> =>
       console.error(err)
     })
 
-export { thing }
+export { thing, DB }

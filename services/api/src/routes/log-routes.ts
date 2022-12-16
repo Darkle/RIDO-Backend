@@ -1,5 +1,5 @@
 import { DB } from '../db'
-import { logSearchZSchema, LogZSchema } from '../Entities/ZodSchemas'
+import { logSearchZSchema, LogZSchema } from '../ZodSchemas'
 import { trpc } from '../api'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

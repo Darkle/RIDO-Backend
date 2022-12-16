@@ -6,7 +6,7 @@
 // import { logRoutes } from './routes/log-routes'
 // import { initStaticFileServer } from './static-file-server'
 // import { settingsRoutes } from './routes/settings-routes'
-// import { DB } from './db'
+import { DB, thing } from './db'
 // import { startSubscriptionsServer } from './routes/sse-subscriptions'
 // import { postRoutes } from './routes/post-routes'
 // import { subredditRoutes } from './routes/subreddit-routes'
@@ -42,6 +42,8 @@
 // console.log(`API Running on port ${apiPort} `)
 
 // startSubscriptionsServer().catch(err => console.error(err))
+
+DB.init().catch(err => console.error(err))
 
 // // thing().catch(err => console.error(err))
 
@@ -84,12 +86,11 @@
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
-import { thing } from './db'
-
-thing()
-  .then(() => {
-    console.log('finished')
-  })
-  .catch(err => {
-    console.error(err)
-  })
+// DB.createInitialSettings()
+//   .then(res => {
+//     console.log('res', res)
+//   })
+//   .catch(err => {
+//     console.log('in error catch')
+//     console.error(err)
+//   })

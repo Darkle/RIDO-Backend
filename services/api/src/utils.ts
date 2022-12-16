@@ -12,8 +12,6 @@ const getEnvFilePath = (pth = ''): string =>
 
 const isInTesting = process.env['NODE_ENV'] === 'test'
 
-const getDbName = (): string => (isInTesting ? 'RIDOdb-Test' : 'RIDOdb')
-
 /*****
   The posts timestamp is in seconds since the epoch and is UTC 0. So we need to convert
   the date we received from the frontend from the local date to UTC 0 (aka GMT) and to
@@ -21,4 +19,4 @@ const getDbName = (): string => (isInTesting ? 'RIDOdb-Test' : 'RIDOdb')
 *****/
 const localDateToGMTEpoch = (d: Date): number => DateTime.fromJSDate(d).setZone('GMT').toSeconds()
 
-export { isDev, getEnvFilePath, getDbName, isInTesting, localDateToGMTEpoch }
+export { isDev, getEnvFilePath, isInTesting, localDateToGMTEpoch }

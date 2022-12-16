@@ -98,10 +98,10 @@ module default {
     required property score -> int64 {
       readonly := true;
     };
-    # The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of SECONDS since the epoch). It's UTC is GMT, aka no timezone.
     required property timestamp -> int64 {
       constraint min_value(1);
       readonly := true;
+      annotation description := "The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of _SECONDS_ since the epoch). It's UTC is GMT, aka no timezone.";
     };
     required property mediaUrl -> str {
       readonly := true;
@@ -142,21 +142,21 @@ module default {
       constraint min_len_value(1);
       readonly := true;
     };
-    property favrourited -> bool {
+    property favourited -> bool {
       default := false;
     };
     index on (.tag);
   }
 
   type Subreddit {
-    required multi link posts -> Post;
+    multi link posts -> Post;
     multi link groups -> SubredditGroup;
     required property subreddit -> str {
       constraint exclusive;
       constraint min_len_value(1);
       readonly := true;
     };
-    property favrourited -> bool {
+    property favourited -> bool {
       default := false;
     };
     property lastUpdated -> int64 {
@@ -173,7 +173,7 @@ module default {
       constraint min_len_value(1);
       readonly := true;
     };
-    property favrourited -> bool {
+    property favourited -> bool {
       default := false;
     };
     index on (.subGroup);

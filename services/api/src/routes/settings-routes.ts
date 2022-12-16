@@ -1,5 +1,5 @@
 import { DB } from '../db'
-import { SettingsZSchema } from '../Entities/ZodSchemas'
+import { SettingsZSchema } from '../ZodSchemas'
 import { trpc } from '../api'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type

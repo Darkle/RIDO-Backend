@@ -1,4 +1,4 @@
-CREATE MIGRATION m1bghcrgtux6wv3sgqli4nbqt7lqchubslbuyaz4ctehhmso3kx2mq
+CREATE MIGRATION m1pbhiiatocsaoivpzwxntibghwf3nunnihksfu62ohm7aaiwcvioq
     ONTO initial
 {
   CREATE FUTURE nonrecursive_access_policies;
@@ -28,6 +28,7 @@ CREATE MIGRATION m1bghcrgtux6wv3sgqli4nbqt7lqchubslbuyaz4ctehhmso3kx2mq
       CREATE REQUIRED PROPERTY timestamp -> std::int64 {
           SET readonly := true;
           CREATE CONSTRAINT std::min_value(1);
+          CREATE ANNOTATION std::description := "The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of _SECONDS_ since the epoch). It's UTC is GMT, aka no timezone.";
       };
       CREATE INDEX ON (.timestamp);
       CREATE REQUIRED PROPERTY subredditName -> std::str {
@@ -84,9 +85,9 @@ CREATE MIGRATION m1bghcrgtux6wv3sgqli4nbqt7lqchubslbuyaz4ctehhmso3kx2mq
           CREATE CONSTRAINT std::exclusive;
           CREATE CONSTRAINT std::min_len_value(1);
       };
-      CREATE REQUIRED MULTI LINK posts -> default::Post;
+      CREATE MULTI LINK posts -> default::Post;
       CREATE INDEX ON (.subreddit);
-      CREATE PROPERTY favrourited -> std::bool {
+      CREATE PROPERTY favourited -> std::bool {
           SET default := false;
       };
       CREATE PROPERTY lastUpdated -> std::int64 {
@@ -112,7 +113,7 @@ CREATE MIGRATION m1bghcrgtux6wv3sgqli4nbqt7lqchubslbuyaz4ctehhmso3kx2mq
           CREATE CONSTRAINT std::min_len_value(1);
       };
       CREATE INDEX ON (.tag);
-      CREATE PROPERTY favrourited -> std::bool {
+      CREATE PROPERTY favourited -> std::bool {
           SET default := false;
       };
   };
@@ -166,7 +167,7 @@ CREATE MIGRATION m1bghcrgtux6wv3sgqli4nbqt7lqchubslbuyaz4ctehhmso3kx2mq
           CREATE CONSTRAINT std::min_len_value(1);
       };
       CREATE INDEX ON (.subGroup);
-      CREATE PROPERTY favrourited -> std::bool {
+      CREATE PROPERTY favourited -> std::bool {
           SET default := false;
       };
   };
