@@ -11,7 +11,7 @@
 - Had to use esbuild in api service instead of swc cause swc doesnt support decorators yet
 
 - On a fresh setup for development, to set up the db, do the following in the services/api directory:
-  1. Run `dotenv-extended --path=../../.env --defaults=../../.env.defaults edgedb project init --non-interactive`
+  1. Run `pnpm exec dotenv-extended --path=../../.env --defaults=../../.env.defaults edgedb project init --non-interactive`
   2. Run `edgedb migration create`
   3. Run `edgedb migrate`
   4. Run `npx @edgedb/generate interfaces` (pnpx or pnpm exec doesnt seem to work)

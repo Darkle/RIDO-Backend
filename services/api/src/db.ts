@@ -11,21 +11,60 @@ import type { Settings, Log, Post, Subreddit, SubredditGroup, Tag } from '../dbs
 
 const client = createClient()
 
-const settingsColumnsToReturn = [
-  'numberMediaDownloadsAtOnce',
-  'numberImagesProcessAtOnce',
-  'updateAllDay',
-  'updateStartingHour',
-  'updateEndingHour',
-  'imageCompressionQuality',
-  'archiveImageCompressionQuality',
-  'maxImageWidthForNonArchiveImage',
-] as const
+/*****
+  Sans DB links
+*****/
+type BasePost = Omit<Post, 'subreddit' | 'tags' | 'id'>
+type BaseSubreddit = Omit<Subreddit, 'posts' | 'groups' | 'id'>
+type BaseSubredditGroup = Omit<SubredditGroup, 'subreddits' | 'id'>
+type BaseTag = Omit<Tag, 'posts' | 'id'>
 
-type PostSansDBLinks = Omit<Post, 'subreddit' | 'tags'>
-type SubredditSansDBLinks = Omit<Subreddit, 'posts' | 'groups'>
-type SubredditGroupSansDBLinks = Omit<SubredditGroup, 'subreddits'>
-type TagSansDBLinks = Omit<Tag, 'posts'>
+const settingsShapeSansId = e.shape(e.Settings, () => ({
+  archiveImageCompressionQuality: true,
+  imageCompressionQuality: true,
+  maxImageWidthForNonArchiveImage: true,
+  numberImagesProcessAtOnce: true,
+  numberMediaDownloadsAtOnce: true,
+  uniqueId: true,
+  updateAllDay: true,
+  updateEndingHour: true,
+  updateStartingHour: true,
+}))
+
+const postShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
+  timestamp: true,
+  subredditName: true,
+  couldNotDownload: true,
+  downloadError: true,
+  downloadedMedia: true,
+  downloadedMediaCount: true,
+  mediaDownloadTries: true,
+  mediaHasBeenDownloaded: true,
+  mediaUrl: true,
+  postId: true,
+  postMediaImagesHaveBeenProcessed: true,
+  postMediaImagesProcessingError: true,
+  postThumbnailsCreated: true,
+  postUrl: true,
+  score: true,
+  title: true,
+}))
+
+const subredditShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
+  subreddit: true,
+  favourited: true,
+  lastUpdated: true,
+}))
+
+const subredditGroupShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
+  subGroup: true,
+  favourited: true,
+}))
+
+const tagShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
+  tag: true,
+  favourited: true,
+}))
 
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
@@ -46,10 +85,7 @@ class DB {
   static getSettings(): Promise<Settings> {
     return (
       e
-        .select(e.Settings, () => ({
-          ...e.Settings['*'],
-          filter_single: { uniqueId: 'settings' },
-        }))
+        .select(e.Settings, s => ({ ...settingsShapeSansId(s), filter_single: { uniqueId: 'settings' } }))
         // dont need Maybe here as settings will always be there
         .run(client) as Promise<Settings>
     )
@@ -65,17 +101,7 @@ class DB {
       .run(client)
       .then(() =>
         e
-          .select(e.Settings, () => ({
-            numberMediaDownloadsAtOnce: true,
-            numberImagesProcessAtOnce: true,
-            updateAllDay: true,
-            updateStartingHour: true,
-            updateEndingHour: true,
-            imageCompressionQuality: true,
-            archiveImageCompressionQuality: true,
-            maxImageWidthForNonArchiveImage: true,
-            filter_single: { uniqueId: 'settings' },
-          }))
+          .select(e.Settings, s => ({ ...settingsShapeSansId(s), filter_single: { uniqueId: 'settings' } }))
           .run(client)
       )
       .then(updatedSettings => {
@@ -107,107 +133,210 @@ class DB {
       .run(client)
   }
 
-  // static findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-
-  //   return ridoDB
-  //     .selectFrom('Log')
-  //     .selectAll()
-  //     .where('message', 'like', `%${searchQuery}%`)
-  //     .orWhere('service', 'like', `%${searchQuery}%`)
-  //     .orWhere('error', 'like', `%${searchQuery}%`)
-  //     .orWhere('other', 'like', `%${searchQuery}%`)
-  //     .offset(skip)
-  //     .limit(limit)
-  //     .orderBy('createdAt', 'desc')
-  //     .execute()
-  // }
-
-  // static findLogs_LevelFilter_NoSearch_Paginated(page: number, limit: number, logLevel: Log['level']) {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-
-  //   return ridoDB
-  //     .selectFrom('Log')
-  //     .selectAll()
-  //     .where('level', '=', logLevel)
-  //     .offset(skip)
-  //     .limit(limit)
-  //     .orderBy('createdAt', 'desc')
-  //     .execute()
-  // }
-
-  // static findLogs_LevelFilter_WithSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   searchQuery: string,
-  //   logLevel: Log['level']
-  // ) {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   //NOTE: kysely doesnt seem to have an andWhere method like knex to put multiple wheres in parenthesis. e.g. https://knexjs.org/faq/recipes.html#using-parentheses-with-and-operator, so gotta use sql function
-
-  //   // This needs to be like this as kysely will wrap in quotes (dont want it to wrap inside the %)
-  //   const sq = `%${searchQuery}%`
-
-  //   return sql<LogTable>`select * from "Log" WHERE "level" = ${logLevel} AND ("message" LIKE ${sq} OR "service" LIKE ${sq} or "error" LIKE ${sq} or "other" LIKE ${sq}) ORDER BY "createdAt" DESC LIMIT ${limit} OFFSET ${skip}`
-  //     .execute(ridoDB)
-  //     .then(results => results.rows)
-  // }
-
-  static getAllPosts(): Promise<readonly PostSansDBLinks[]> {
-    return e.select(e.Post, () => ({ ...e.Post['*'] })).run(client)
+  static findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+    const sq = `%${searchQuery}`
+    e.o
+    return e
+      .select(e.Log, log => ({
+        ...e.Log['*'],
+        limit,
+        offset: skip,
+        order_by: {
+          expression: log.createdAt,
+          direction: e.DESC,
+        },
+        filter: e.op(
+          e.op(log.message, 'ilike', sq),
+          'or',
+          e.op(log.service, 'ilike', sq),
+          'or',
+          e.op(log.error, 'ilike', sq),
+          'or',
+          e.op(log.other, 'ilike', sq)
+        ),
+      }))
+      .run(client)
   }
 
-  static getSinglePost(postId: Post['postId']): Promise<Maybe<PostSansDBLinks>> {
+  static findLogs_LevelFilter_NoSearch_Paginated(
+    page: number,
+    limit: number,
+    logLevel: Log['level']
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
     return e
-      .select(e.Post, () => ({ ...e.Post['*'], filter_single: { postId } }))
+      .select(e.Log, log => ({
+        ...e.Log['*'],
+        limit,
+        offset: skip,
+        order_by: {
+          expression: log.createdAt,
+          direction: e.DESC,
+        },
+        filter: e.op(log.level, '=', logLevel),
+      }))
+      .run(client)
+  }
+
+  // eslint-disable-next-line max-lines-per-function
+  static findLogs_LevelFilter_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string,
+    logLevel: Log['level']
+  ) {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+    const sq = `%${searchQuery}%`
+
+    return e
+      .select(e.Log, log => ({
+        ...e.Log['*'],
+        limit,
+        offset: skip,
+        order_by: {
+          expression: log.createdAt,
+          direction: e.DESC,
+        },
+        filter: e.op(
+          e.op(log.level, '=', logLevel),
+          'and',
+          e.op(
+            e.op(log.message, 'ilike', sq),
+            'or',
+            e.op(log.service, 'ilike', sq),
+            'or',
+            e.op(log.error, 'ilike', sq),
+            'or',
+            e.op(log.other, 'ilike', sq)
+          )
+        ),
+      }))
+      .run(client)
+  }
+
+  static getAllPosts(): Promise<readonly BasePost[]> {
+    return e.select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p) })).run(client)
+  }
+
+  static getSinglePost(postId: Post['postId']): Promise<Maybe<BasePost>> {
+    return e
+      .select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p), filter_single: { postId } }))
       .run(client)
       .then(nullable)
   }
 
-  static addPost(post: PostSansDBLinks): Promise<void> {
+  static addPost(post: BasePost): Promise<void> {
     return e.insert(e.Post, post).run(client).then(F.ignore)
   }
 
-  // static batchAddPosts(posts: readonly Post[]) {
-  //   const postsSubMapping = posts.map(post => ({ subreddit: post.subreddit, postId: post.postId }))
+  // eslint-disable-next-line max-lines-per-function
+  static batchAddPosts(posts: readonly BasePost[]): Promise<void> {
+    /*****
+      Docs state that you need to set any optional columns to null when using for loop
+      https://www.edgedb.com/docs/clients/js/for#bulk-inserts
+    *****/
+    // Since json_get returns an empty set if nothing there, i think perhaps i dont need to do this
+    // const nulledOptionalPostColumns = {
+    //   couldNotDownload: null,
+    //   downloadError: null,
+    //   downloadedMedia: null,
+    //   downloadedMediaCount: null,
+    //   mediaDownloadTries: null,
+    //   mediaHasBeenDownloaded: null,
+    //   postMediaImagesHaveBeenProcessed: null,
+    //   postMediaImagesProcessingError: null,
+    //   postThumbnailsCreated: null,
+    // }
 
-  //   return Promise.all([
-  //     ridoDB.insertInto('Post').values(posts).execute(),
-  //     ridoDB.insertInto('Subreddit_Post').values(postsSubMapping).execute(),
-  //   ]).then(F.ignore)
-  // }
+    // const postsReadyForDb = posts.map(post => ({ ...nulledOptionalPostColumns, ...post }))
+    // eslint-disable-next-line max-lines-per-function
+    const query = e.params({ posts: e.json }, params =>
+      e.for(e.json_array_unpack(params.posts), post =>
+        e
+          .insert(e.Post, {
+            timestamp: e.cast(e.int64, e.json_get(post, 'timestamp')),
+            subredditName: e.cast(e.str, e.json_get(post, 'subredditName')),
+            mediaUrl: e.cast(e.str, e.json_get(post, 'mediaUrl')),
+            postId: e.cast(e.str, e.json_get(post, 'postId')),
+            postUrl: e.cast(e.str, e.json_get(post, 'postUrl')),
+            score: e.cast(e.int64, e.json_get(post, 'score')),
+            title: e.cast(e.str, e.json_get(post, 'title')),
+            postThumbnailsCreated: e.cast(e.bool, e.json_get(post, 'postThumbnailsCreated')),
+            postMediaImagesProcessingError: e.cast(e.str, e.json_get(post, 'postMediaImagesProcessingError')),
+            postMediaImagesHaveBeenProcessed: e.cast(
+              e.bool,
+              e.json_get(post, 'postMediaImagesHaveBeenProcessed')
+            ),
+            mediaHasBeenDownloaded: e.cast(e.bool, e.json_get(post, 'mediaHasBeenDownloaded')),
+            mediaDownloadTries: e.cast(e.int32, e.json_get(post, 'mediaDownloadTries')),
+            downloadedMediaCount: e.cast(e.int32, e.json_get(post, 'downloadedMediaCount')),
+            downloadedMedia: e.cast(e.array(e.str), e.json_get(post, 'downloadedMedia')),
+            downloadError: e.cast(e.str, e.json_get(post, 'downloadError')),
+            couldNotDownload: e.cast(e.bool, e.json_get(post, 'couldNotDownload')),
+          })
+          .unlessConflict(p => ({ on: p.postId }))
+      )
+    )
 
-  static fetchAllPostIds(): Promise<readonly Post['postId'][]> {
+    return query.run(client, { posts }).then(F.ignore)
+  }
+
+  static fetchAllPostIds(): Promise<readonly BasePost['postId'][]> {
     return e
       .select(e.Post, () => ({ postId: true }))
       .run(client)
       .then(results => results.map(result => result.postId))
   }
 
-  static getPostsThatNeedMediaToBeDownloaded() {
+  static getPostsThatNeedMediaToBeDownloaded(): Promise<
+    readonly Pick<BasePost, 'postId' | 'mediaUrl' | 'mediaDownloadTries'>[]
+  > {
     return e
       .select(e.Post, post => ({
         postId: true,
         mediaUrl: true,
         mediaDownloadTries: true,
-        filter: e.op(post.mediaHasBeenDownloaded, '=', false, 'and', post.couldNotDownload, '=', false),
-        filter: e.op(post.couldNotDownload, '=', false),
-        // filter: { mediaHasBeenDownloaded: false, couldNotDownload: false },
+        filter: e.op(
+          e.op(post.mediaHasBeenDownloaded, '=', false),
+          'and',
+          e.op(post.couldNotDownload, '=', false)
+        ),
       }))
       .run(client)
   }
 
-  // static getPostsWhereImagesNeedToBeOptimized() {
-  //   return ridoDB
-  //     .selectFrom('Post')
-  //     .selectAll()
-  //     .where('mediaHasBeenDownloaded', '=', SQLiteBoolTrue)
-  //     .where('couldNotDownload', '=', SQLiteBoolFalse)
-  //     .where('postMediaImagesHaveBeenProcessed', '=', SQLiteBoolFalse)
-  //     .execute()
-  // }
+  static getPostsWhereImagesNeedToBeOptimized() {
+    // return e
+    //   .op(
+    //     e.op(post.mediaHasBeenDownloaded, '=', true),
+    //     'and',
+    //     e.op(post.couldNotDownload, '=', false),
+    //     'and',
+    //     e.op(post.postMediaImagesHaveBeenProcessed, '=', false)
+    //   )
+    //   .toEdgeQL()
+    return Promise.resolve(
+      e
+        .select(e.Post, post => ({
+          ...postShapeSansIdSansDBLinks(post),
+          filter: e.op(
+            e.op(post.mediaHasBeenDownloaded, '=', true),
+            'and',
+            // e.op(
+            e.op(post.couldNotDownload, '=', false),
+            'and',
+            e.op(post.postMediaImagesHaveBeenProcessed, '=', false)
+            // )
+          ),
+        }))
+        // .run(client)
+        .toEdgeQL()
+    )
+  }
 
-  static updatePostInfo(postDataUpdates: MarkRequired<Partial<PostSansDBLinks>, 'postId'>): Promise<void> {
+  static updatePostInfo(postDataUpdates: MarkRequired<Partial<BasePost>, 'postId'>): Promise<void> {
     return e
       .update(e.Post, () => ({
         filter_single: { postId: postDataUpdates.postId },
@@ -217,53 +346,74 @@ class DB {
       .then(F.ignore)
   }
 
-  static addSubreddit(subreddit: SubredditSansDBLinks['subreddit']): Promise<void> {
+  static addSubreddit(subreddit: BaseSubreddit['subreddit']): Promise<void> {
     return e.insert(e.Subreddit, { subreddit }).run(client).then(F.ignore)
   }
 
-  static getAllSubreddits(): Promise<readonly SubredditSansDBLinks[]> {
-    return e.select(e.Subreddit, () => ({ ...e.Subreddit['*'] })).run(client)
+  static getAllSubreddits(): Promise<readonly BaseSubreddit[]> {
+    return e.select(e.Subreddit, s => ({ ...subredditShapeSansIdSansDBLinks(s) })).run(client)
   }
 
-  static getSingleSubreddit({
-    subreddit,
-  }: {
-    readonly subreddit: string
-  }): Promise<Maybe<SubredditSansDBLinks>> {
+  static getSingleSubreddit({ subreddit }: { readonly subreddit: string }): Promise<Maybe<BaseSubreddit>> {
     return e
-      .select(e.Subreddit, () => ({ ...e.Subreddit['*'], filter_single: { subreddit } }))
+      .select(e.Subreddit, s => ({ ...subredditShapeSansIdSansDBLinks(s), filter_single: { subreddit } }))
       .run(client)
       .then(nullable)
   }
 
-  static getFavouriteSubreddits(): Promise<readonly SubredditSansDBLinks[]> {
+  static getFavouriteSubreddits(): Promise<readonly BaseSubreddit[]> {
     return e
       .select(e.Subreddit, sub => ({
-        ...e.Subreddit['*'],
+        ...subredditShapeSansIdSansDBLinks(sub),
         filter: e.op(sub.favourited, '=', true),
       }))
       .run(client)
   }
 
-  static getAllSubredditGroups(): Promise<readonly SubredditGroupSansDBLinks[]> {
-    return e.select(e.SubredditGroup, () => ({ ...e.SubredditGroup['*'] })).run(client)
+  static getSubsThatNeedToBeUpdated(): Promise<readonly BaseSubreddit[]> {
+    const oneHourInMillisecs = 3_600_000
+    const anHourAgo = (): number => Date.now() - oneHourInMillisecs
+
+    return e
+      .select(e.Subreddit, s => ({
+        ...subredditShapeSansIdSansDBLinks(s),
+        filter: e.op(s.lastUpdated, '<', anHourAgo()),
+      }))
+      .run(client)
+  }
+
+  static updateSubredditLastUpdatedTimeToNow(subreddit: BaseSubreddit['subreddit']): Promise<void> {
+    return e
+      .update(e.Subreddit, () => ({
+        filter_single: { subreddit },
+        set: { lastUpdated: Date.now() },
+      }))
+      .run(client)
+      .then(F.ignore)
+  }
+
+  static getAllSubredditGroups(): Promise<readonly BaseSubredditGroup[]> {
+    return e.select(e.SubredditGroup, sg => ({ ...subredditGroupShapeSansIdSansDBLinks(sg) })).run(client)
   }
 
   static getSingleSubredditGroup({
     subGroup,
   }: {
     readonly subGroup: string
-  }): Promise<Maybe<SubredditGroupSansDBLinks>> {
+  }): Promise<Maybe<BaseSubredditGroup>> {
     return e
-      .select(e.SubredditGroup, () => ({ ...e.SubredditGroup['*'], filter_single: { subGroup } }))
+      .select(e.SubredditGroup, sg => ({
+        ...subredditGroupShapeSansIdSansDBLinks(sg),
+        filter_single: { subGroup },
+      }))
       .run(client)
       .then(nullable)
   }
 
-  static getFavouriteSubredditGroups(): Promise<readonly SubredditGroupSansDBLinks[]> {
+  static getFavouriteSubredditGroups(): Promise<readonly BaseSubredditGroup[]> {
     return e
       .select(e.SubredditGroup, sg => ({
-        ...e.SubredditGroup['*'],
+        ...subredditGroupShapeSansIdSansDBLinks(sg),
         filter: e.op(sg.favourited, '=', true),
       }))
       .run(client)
@@ -273,46 +423,31 @@ class DB {
   //
   // }
 
-  // static getSubsThatNeedToBeUpdated() {
-  //   const oneHourInMillisecs = 3_600_000
-  //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
-  //   return ridoDB.selectFrom('Subreddit').selectAll().where('lastUpdated', '<', anHourAgo()).execute()
-  // }
-
-  // static updateSubredditLastUpdatedTimeToNow(subreddit: Subreddit['subreddit']) {
-  //   return ridoDB
-  //     .updateTable('Subreddit')
-  //     .where('subreddit', '=', subreddit)
-  //     .set({ lastUpdated: Date.now() })
-  //     .execute()
-  //     .then(F.ignore)
-  // }
-
-  static getAllTags(): Promise<readonly TagSansDBLinks[]> {
-    return e.select(e.Tag, () => ({ ...e.Tag['*'] })).run(client)
+  static getAllTags(): Promise<readonly BaseTag[]> {
+    return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
   }
 
-  static getSingleTag({ tag }: { readonly tag: string }): Promise<Maybe<TagSansDBLinks>> {
+  static getSingleTag({ tag }: { readonly tag: string }): Promise<Maybe<BaseTag>> {
     return e
-      .select(e.Tag, () => ({ ...e.Tag['*'], filter_single: { tag } }))
+      .select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t), filter_single: { tag } }))
       .run(client)
       .then(nullable)
   }
 
-  static getFavouriteTags(): Promise<readonly TagSansDBLinks[]> {
+  static getFavouriteTags(): Promise<readonly BaseTag[]> {
     return e
       .select(e.Tag, tag => ({
-        ...e.Tag['*'],
+        ...tagShapeSansIdSansDBLinks(tag),
         filter: e.op(tag.favourited, '=', true),
       }))
       .run(client)
   }
 }
 
-const delay = (): Promise<unknown> =>
-  new Promise(resolve => {
-    setTimeout(resolve)
-  })
+// const delay = (): Promise<unknown> =>
+//   new Promise(resolve => {
+//     setTimeout(resolve)
+//   })
 
 // eslint-disable-next-line max-lines-per-function
 const thing = (): Promise<void | readonly void[]> =>

@@ -28,10 +28,21 @@ module.exports = {
         'no-param-reassign': 'off',
       },
     },
+    {
+      files: ['services/api/dbschema/*.*'],
+      extends: ['./.eslintrc-ts-base.cjs'],
+      rules: {
+        '@typescript-eslint/no-namespace': 'off',
+        '@typescript-eslint/no-empty-interface': 'off',
+        'functional/prefer-readonly-type': 'off',
+        '@typescript-eslint/quotes': 'off',
+        quotes: 'off',
+      },
+    },
     // Everything other than test files
     {
       files: ['**/*.ts', '**/*.d.ts', './*.d.ts', './*.ts'],
-      excludedFiles: ['test/**'],
+      excludedFiles: ['test/**', 'services/api/dbschema/interfaces.ts'],
       extends: ['./.eslintrc-ts-base.cjs'],
     },
   ],
