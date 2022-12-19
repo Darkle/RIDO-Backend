@@ -16,8 +16,8 @@ module default {
     property error -> str {
       readonly := true;
     };
-    # json can also be set with non array/object (eg bool/string)
-    property other -> json {
+    # Doing this as a string to make it easy to search with like
+    property other -> str {
       readonly := true;
     };
     index on (.level);

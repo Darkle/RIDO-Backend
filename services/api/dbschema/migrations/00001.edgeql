@@ -1,4 +1,4 @@
-CREATE MIGRATION m1pbhiiatocsaoivpzwxntibghwf3nunnihksfu62ohm7aaiwcvioq
+CREATE MIGRATION m132t5f4k3h22vkljbmaganotu6uxqmxizvcw4enwf5zgb6ctsfv6a
     ONTO initial
 {
   CREATE FUTURE nonrecursive_access_policies;
@@ -17,7 +17,7 @@ CREATE MIGRATION m1pbhiiatocsaoivpzwxntibghwf3nunnihksfu62ohm7aaiwcvioq
       CREATE PROPERTY message -> std::str {
           SET readonly := true;
       };
-      CREATE PROPERTY other -> std::json {
+      CREATE PROPERTY other -> std::str {
           SET readonly := true;
       };
       CREATE PROPERTY service -> std::str {

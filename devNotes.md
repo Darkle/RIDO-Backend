@@ -8,8 +8,6 @@
 
 - If you ever want to change the format/compression of the images downloaded in bulk, install [sharp-cli](https://github.com/vseventer/sharp-cli), then run something like this: `find . -name "*.avif" -execdir bash -c 'file="{}"; sharp -i "$file" -o "$PWD" --format webp' \;`
 
-- Had to use esbuild in api service instead of swc cause swc doesnt support decorators yet
-
 - On a fresh setup for development, to set up the db, do the following in the services/api directory:
   1. Run `pnpm exec dotenv-extended --path=../../.env --defaults=../../.env.defaults edgedb project init --non-interactive`
   2. Run `edgedb migration create`

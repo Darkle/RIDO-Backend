@@ -133,10 +133,15 @@ class DB {
       .run(client)
   }
 
-  static findLogs_AllLevels_WithSearch_Paginated(page: number, limit: number, searchQuery: string) {
+  // eslint-disable-next-line max-lines-per-function
+  static findLogs_AllLevels_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string
+  ): Promise<readonly Log[]> {
     const skip = page === 1 ? 0 : (page - 1) * limit
-    const sq = `%${searchQuery}`
-    e.o
+    const sq = `%${searchQuery}%`
+
     return e
       .select(e.Log, log => ({
         ...e.Log['*'],
@@ -147,13 +152,9 @@ class DB {
           direction: e.DESC,
         },
         filter: e.op(
-          e.op(log.message, 'ilike', sq),
+          e.op(e.op(log.message, 'ilike', sq), 'or', e.op(log.service, 'ilike', sq)),
           'or',
-          e.op(log.service, 'ilike', sq),
-          'or',
-          e.op(log.error, 'ilike', sq),
-          'or',
-          e.op(log.other, 'ilike', sq)
+          e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.other, 'ilike', sq))
         ),
       }))
       .run(client)
@@ -186,7 +187,7 @@ class DB {
     limit: number,
     searchQuery: string,
     logLevel: Log['level']
-  ) {
+  ): Promise<readonly Log[]> {
     const skip = page === 1 ? 0 : (page - 1) * limit
     const sq = `%${searchQuery}%`
 
@@ -203,13 +204,9 @@ class DB {
           e.op(log.level, '=', logLevel),
           'and',
           e.op(
-            e.op(log.message, 'ilike', sq),
+            e.op(e.op(log.message, 'ilike', sq), 'or', e.op(log.service, 'ilike', sq)),
             'or',
-            e.op(log.service, 'ilike', sq),
-            'or',
-            e.op(log.error, 'ilike', sq),
-            'or',
-            e.op(log.other, 'ilike', sq)
+            e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.other, 'ilike', sq))
           )
         ),
       }))
@@ -307,16 +304,7 @@ class DB {
       .run(client)
   }
 
-  static getPostsWhereImagesNeedToBeOptimized() {
-    // return e
-    //   .op(
-    //     e.op(post.mediaHasBeenDownloaded, '=', true),
-    //     'and',
-    //     e.op(post.couldNotDownload, '=', false),
-    //     'and',
-    //     e.op(post.postMediaImagesHaveBeenProcessed, '=', false)
-    //   )
-    //   .toEdgeQL()
+  static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly BasePost[]> {
     return Promise.resolve(
       e
         .select(e.Post, post => ({
@@ -324,15 +312,14 @@ class DB {
           filter: e.op(
             e.op(post.mediaHasBeenDownloaded, '=', true),
             'and',
-            // e.op(
-            e.op(post.couldNotDownload, '=', false),
-            'and',
-            e.op(post.postMediaImagesHaveBeenProcessed, '=', false)
-            // )
+            e.op(
+              e.op(post.couldNotDownload, '=', false),
+              'and',
+              e.op(post.postMediaImagesHaveBeenProcessed, '=', false)
+            )
           ),
         }))
-        // .run(client)
-        .toEdgeQL()
+        .run(client)
     )
   }
 
@@ -392,6 +379,10 @@ class DB {
       .then(F.ignore)
   }
 
+  static getSubredditGroupsAssociatedWithSubreddit() {
+  return e.select()
+  }
+
   static getAllSubredditGroups(): Promise<readonly BaseSubredditGroup[]> {
     return e.select(e.SubredditGroup, sg => ({ ...subredditGroupShapeSansIdSansDBLinks(sg) })).run(client)
   }
@@ -418,10 +409,6 @@ class DB {
       }))
       .run(client)
   }
-
-  // static getSubredditGroupsAssociatedWithSubreddit() {
-  //
-  // }
 
   static getAllTags(): Promise<readonly BaseTag[]> {
     return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
