@@ -6,7 +6,7 @@ import { trpc } from '../api'
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,max-lines-per-function
 const subredditGroupRoutes = () =>
   trpc.router({
-    getAllSubredditGroups: trpc.procedure.query(() => DB.getAllSubredditGroups()),
+    getAllSubredditGroups: trpc.procedure.query(() => DB.getAllFeedTags()),
     getSingleSubredditGroup: trpc.procedure
       .input(z.object({ subGroup: z.string().min(2) }))
       .query(({ input }) => DB.getSingleSubredditGroup(input)),

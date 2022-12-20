@@ -16,10 +16,12 @@ module default {
     property error -> str {
       readonly := true;
     };
-    # Doing this as a string to make it easy to search with like
-    property other -> str {
+    property other -> json {
       readonly := true;
+      default := to_json('{}');
     };
+    property otherAsStr := to_str(.other);
+    
     index on (.level);
   }
 
@@ -61,31 +63,36 @@ module default {
       default := 1400;
       constraint min_value(1);
     };
-    # Now that no users, prolly dont need this. Cause what if two users?
-    # required property hasSeenWelcomeMessage -> bool
   }
 
-  # This may need to be: select Subreddit filter str_lower(.subreddit) = str_lower(Post.subredditName)
-  #  https://www.edgedb.com/docs/datamodel/computeds
-  #  https://www.edgedb.com/docs/datamodel/computeds#filtering
   type Post {
     multi link tags -> Tag;
-    required link subreddit -> Subreddit {
+    required link feed -> Feed {
       default := (
         assert_single(
-          (select Subreddit filter str_lower(.subreddit) = str_lower(Post.subredditName))
+          (select Feed filter .feedId = Post.uniqueId)
         )
       );
       # TODO: check this works
       on target delete delete source
     };
     required property postId -> str {
+      constraint min_len_value(1);
+      readonly := true;
+    };
+    required property feedType -> str {
+      constraint min_len_value(1);
+      readonly := true;
+      constraint one_of ('reddit', 'titops', 'cand');
+    };
+    required property feedName -> str {
       constraint exclusive;
       constraint min_len_value(1);
       readonly := true;
     };
-    required property subredditName -> str {
-      constraint min_len_value(1);
+    # Not an out and out computed property as we want to be able to filter by this
+    required property uniqueId -> str {
+      default := str_lower(.feedType ++ '-' ++ .postId);
       readonly := true;
     };
     required property title -> str {
@@ -130,29 +137,28 @@ module default {
     property downloadError -> str;
     property downloadedMedia -> array<str>;
 
-    index on (.subredditName);
+    constraint exclusive on (.uniqueId);
+
     index on (.timestamp);
-    index on ((.timestamp, .subredditName));
+    index on ((.feedType, .feedName));
+    index on ((.timestamp, .feedType, .feedName));
   }
 
-  type Tag {
+  type Feed {
     multi link posts -> Post;
-    required property tag -> str {
-      constraint exclusive;
-      constraint min_len_value(1);
+    multi link tags -> Tag;
+    # Not an out and out computed property as we want to be able to filter by this
+    required property feedId -> str {
+      default := str_lower(Feed.feedType) ++ '-' ++ str_lower(Feed.feedName);
       readonly := true;
     };
-    property favourited -> bool {
-      default := false;
+    required property feedType -> str {
+      constraint min_len_value(1);
+      readonly := true;
+      constraint one_of ('reddit', 'tops', 'cand');
     };
-    index on (.tag);
-  }
-
-  type Subreddit {
-    multi link posts -> Post;
-    multi link groups -> SubredditGroup;
-    required property subreddit -> str {
-      constraint exclusive;
+    required property feedNameLC := str_lower(.feedName);
+    required property feedName -> str {
       constraint min_len_value(1);
       readonly := true;
     };
@@ -163,12 +169,20 @@ module default {
       default := 1;
       constraint min_value(1);
     };
-    index on (.subreddit);
+    property updateCheck_LastPostSeen -> str {
+      annotation description := "Only used for non-reddit feeds.";
+    };
+
+    constraint exclusive on (.feedId);
+
+    index on (.favourited);
+    index on (.feedId);
   }
 
-  type SubredditGroup {
-    multi link subreddits -> Subreddit;
-    required property subGroup -> str {
+  type Tag {
+    multi link posts -> Post;
+    multi link feeds -> Feed;
+    required property tag -> str {
       constraint exclusive;
       constraint min_len_value(1);
       readonly := true;
@@ -176,6 +190,9 @@ module default {
     property favourited -> bool {
       default := false;
     };
-    index on (.subGroup);
+    index on (.tag);
+    index on (.favourited);
   }
+
+
 }

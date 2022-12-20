@@ -7,16 +7,15 @@ import { createClient } from 'edgedb'
 
 import { EE } from './events'
 import e from '../dbschema/edgeql-js'
-import type { Settings, Log, Post, Subreddit, SubredditGroup, Tag } from '../dbschema/interfaces'
+import type { Settings, Log, Post, Feed, Tag } from '../dbschema/interfaces'
 
 const client = createClient()
 
 /*****
   Sans DB links
 *****/
-type BasePost = Omit<Post, 'subreddit' | 'tags' | 'id'>
-type BaseSubreddit = Omit<Subreddit, 'posts' | 'groups' | 'id'>
-type BaseSubredditGroup = Omit<SubredditGroup, 'subreddits' | 'id'>
+type BasePost = Omit<Post, 'feed' | 'tags' | 'id'>
+type BaseFeed = Omit<Feed, 'feedNameLC' | 'posts' | 'tags' | 'id'>
 type BaseTag = Omit<Tag, 'posts' | 'id'>
 
 const settingsShapeSansId = e.shape(e.Settings, () => ({
@@ -32,33 +31,33 @@ const settingsShapeSansId = e.shape(e.Settings, () => ({
 }))
 
 const postShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
-  timestamp: true,
-  subredditName: true,
-  couldNotDownload: true,
-  downloadError: true,
-  downloadedMedia: true,
-  downloadedMediaCount: true,
-  mediaDownloadTries: true,
-  mediaHasBeenDownloaded: true,
-  mediaUrl: true,
+  uniqueId: true,
   postId: true,
+  feedType: true,
+  feedName: true,
+  title: true,
+  postUrl: true,
+  score: true,
+  timestamp: true,
+  mediaUrl: true,
+  mediaHasBeenDownloaded: true,
+  couldNotDownload: true,
   postMediaImagesHaveBeenProcessed: true,
   postMediaImagesProcessingError: true,
   postThumbnailsCreated: true,
-  postUrl: true,
-  score: true,
-  title: true,
+  mediaDownloadTries: true,
+  downloadedMediaCount: true,
+  downloadError: true,
+  downloadedMedia: true,
 }))
 
-const subredditShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
-  subreddit: true,
+const feedShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
+  feedId: true,
+  feedType: true,
+  feedName: true,
   favourited: true,
   lastUpdated: true,
-}))
-
-const subredditGroupShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
-  subGroup: true,
-  favourited: true,
+  updateCheck_LastPostSeen: true,
 }))
 
 const tagShapeSansIdSansDBLinks = e.shape(e.Settings, () => ({
@@ -154,7 +153,7 @@ class DB {
         filter: e.op(
           e.op(e.op(log.message, 'ilike', sq), 'or', e.op(log.service, 'ilike', sq)),
           'or',
-          e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.other, 'ilike', sq))
+          e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.otherAsStr, 'ilike', sq))
         ),
       }))
       .run(client)
@@ -206,7 +205,7 @@ class DB {
           e.op(
             e.op(e.op(log.message, 'ilike', sq), 'or', e.op(log.service, 'ilike', sq)),
             'or',
-            e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.other, 'ilike', sq))
+            e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.otherAsStr, 'ilike', sq))
           )
         ),
       }))
@@ -217,9 +216,9 @@ class DB {
     return e.select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p) })).run(client)
   }
 
-  static getSinglePost(postId: Post['postId']): Promise<Maybe<BasePost>> {
+  static getSinglePost(uniqueId: Post['uniqueId']): Promise<Maybe<BasePost>> {
     return e
-      .select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p), filter_single: { postId } }))
+      .select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p), filter_single: { uniqueId } }))
       .run(client)
       .then(nullable)
   }
@@ -250,11 +249,13 @@ class DB {
     // const postsReadyForDb = posts.map(post => ({ ...nulledOptionalPostColumns, ...post }))
     // eslint-disable-next-line max-lines-per-function
     const query = e.params({ posts: e.json }, params =>
+      // eslint-disable-next-line max-lines-per-function
       e.for(e.json_array_unpack(params.posts), post =>
         e
           .insert(e.Post, {
             timestamp: e.cast(e.int64, e.json_get(post, 'timestamp')),
-            subredditName: e.cast(e.str, e.json_get(post, 'subredditName')),
+            feedType: e.cast(e.str, e.json_get(post, 'feedType')),
+            feedName: e.cast(e.str, e.json_get(post, 'feedName')),
             mediaUrl: e.cast(e.str, e.json_get(post, 'mediaUrl')),
             postId: e.cast(e.str, e.json_get(post, 'postId')),
             postUrl: e.cast(e.str, e.json_get(post, 'postUrl')),
@@ -323,91 +324,77 @@ class DB {
     )
   }
 
-  static updatePostInfo(postDataUpdates: MarkRequired<Partial<BasePost>, 'postId'>): Promise<void> {
+  static updatePostInfo(
+    postDataUpdates: MarkRequired<Partial<BasePost>, 'postId' | 'feedType'>
+  ): Promise<void> {
+    const uniqueId = `${postDataUpdates.feedType}-${postDataUpdates.postId}`
     return e
       .update(e.Post, () => ({
-        filter_single: { postId: postDataUpdates.postId },
+        filter_single: { uniqueId },
         set: { ...postDataUpdates },
       }))
       .run(client)
       .then(F.ignore)
   }
 
-  static addSubreddit(subreddit: BaseSubreddit['subreddit']): Promise<void> {
-    return e.insert(e.Subreddit, { subreddit }).run(client).then(F.ignore)
+  static addFeed(feedName: BaseFeed['feedName'], feedType: BaseFeed['feedName']): Promise<void> {
+    return e.insert(e.Feed, { feedName, feedType }).run(client).then(F.ignore)
   }
 
-  static getAllSubreddits(): Promise<readonly BaseSubreddit[]> {
-    return e.select(e.Subreddit, s => ({ ...subredditShapeSansIdSansDBLinks(s) })).run(client)
+  static getAllFeeds(): Promise<readonly BaseFeed[]> {
+    return e.select(e.Feed, f => ({ ...feedShapeSansIdSansDBLinks(f) })).run(client)
   }
 
-  static getSingleSubreddit({ subreddit }: { readonly subreddit: string }): Promise<Maybe<BaseSubreddit>> {
+  static getSingleFeed(feedName: BaseFeed['feedName'], feedType: BaseFeed['feedName']) {
+    const feedId = `${feedName}-${feedType}`
     return e
-      .select(e.Subreddit, s => ({ ...subredditShapeSansIdSansDBLinks(s), filter_single: { subreddit } }))
+      .select(e.Feed, f => ({ ...feedShapeSansIdSansDBLinks(f), filter_single: { feedId: feedId } }))
       .run(client)
       .then(nullable)
   }
 
-  static getFavouriteSubreddits(): Promise<readonly BaseSubreddit[]> {
+  static getFavouriteFeeds(): Promise<readonly BaseFeed[]> {
     return e
-      .select(e.Subreddit, sub => ({
-        ...subredditShapeSansIdSansDBLinks(sub),
-        filter: e.op(sub.favourited, '=', true),
+      .select(e.Feed, feed => ({
+        ...feedShapeSansIdSansDBLinks(feed),
+        filter: e.op(feed.favourited, '=', true),
       }))
       .run(client)
   }
 
-  static getSubsThatNeedToBeUpdated(): Promise<readonly BaseSubreddit[]> {
+  static getFeedsThatNeedToBeUpdated(): Promise<readonly BaseFeed[]> {
     const oneHourInMillisecs = 3_600_000
     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
 
     return e
-      .select(e.Subreddit, s => ({
-        ...subredditShapeSansIdSansDBLinks(s),
-        filter: e.op(s.lastUpdated, '<', anHourAgo()),
+      .select(e.Feed, f => ({
+        ...feedShapeSansIdSansDBLinks(f),
+        filter: e.op(f.lastUpdated, '<', anHourAgo()),
       }))
       .run(client)
   }
 
-  static updateSubredditLastUpdatedTimeToNow(subreddit: BaseSubreddit['subreddit']): Promise<void> {
+  static updateFeedLastUpdatedTimeToNow(
+    feedName: BaseFeed['feedName'],
+    feedType: BaseFeed['feedName']
+  ): Promise<void> {
+    const feedId = `${feedName}-${feedType}`
     return e
-      .update(e.Subreddit, () => ({
-        filter_single: { subreddit },
+      .update(e.Feed, () => ({
+        filter_single: { feedId },
         set: { lastUpdated: Date.now() },
       }))
       .run(client)
       .then(F.ignore)
   }
 
-  static getSubredditGroupsAssociatedWithSubreddit() {
-  return e.select()
-  }
+  // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
+  // static getFeedTagsAssociatedWithFeed() {
+  //   return e.select()
+  // }
 
-  static getAllSubredditGroups(): Promise<readonly BaseSubredditGroup[]> {
-    return e.select(e.SubredditGroup, sg => ({ ...subredditGroupShapeSansIdSansDBLinks(sg) })).run(client)
-  }
-
-  static getSingleSubredditGroup({
-    subGroup,
-  }: {
-    readonly subGroup: string
-  }): Promise<Maybe<BaseSubredditGroup>> {
-    return e
-      .select(e.SubredditGroup, sg => ({
-        ...subredditGroupShapeSansIdSansDBLinks(sg),
-        filter_single: { subGroup },
-      }))
-      .run(client)
-      .then(nullable)
-  }
-
-  static getFavouriteSubredditGroups(): Promise<readonly BaseSubredditGroup[]> {
-    return e
-      .select(e.SubredditGroup, sg => ({
-        ...subredditGroupShapeSansIdSansDBLinks(sg),
-        filter: e.op(sg.favourited, '=', true),
-      }))
-      .run(client)
+  static getAllFeedTags(): Promise<readonly BaseTag[]> {
+    return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
   }
 
   static getAllTags(): Promise<readonly BaseTag[]> {
