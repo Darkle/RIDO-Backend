@@ -1,0 +1,73 @@
+DEFINE NAMESPACE rido;
+DEFINE DATABASE rido;
+
+
+DEFINE TABLE log SCHEMAFULL;
+
+DEFINE FIELD createdAt ON TABLE log TYPE float;
+DEFINE FIELD level ON TABLE log TYPE string ASSERT $value INSIDE ['fatal', 'error', 'warn', 'info', 'debug', 'trace'];
+DEFINE FIELD message ON TABLE log TYPE string;
+DEFINE FIELD service ON TABLE log TYPE string;
+DEFINE FIELD error ON TABLE log TYPE string;
+DEFINE FIELD other ON TABLE log TYPE object;
+DEFINE FIELD otherAsStr ON TABLE log TYPE string;
+
+DEFINE TABLE settings SCHEMAFULL;
+DEFINE FIELD numberMediaDownloadsAtOnce ON TABLE settings TYPE int VALUE $value OR 2 ASSERT $value > 0;
+DEFINE FIELD numberImagesProcessAtOnce ON TABLE settings TYPE int VALUE $value OR 2 ASSERT $value > 0;
+DEFINE FIELD updateAllDay ON TABLE settings TYPE bool VALUE $value OR true;
+DEFINE FIELD updateStartingHour ON TABLE settings TYPE int VALUE $value OR 1 ASSERT $value > 0 ASSERT $value < 23;
+DEFINE FIELD updateEndingHour ON TABLE settings TYPE int VALUE $value OR 7 ASSERT $value > 0 ASSERT $value < 23;
+DEFINE FIELD imageCompressionQuality ON TABLE settings TYPE int VALUE $value OR 80 ASSERT $value > 0 ASSERT $value <= 100;
+DEFINE FIELD maxImageWidthForNonArchiveImage ON TABLE settings TYPE int VALUE $value OR 1400 ASSERT $value > 0;
+
+-- Create only creates a new one if not exists.
+CREATE settings:settings;
+
+DEFINE TABLE post SCHEMAFULL;
+DEFINE FIELD postId ON TABLE post TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD feedType ON TABLE post TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD feedName ON TABLE post TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD uniqueId ON TABLE post TYPE string VALUE function(){
+  return this.feedType.toLowerCase() + '-' + this.postId;
+};
+DEFINE FIELD title ON TABLE post TYPE string;
+DEFINE FIELD postUrl ON TABLE post TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD score ON TABLE post TYPE int;
+-- The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of _SECONDS_ since the epoch). It's UTC is GMT, aka no timezone.
+DEFINE FIELD timestamp ON TABLE post TYPE int ASSERT $value > 1 ASSERT $value >= 1;
+DEFINE FIELD mediaUrl ON TABLE post TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD mediaHasBeenDownloaded ON TABLE post TYPE bool VALUE $value OR false;
+DEFINE FIELD couldNotDownload ON TABLE post TYPE bool VALUE $value OR false;
+DEFINE FIELD postMediaImagesHaveBeenProcessed ON TABLE post TYPE bool VALUE $value OR false;
+DEFINE FIELD postThumbnailsCreated ON TABLE post TYPE bool VALUE $value OR false;
+DEFINE FIELD postMediaImagesProcessingError ON TABLE post TYPE bool VALUE $value OR NULL;
+DEFINE FIELD downloadError ON TABLE post TYPE bool VALUE $value OR NULL;
+DEFINE FIELD mediaDownloadTries ON TABLE post TYPE int VALUE $value OR 0 ASSERT $value > 0;
+DEFINE FIELD downloadedMediaCount ON TABLE post TYPE int VALUE $value OR 0 ASSERT $value > 0;
+DEFINE FIELD downloadedMedia ON TABLE post TYPE array VALUE $value OR NULL;
+
+DEFINE INDEX uniqueId ON TABLE post COLUMNS uniqueId UNIQUE;
+
+
+DEFINE TABLE feed SCHEMAFULL;
+DEFINE FIELD feedId ON TABLE feed TYPE string VALUE function(){
+  return this.feedType.toLowerCase() + '-' + this.feedName;
+};
+DEFINE FIELD feedType ON TABLE feed TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD feedName ON TABLE feed TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD favourited ON TABLE feed TYPE bool VALUE $value OR false;
+DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value >= 1;
+DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value >= 1;
+-- updateCheck_LastPostSeen is only used for non-reddit feeds.
+DEFINE FIELD updateCheck_LastPostSeen ON TABLE feed TYPE string;
+
+DEFINE INDEX feedId ON TABLE post COLUMNS feedId UNIQUE;
+
+
+DEFINE TABLE tag SCHEMAFULL;
+
+DEFINE FIELD tag ON TABLE tag TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD favourited ON TABLE tag TYPE bool VALUE $value OR false;
+
+DEFINE INDEX tag ON TABLE tag COLUMNS tag UNIQUE;

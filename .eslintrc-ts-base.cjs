@@ -76,6 +76,7 @@ module.exports = {
       },
     ],
     '@typescript-eslint/space-infix-ops': ['error', { int32Hint: false }],
+    '@typescript-eslint/switch-exhaustiveness-check': 'error',
     'functional/no-return-void': 'off',
     'functional/no-class': 'off',
     'functional/no-expression-statement': 'off',
