@@ -2,6 +2,9 @@ DEFINE NAMESPACE rido;
 DEFINE DATABASE rido;
 
 
+-- ------------------------------
+-- TABLE: log
+-- ------------------------------
 DEFINE TABLE log SCHEMAFULL;
 
 DEFINE FIELD createdAt ON TABLE log TYPE float;
@@ -12,7 +15,11 @@ DEFINE FIELD error ON TABLE log TYPE string;
 DEFINE FIELD other ON TABLE log TYPE object;
 DEFINE FIELD otherAsStr ON TABLE log TYPE string;
 
+-- ------------------------------
+-- TABLE: settings
+-- ------------------------------
 DEFINE TABLE settings SCHEMAFULL;
+
 DEFINE FIELD numberMediaDownloadsAtOnce ON TABLE settings TYPE int VALUE $value OR 2 ASSERT $value > 0;
 DEFINE FIELD numberImagesProcessAtOnce ON TABLE settings TYPE int VALUE $value OR 2 ASSERT $value > 0;
 DEFINE FIELD updateAllDay ON TABLE settings TYPE bool VALUE $value OR true;
@@ -24,8 +31,15 @@ DEFINE FIELD maxImageWidthForNonArchiveImage ON TABLE settings TYPE int VALUE $v
 -- Create only creates a new one if not exists.
 CREATE settings:settings;
 
+-- ------------------------------
+-- TABLE: post
+-- ------------------------------
 DEFINE TABLE post SCHEMAFULL;
+
 DEFINE FIELD postId ON TABLE post TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD feed ON TABLE post TYPE record(Feed);
+DEFINE FIELD tags ON TABLE post TYPE array VALUE $value OR NULL;
+DEFINE FIELD tags[*] ON TABLE post TYPE record(Tag);
 DEFINE FIELD feedType ON TABLE post TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD feedName ON TABLE post TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD uniqueId ON TABLE post TYPE string VALUE function(){
@@ -46,11 +60,19 @@ DEFINE FIELD downloadError ON TABLE post TYPE bool VALUE $value OR NULL;
 DEFINE FIELD mediaDownloadTries ON TABLE post TYPE int VALUE $value OR 0 ASSERT $value > 0;
 DEFINE FIELD downloadedMediaCount ON TABLE post TYPE int VALUE $value OR 0 ASSERT $value > 0;
 DEFINE FIELD downloadedMedia ON TABLE post TYPE array VALUE $value OR NULL;
+DEFINE FIELD downloadedMedia[*] ON TABLE post TYPE string;
 
 DEFINE INDEX uniqueId ON TABLE post COLUMNS uniqueId UNIQUE;
 
-
+-- ------------------------------
+-- TABLE: feed
+-- ------------------------------
 DEFINE TABLE feed SCHEMAFULL;
+
+DEFINE FIELD tags ON TABLE feed TYPE array VALUE $value OR NULL;
+DEFINE FIELD tags[*] ON TABLE feed TYPE record(Tag);
+DEFINE FIELD posts ON TABLE feed TYPE array VALUE $value OR NULL;
+DEFINE FIELD posts[*] ON TABLE feed TYPE record(Post);
 DEFINE FIELD feedId ON TABLE feed TYPE string VALUE function(){
   return this.feedType.toLowerCase() + '-' + this.feedName;
 };
@@ -58,15 +80,21 @@ DEFINE FIELD feedType ON TABLE feed TYPE string ASSERT string::length($value) > 
 DEFINE FIELD feedName ON TABLE feed TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD favourited ON TABLE feed TYPE bool VALUE $value OR false;
 DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value >= 1;
-DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value >= 1;
 -- updateCheck_LastPostSeen is only used for non-reddit feeds.
 DEFINE FIELD updateCheck_LastPostSeen ON TABLE feed TYPE string;
 
-DEFINE INDEX feedId ON TABLE post COLUMNS feedId UNIQUE;
+DEFINE INDEX feedId ON TABLE feed COLUMNS feedId UNIQUE;
 
 
+-- ------------------------------
+-- TABLE: tag
+-- ------------------------------
 DEFINE TABLE tag SCHEMAFULL;
 
+DEFINE FIELD feeds ON TABLE tag TYPE array VALUE $value OR NULL;
+DEFINE FIELD feeds[*] ON TABLE tag TYPE record(Feed);
+DEFINE FIELD posts ON TABLE tag TYPE array VALUE $value OR NULL;
+DEFINE FIELD posts[*] ON TABLE tag TYPE record(Post);
 DEFINE FIELD tag ON TABLE tag TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD favourited ON TABLE tag TYPE bool VALUE $value OR false;
 
