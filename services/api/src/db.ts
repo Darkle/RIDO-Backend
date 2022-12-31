@@ -3,17 +3,30 @@
 import { nullable, type Maybe } from 'pratica'
 import { F } from '@mobily/ts-belt'
 import type { MarkRequired } from 'ts-essentials'
-import Surreal from 'surrealdb.js'
+import Surreal, { type Result } from 'surrealdb.js'
 
 import { EE } from './events'
-import type { Settings } from './entities'
+import type { Feed, Log, Post, Settings, Tag } from './entities'
 
 const client = new Surreal('http://127.0.0.1:8000/rpc')
-// const client = Surreal.Instance
 
-/*****
-  NOTE: return a Maybe (nullable) if its a read query for a single item
-*****/
+type QueryResults<T> = readonly Result<readonly T[]>[]
+
+function handleResultMultipleItems<T>(
+  results: readonly Result<readonly T[]>[]
+): readonly T[] | Promise<never> {
+  const res = results[0]
+  if (!res) return []
+  return res.error ? Promise.reject(res.error) : res.result
+}
+
+function handleResultSingleItem<T>(results: readonly Result<readonly T[]>[]): Promise<never> | Maybe<T> {
+  //NOTE: returning a Maybe when its single item (not an array) to force handle undefined
+  const res = results[0]
+  if (!res) return nullable(res)
+  return res.error ? Promise.reject(res.error) : nullable(res.result[0])
+}
+
 class DB {
   readonly close = client.close
 
@@ -32,284 +45,166 @@ class DB {
     })
   }
 
-  // static saveLog(log: Log): Promise<void> {
-  //   return e
-  //     .insert(e.Log, { ...log })
-  //     .run(client)
-  //     .then(F.ignore)
-  // }
+  static saveLog(log: Log): Promise<void> {
+    const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
+    return client.create('log', { ...log, otherAsStr }).then(F.ignore)
+  }
 
-  // static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
+  static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
 
-  //   return e
-  //     .select(e.Log, log => ({
-  //       ...e.Log['*'],
-  //       limit,
-  //       offset: skip,
-  //       order_by: {
-  //         expression: log.createdAt,
-  //         direction: e.DESC,
-  //       },
-  //     }))
-  //     .run(client)
-  // }
+    return client
+      .query<QueryResults<Log>>('SELECT * FROM log LIMIT $limit START $skip ORDER BY createdAt DESC', {
+        limit,
+        skip,
+      })
+      .then(handleResultMultipleItems)
+  }
 
-  // // eslint-disable-next-line max-lines-per-function
-  // static findLogs_AllLevels_WithSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   searchQuery: string
-  // ): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   const sq = `%${searchQuery}%`
+  static findLogs_AllLevels_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
 
-  //   return e
-  //     .select(e.Log, log => ({
-  //       ...e.Log['*'],
-  //       limit,
-  //       offset: skip,
-  //       order_by: {
-  //         expression: log.createdAt,
-  //         direction: e.DESC,
-  //       },
-  //       filter: e.op(
-  //         e.op(e.op(log.message, 'ilike', sq), 'or', e.op(log.service, 'ilike', sq)),
-  //         'or',
-  //         e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.otherAsStr, 'ilike', sq))
-  //       ),
-  //     }))
-  //     .run(client)
-  // }
+    return client
+      .query<QueryResults<Log>>(
+        `SELECT *, string::lowercase(message) AS messageLC, string::lowercase(service) AS serviceLC, string::lowercase(error) AS errorLC, string::lowercase(otherAsStr) AS otherAsStrLC FROM log messageLC CONTAINS $sq OR serviceLC CONTAINS $sq OR errorLC CONTAINS $sq OR otherAsStrLC CONTAINS $sq LIMIT $limit START $skip ORDER BY createdAt DESC`,
+        { limit, skip, sq: searchQuery }
+      )
+      .then(handleResultMultipleItems)
+  }
 
-  // static findLogs_LevelFilter_NoSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   logLevel: Log['level']
-  // ): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
+  static findLogs_LevelFilter_NoSearch_Paginated(
+    page: number,
+    limit: number,
+    logLevel: Log['level']
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
 
-  //   return e
-  //     .select(e.Log, log => ({
-  //       ...e.Log['*'],
-  //       limit,
-  //       offset: skip,
-  //       order_by: {
-  //         expression: log.createdAt,
-  //         direction: e.DESC,
-  //       },
-  //       filter: e.op(log.level, '=', logLevel),
-  //     }))
-  //     .run(client)
-  // }
+    return client
+      .query<QueryResults<Log>>(
+        `SELECT * FROM log WHERE level = $logLevel LIMIT $limit START $skip ORDER BY createdAt DESC`,
+        { limit, skip, logLevel }
+      )
+      .then(handleResultMultipleItems)
+  }
 
-  // // eslint-disable-next-line max-lines-per-function
-  // static findLogs_LevelFilter_WithSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   searchQuery: string,
-  //   logLevel: Log['level']
-  // ): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   const sq = `%${searchQuery}%`
+  static findLogs_LevelFilter_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string,
+    logLevel: Log['level']
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
 
-  //   return e
-  //     .select(e.Log, log => ({
-  //       ...e.Log['*'],
-  //       limit,
-  //       offset: skip,
-  //       order_by: {
-  //         expression: log.createdAt,
-  //         direction: e.DESC,
-  //       },
-  //       filter: e.op(
-  //         e.op(log.level, '=', logLevel),
-  //         'and',
-  //         e.op(
-  //           e.op(e.op(log.message, 'ilike', sq), 'or', e.op(log.service, 'ilike', sq)),
-  //           'or',
-  //           e.op(e.op(log.error, 'ilike', sq), 'or', e.op(log.otherAsStr, 'ilike', sq))
-  //         )
-  //       ),
-  //     }))
-  //     .run(client)
-  // }
+    return client
+      .query<QueryResults<Log>>(
+        `SELECT *, string::lowercase(message) AS messageLC, string::lowercase(service) AS serviceLC, string::lowercase(error) AS errorLC, string::lowercase(otherAsStr) AS otherAsStrLC FROM log WHERE level = $logLevel AND messageLC CONTAINS $sq OR serviceLC CONTAINS $sq OR errorLC CONTAINS $sq OR otherAsStrLC CONTAINS $sq LIMIT $limit START $skip ORDER BY createdAt DESC`,
+        { limit, skip, sq: searchQuery, logLevel }
+      )
+      .then(handleResultMultipleItems)
+  }
 
-  // static getAllPosts(): Promise<readonly BasePost[]> {
-  //   return e.select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p) })).run(client)
-  // }
+  static getAllPosts(): Promise<readonly Post[]> {
+    return client.select('post')
+  }
 
-  // static getSinglePost(uniqueId: Post['uniqueId']): Promise<Maybe<BasePost>> {
-  //   return e
-  //     .select(e.Post, p => ({ ...postShapeSansIdSansDBLinks(p), filter_single: { uniqueId } }))
-  //     .run(client)
-  //     .then(nullable)
-  // }
+  static getSinglePost(uniqueId: Post['uniqueId']): Promise<Maybe<Post>> {
+    return client
+      .query<QueryResults<Post>>(`SELECT * FROM post WHERE uniqueId = $uniqueId`, {
+        uniqueId,
+      })
+      .then(handleResultSingleItem)
+  }
 
-  // static addPost(post: BasePost): Promise<void> {
-  //   return e.insert(e.Post, post).run(client).then(F.ignore)
-  // }
+  static addPost(post: Post): Promise<void> {
+    return client.create('post', { ...post }).then(F.ignore)
+  }
 
-  // // eslint-disable-next-line max-lines-per-function
-  // static batchAddPosts(posts: readonly BasePost[]): Promise<void> {
-  //   /*****
-  //     Docs state that you need to set any optional columns to null when using for loop
-  //     https://www.edgedb.com/docs/clients/js/for#bulk-inserts
-  //   *****/
-  //   // Since json_get returns an empty set if nothing there, i think perhaps i dont need to do this
-  //   // const nulledOptionalPostColumns = {
-  //   //   couldNotDownload: null,
-  //   //   downloadError: null,
-  //   //   downloadedMedia: null,
-  //   //   downloadedMediaCount: null,
-  //   //   mediaDownloadTries: null,
-  //   //   mediaHasBeenDownloaded: null,
-  //   //   postMediaImagesHaveBeenProcessed: null,
-  //   //   postMediaImagesProcessingError: null,
-  //   //   postThumbnailsCreated: null,
-  //   // }
+  static batchAddPosts(posts: readonly Post[]): Promise<void> {
+    return client.query('INSERT INTO post ($posts);', { posts }).then(F.ignore)
+  }
 
-  //   // const postsReadyForDb = posts.map(post => ({ ...nulledOptionalPostColumns, ...post }))
-  //   // eslint-disable-next-line max-lines-per-function
-  //   const query = e.params({ posts: e.json }, params =>
-  //     // eslint-disable-next-line max-lines-per-function
-  //     e.for(e.json_array_unpack(params.posts), post =>
-  //       e
-  //         .insert(e.Post, {
-  //           timestamp: e.cast(e.int64, e.json_get(post, 'timestamp')),
-  //           feedType: e.cast(e.str, e.json_get(post, 'feedType')),
-  //           feedName: e.cast(e.str, e.json_get(post, 'feedName')),
-  //           mediaUrl: e.cast(e.str, e.json_get(post, 'mediaUrl')),
-  //           postId: e.cast(e.str, e.json_get(post, 'postId')),
-  //           postUrl: e.cast(e.str, e.json_get(post, 'postUrl')),
-  //           score: e.cast(e.int64, e.json_get(post, 'score')),
-  //           title: e.cast(e.str, e.json_get(post, 'title')),
-  //           postThumbnailsCreated: e.cast(e.bool, e.json_get(post, 'postThumbnailsCreated')),
-  //           postMediaImagesProcessingError: e.cast(e.str, e.json_get(post, 'postMediaImagesProcessingError')),
-  //           postMediaImagesHaveBeenProcessed: e.cast(
-  //             e.bool,
-  //             e.json_get(post, 'postMediaImagesHaveBeenProcessed')
-  //           ),
-  //           mediaHasBeenDownloaded: e.cast(e.bool, e.json_get(post, 'mediaHasBeenDownloaded')),
-  //           mediaDownloadTries: e.cast(e.int32, e.json_get(post, 'mediaDownloadTries')),
-  //           downloadedMediaCount: e.cast(e.int32, e.json_get(post, 'downloadedMediaCount')),
-  //           downloadedMedia: e.cast(e.array(e.str), e.json_get(post, 'downloadedMedia')),
-  //           downloadError: e.cast(e.str, e.json_get(post, 'downloadError')),
-  //           couldNotDownload: e.cast(e.bool, e.json_get(post, 'couldNotDownload')),
-  //         })
-  //         .unlessConflict(p => ({ on: p.postId }))
-  //     )
-  //   )
+  static fetchAllPostIds(): Promise<readonly Post[]> {
+    return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
+  }
 
-  //   return query.run(client, { posts }).then(F.ignore)
-  // }
+  static getPostsThatNeedMediaToBeDownloaded(): Promise<
+    readonly Pick<Post, 'postId' | 'mediaUrl' | 'mediaDownloadTries'>[]
+  > {
+    return client
+      .query<QueryResults<Pick<Post, 'postId' | 'mediaUrl' | 'mediaDownloadTries'>>>(
+        `SELECT postId, mediaUrl, mediaDownloadTries FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
+      )
+      .then(handleResultMultipleItems)
+  }
 
-  // static fetchAllPostIds(): Promise<readonly BasePost['postId'][]> {
-  //   return e
-  //     .select(e.Post, () => ({ postId: true }))
-  //     .run(client)
-  //     .then(results => results.map(result => result.postId))
-  // }
+  static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
+    return client
+      .query<QueryResults<Post>>(
+        `SELECT * FROM post WHERE mediaHasBeenDownloaded = true AND couldNotDownload = false AND postMediaImagesHaveBeenProcessed = false`
+      )
+      .then(handleResultMultipleItems)
+  }
 
-  // static getPostsThatNeedMediaToBeDownloaded(): Promise<
-  //   readonly Pick<BasePost, 'postId' | 'mediaUrl' | 'mediaDownloadTries'>[]
-  // > {
-  //   return e
-  //     .select(e.Post, post => ({
-  //       postId: true,
-  //       mediaUrl: true,
-  //       mediaDownloadTries: true,
-  //       filter: e.op(
-  //         e.op(post.mediaHasBeenDownloaded, '=', false),
-  //         'and',
-  //         e.op(post.couldNotDownload, '=', false)
-  //       ),
-  //     }))
-  //     .run(client)
-  // }
+  static updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'postId' | 'feedType'>): Promise<void> {
+    const uniqueId = `${postDataUpdates.feedType}-${postDataUpdates.postId}`
 
-  // static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly BasePost[]> {
-  //   return Promise.resolve(
-  //     e
-  //       .select(e.Post, post => ({
-  //         ...postShapeSansIdSansDBLinks(post),
-  //         filter: e.op(
-  //           e.op(post.mediaHasBeenDownloaded, '=', true),
-  //           'and',
-  //           e.op(
-  //             e.op(post.couldNotDownload, '=', false),
-  //             'and',
-  //             e.op(post.postMediaImagesHaveBeenProcessed, '=', false)
-  //           )
-  //         ),
-  //       }))
-  //       .run(client)
-  //   )
-  // }
+    return client
+      .query('UPDATE post CONTENT $postDataUpdates WHERE uniqueId = $uniqueId', {
+        postDataUpdates,
+        uniqueId,
+      })
+      .then(F.ignore)
+  }
 
-  // static updatePostInfo(
-  //   postDataUpdates: MarkRequired<Partial<BasePost>, 'postId' | 'feedType'>
-  // ): Promise<void> {
-  //   const uniqueId = `${postDataUpdates.feedType}-${postDataUpdates.postId}`
-  //   return e
-  //     .update(e.Post, () => ({
-  //       filter_single: { uniqueId },
-  //       set: { ...postDataUpdates },
-  //     }))
-  //     .run(client)
-  //     .then(F.ignore)
-  // }
+  static addFeed(feedName: Feed['feedName'], feedType: Feed['feedType']): Promise<void> {
+    return client.create('feed', { feedName, feedType }).then(F.ignore)
+  }
 
-  // static addFeed(feedName: BaseFeed['feedName'], feedType: BaseFeed['feedName']): Promise<void> {
-  //   return e.insert(e.Feed, { feedName, feedType }).run(client).then(F.ignore)
-  // }
+  static getAllFeeds(): Promise<readonly Feed[]> {
+    return client.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleResultMultipleItems)
+  }
 
-  // static getAllFeeds(): Promise<readonly BaseFeed[]> {
-  //   return e.select(e.Feed, f => ({ ...feedShapeSansIdSansDBLinks(f) })).run(client)
-  // }
+  static getSingleFeed(feedName: Feed['feedName'], feedType: Feed['feedName']): Promise<Maybe<Feed>> {
+    const feedId = `${feedName}-${feedType}`
+    return client
+      .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $feedId', { feedId })
+      .then(handleResultSingleItem)
+  }
 
-  // static getSingleFeed(feedName: BaseFeed['feedName'], feedType: BaseFeed['feedName']) {
-  //   const feedId = `${feedName}-${feedType}`
-  //   return e
-  //     .select(e.Feed, f => ({ ...feedShapeSansIdSansDBLinks(f), filter_single: { feedId: feedId } }))
-  //     .run(client)
-  //     .then(nullable)
-  // }
+  static getFavouriteFeeds(): Promise<readonly Feed[]> {
+    return client
+      .query<QueryResults<Feed>>('SELECT * FROM feed WHERE favourited = true')
+      .then(handleResultMultipleItems)
+  }
 
-  // static getFavouriteFeeds(): Promise<readonly BaseFeed[]> {
-  //   return e
-  //     .select(e.Feed, feed => ({
-  //       ...feedShapeSansIdSansDBLinks(feed),
-  //       filter: e.op(feed.favourited, '=', true),
-  //     }))
-  //     .run(client)
-  // }
+  static getFeedsThatNeedToBeUpdated(): Promise<readonly Feed[]> {
+    const oneHourInMillisecs = 3_600_000
+    const anHourAgo = (): number => Date.now() - oneHourInMillisecs
 
-  // static getFeedsThatNeedToBeUpdated(): Promise<readonly BaseFeed[]> {
-  //   const oneHourInMillisecs = 3_600_000
-  //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
+    return client
+      .query<QueryResults<Feed>>('SELECT * FROM feed WHERE lastUpdated < $anHourAgo', {
+        anHourAgo: anHourAgo(),
+      })
+      .then(handleResultMultipleItems)
+  }
 
-  //   return e
-  //     .select(e.Feed, f => ({
-  //       ...feedShapeSansIdSansDBLinks(f),
-  //       filter: e.op(f.lastUpdated, '<', anHourAgo()),
-  //     }))
-  //     .run(client)
-  // }
+  static updateFeedLastUpdatedTimeToNow(
+    feedName: Feed['feedName'],
+    feedType: Feed['feedName']
+  ): Promise<void> {
+    const feedId = `${feedName}-${feedType}`
 
-  // static updateFeedLastUpdatedTimeToNow(
-  //   feedName: BaseFeed['feedName'],
-  //   feedType: BaseFeed['feedName']
-  // ): Promise<void> {
-  //   const feedId = `${feedName}-${feedType}`
-  //   return e
-  //     .update(e.Feed, () => ({
-  //       filter_single: { feedId },
-  //       set: { lastUpdated: Date.now() },
-  //     }))
-  //     .run(client)
-  //     .then(F.ignore)
-  // }
+    return client
+      .query('UPDATE feed CONTENT { lastUpdated: $now } WHERE feedId = $feedId', {
+        now: Date.now(),
+        feedId,
+      })
+      .then(F.ignore)
+  }
 
   // // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
   // // static getFeedTagsAssociatedWithFeed() {
@@ -320,25 +215,21 @@ class DB {
   //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
   // }
 
-  // static getAllTags(): Promise<readonly BaseTag[]> {
-  //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
-  // }
+  static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
+    return client
+      .query<QueryResults<Tag>>('SELECT * FROM tag WHERE tag = $tag', { tag })
+      .then(handleResultSingleItem)
+  }
 
-  // static getSingleTag({ tag }: { readonly tag: string }): Promise<Maybe<BaseTag>> {
-  //   return e
-  //     .select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t), filter_single: { tag } }))
-  //     .run(client)
-  //     .then(nullable)
-  // }
+  static getAllTags(): Promise<readonly Tag[]> {
+    return client.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleResultMultipleItems)
+  }
 
-  // static getFavouriteTags(): Promise<readonly BaseTag[]> {
-  //   return e
-  //     .select(e.Tag, tag => ({
-  //       ...tagShapeSansIdSansDBLinks(tag),
-  //       filter: e.op(tag.favourited, '=', true),
-  //     }))
-  //     .run(client)
-  // }
+  static getFavouriteTags(): Promise<readonly Tag[]> {
+    return client
+      .query<QueryResults<Tag>>('SELECT * FROM tag WHERE favourited = true')
+      .then(handleResultMultipleItems)
+  }
 }
 
 // const delay = (): Promise<unknown> =>

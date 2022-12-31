@@ -19,5 +19,6 @@
     ".env.dev": "dotenv",
     ".env.defaults": "dotenv",
     ".env.schema": "dotenv",
-  }
+  },
+  "Codegeex.EnableExtension": false
 }

@@ -87,13 +87,58 @@ DB.init().catch(err => console.error(err))
 // export type { AppRouter }
 
 setTimeout(() => {
-  DB.getSettings()
+  DB.getAllPosts()
+    .then(res => {
+      // res.cata({
+      //   Just: h => console.log(h),
+      //   Nothing: () => console.log(`no data :-(`),
+      // })
+      console.log('res', res)
+    })
+    // .then(() =>
+    //   DB.batchAddPosts([
+    //     {
+    //       postId: 'foo3',
+    //       feed: 'merp3',
+    //       feedType: 'derp3',
+    //       feedName: 'usurp',
+    //       title: 'title of thing',
+    //       postUrl: 'httpasd.com',
+    //       score: 11,
+    //       timestamp: 1,
+    //       mediaUrl: 'httpm.asd',
+    //       mediaHasBeenDownloaded: false,
+    //       couldNotDownload: false,
+    //       postMediaImagesHaveBeenProcessed: false,
+    //       postThumbnailsCreated: false,
+    //       mediaDownloadTries: 0,
+    //       downloadedMediaCount: 0,
+    //     },
+    //     {
+    //       postId: 'foo4',
+    //       feed: 'merp4',
+    //       feedType: 'derp4',
+    //       feedName: 'usurp',
+    //       title: 'title of thing',
+    //       postUrl: 'httpasd.com',
+    //       score: 11,
+    //       timestamp: 1,
+    //       mediaUrl: 'httpm.asd',
+    //       mediaHasBeenDownloaded: false,
+    //       couldNotDownload: false,
+    //       postMediaImagesHaveBeenProcessed: false,
+    //       postThumbnailsCreated: false,
+    //       mediaDownloadTries: 0,
+    //       downloadedMediaCount: 0,
+    //     },
+    //   ])
+    // )
+    // .then(() => DB.getAllPosts())
     .then(res => {
       console.log('res', res)
     })
-    .then(() => DB.updateSettings({ numberMediaDownloadsAtOnce: 333 }))
     .catch(err => {
       console.log('in error catch')
       console.error(err)
     })
-}, 3000)
+}, 1000)

@@ -13,11 +13,11 @@ interface Settings {
 interface Log {
   readonly createdAt: number
   readonly level: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace'
-  readonly message: string
-  readonly service: string
-  readonly error: string
-  readonly other: Jsonifiable
-  readonly otherAsStr: string
+  readonly message?: string
+  readonly service?: string
+  readonly error?: string
+  readonly other?: Jsonifiable
+  readonly otherAsStr?: string
 }
 
 interface Post {

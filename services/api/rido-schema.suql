@@ -49,7 +49,7 @@ DEFINE FIELD title ON TABLE post TYPE string;
 DEFINE FIELD postUrl ON TABLE post TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD score ON TABLE post TYPE int;
 -- The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of _SECONDS_ since the epoch). It's UTC is GMT, aka no timezone.
-DEFINE FIELD timestamp ON TABLE post TYPE int ASSERT $value > 1 ASSERT $value >= 1;
+DEFINE FIELD timestamp ON TABLE post TYPE int ASSERT $value > 0;
 DEFINE FIELD mediaUrl ON TABLE post TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD mediaHasBeenDownloaded ON TABLE post TYPE bool VALUE $value OR false;
 DEFINE FIELD couldNotDownload ON TABLE post TYPE bool VALUE $value OR false;
@@ -57,8 +57,8 @@ DEFINE FIELD postMediaImagesHaveBeenProcessed ON TABLE post TYPE bool VALUE $val
 DEFINE FIELD postThumbnailsCreated ON TABLE post TYPE bool VALUE $value OR false;
 DEFINE FIELD postMediaImagesProcessingError ON TABLE post TYPE bool VALUE $value OR NULL;
 DEFINE FIELD downloadError ON TABLE post TYPE bool VALUE $value OR NULL;
-DEFINE FIELD mediaDownloadTries ON TABLE post TYPE int VALUE $value OR 0 ASSERT $value > 0;
-DEFINE FIELD downloadedMediaCount ON TABLE post TYPE int VALUE $value OR 0 ASSERT $value > 0;
+DEFINE FIELD mediaDownloadTries ON TABLE post TYPE int VALUE $value OR 0;
+DEFINE FIELD downloadedMediaCount ON TABLE post TYPE int VALUE $value OR 0;
 DEFINE FIELD downloadedMedia ON TABLE post TYPE array VALUE $value OR NULL;
 DEFINE FIELD downloadedMedia[*] ON TABLE post TYPE string;
 
