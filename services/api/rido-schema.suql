@@ -28,7 +28,7 @@ DEFINE FIELD updateEndingHour ON TABLE settings TYPE int VALUE $value OR 7 ASSER
 DEFINE FIELD imageCompressionQuality ON TABLE settings TYPE int VALUE $value OR 80 ASSERT $value > 0 ASSERT $value <= 100;
 DEFINE FIELD maxImageWidthForNonArchiveImage ON TABLE settings TYPE int VALUE $value OR 1400 ASSERT $value > 0;
 
--- Create only creates a new one if not exists.
+-- CREATE only creates a new one if not exists.
 CREATE settings:settings;
 
 -- ------------------------------

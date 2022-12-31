@@ -6,9 +6,10 @@ import type { MarkRequired } from 'ts-essentials'
 import Surreal from 'surrealdb.js'
 
 import { EE } from './events'
-// import type { Settings, Log, Post, Feed, Tag } from '../dbschema/interfaces'
+import type { Settings } from './entities'
 
 const client = new Surreal('http://127.0.0.1:8000/rpc')
+// const client = Surreal.Instance
 
 /*****
   NOTE: return a Maybe (nullable) if its a read query for a single item
@@ -17,53 +18,19 @@ class DB {
   readonly close = client.close
 
   static async init(): Promise<void> {
-    await client.use('rido', 'rido')
-    const record = await client.create('person:tobie', {
-      name: 'Tobie',
-      settings: {
-        active: true,
-        marketing: true,
-      },
-    })
-    const groups = await client.query('SELECT marketing, count() FROM type::table($tb) GROUP BY marketing', {
-      tb: 'person',
-    })
-    // const settings = await DB.getSettings()
-
-    // return settings ? Promise.resolve() : DB.createInitialSettings()
+    return client.use('rido', 'rido')
   }
 
-  // static createInitialSettings(): Promise<void> {
-  //   return e.insert(e.Settings, { uniqueId: 'settings' }).run(client).then(F.ignore)
-  // }
+  static getSettings(): Promise<Settings> {
+    // dont need to use `Maybe` here as settings will always be there
+    return client.select<Settings>('settings:settings').then(s => s.at(0) as Settings)
+  }
 
-  // static getSettings(): Promise<Settings> {
-  //   return (
-  //     e
-  //       .select(e.Settings, s => ({ ...settingsShapeSansId(s), filter_single: { uniqueId: 'settings' } }))
-  //       // dont need Maybe here as settings will always be there
-  //       .run(client) as Promise<Settings>
-  //   )
-  // }
-
-  // // eslint-disable-next-line max-lines-per-function
-  // static updateSettings(setting: Partial<Settings>): Promise<void> {
-  //   return e
-  //     .update(e.Settings, () => ({
-  //       filter_single: { uniqueId: 'settings' },
-  //       set: { ...setting },
-  //     }))
-  //     .run(client)
-  //     .then(() =>
-  //       e
-  //         .select(e.Settings, s => ({ ...settingsShapeSansId(s), filter_single: { uniqueId: 'settings' } }))
-  //         .run(client)
-  //     )
-  //     .then(updatedSettings => {
-  //       // We know that settings will be there
-  //       EE.emit('settingsUpdate', updatedSettings as Settings)
-  //     })
-  // }
+  static updateSettings(setting: Partial<Settings>): Promise<void> {
+    return client.update('settings:settings', setting).then(updatedSettings => {
+      EE.emit('settingsUpdate', updatedSettings)
+    })
+  }
 
   // static saveLog(log: Log): Promise<void> {
   //   return e

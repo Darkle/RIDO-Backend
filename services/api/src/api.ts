@@ -86,11 +86,14 @@ DB.init().catch(err => console.error(err))
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
-DB.getPostsWhereImagesNeedToBeOptimized()
-  .then(res => {
-    console.log('res', res)
-  })
-  .catch(err => {
-    console.log('in error catch')
-    console.error(err)
-  })
+setTimeout(() => {
+  DB.getSettings()
+    .then(res => {
+      console.log('res', res)
+    })
+    .then(() => DB.updateSettings({ numberMediaDownloadsAtOnce: 333 }))
+    .catch(err => {
+      console.log('in error catch')
+      console.error(err)
+    })
+}, 3000)
