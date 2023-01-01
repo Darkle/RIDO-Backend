@@ -87,16 +87,22 @@ DB.init().catch(err => console.error(err))
 // export type { AppRouter }
 
 setTimeout(() => {
-  DB.findLogs_LevelFilter_WithSearch_Paginated(1, 100, 'hoot', `error`)
-    .then(res => {
-      // res.cata({
-      //   Just: h => console.log(h),
-      //   Nothing: () => console.log(`no data :-(`),
-      // })
-      console.log('res', res)
-    })
-    // .then(() =>
-    // DB.saveLog({ level: 'debug', message: 'chritsmas', service: 'downloads', error: 'no presents', other: { foo: 'guide' } })
+  // DB.getAllPosts()
+  //   .then(res => {
+  //     // res.cata({
+  //     //   Just: h => console.log(h),
+  //     //   Nothing: () => console.log(`no data :-(`),
+  //     // })
+  //     console.log('res', res)
+  //   })
+  // .then(() =>
+  DB.saveLog({
+    level: 'info',
+    message: 'chritsmas',
+    service: 'downloads',
+    error: 'no presents',
+    other: { foo: 'tesssst' },
+  })
     // )
     // .then(() =>
     //   DB.batchAddPosts([

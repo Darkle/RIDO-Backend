@@ -55,6 +55,7 @@ class DB {
     /*****
       There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
       so just gonna check the vars are numbers then insert without escaping.
+      https://github.com/surrealdb/surrealdb.js/issues/67
     *****/
     invariant(G.isNumber(page), 'page param must be a number')
     invariant(G.isNumber(limit), 'limit param must be a number')
@@ -74,6 +75,7 @@ class DB {
     /*****
       There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
       so just gonna check the vars are numbers then insert without escaping.
+      https://github.com/surrealdb/surrealdb.js/issues/67
     *****/
     invariant(G.isNumber(page), 'page param must be a number')
     invariant(G.isNumber(limit), 'limit param must be a number')
@@ -96,6 +98,7 @@ class DB {
     /*****
       There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
       so just gonna check the vars are numbers then insert without escaping.
+      https://github.com/surrealdb/surrealdb.js/issues/67
     *****/
     invariant(G.isNumber(page), 'page param must be a number')
     invariant(G.isNumber(limit), 'limit param must be a number')
@@ -119,6 +122,7 @@ class DB {
     /*****
       There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
       so just gonna check the vars are numbers then insert without escaping.
+      https://github.com/surrealdb/surrealdb.js/issues/67
     *****/
     invariant(G.isNumber(page), 'page param must be a number')
     invariant(G.isNumber(limit), 'limit param must be a number')

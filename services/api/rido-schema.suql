@@ -5,7 +5,8 @@ DEFINE DATABASE rido;
 -- ------------------------------
 -- TABLE: log
 -- ------------------------------
-DEFINE TABLE log SCHEMAFULL;
+-- Going with SCHEMALESS for log table as want to allow it to take basically anything
+DEFINE TABLE log SCHEMALESS;
 
 DEFINE FIELD createdAt ON TABLE log TYPE float;
 DEFINE FIELD level ON TABLE log TYPE string ASSERT $value INSIDE ['fatal', 'error', 'warn', 'info', 'debug', 'trace'];
