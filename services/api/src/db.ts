@@ -1,9 +1,10 @@
 // import path from 'path'
 
 import { nullable, type Maybe } from 'pratica'
-import { F } from '@mobily/ts-belt'
+import { F, G } from '@mobily/ts-belt'
 import type { MarkRequired } from 'ts-essentials'
 import Surreal, { type Result } from 'surrealdb.js'
+import invariant from 'tiny-invariant'
 
 import { EE } from './events'
 import type { Feed, Log, Post, Settings, Tag } from './entities'
@@ -45,19 +46,23 @@ class DB {
     })
   }
 
-  static saveLog(log: Log): Promise<void> {
+  static saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
     const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
-    return client.create('log', { ...log, otherAsStr }).then(F.ignore)
+    return client.create('log', { ...log, otherAsStr, createdAt: Date.now() }).then(F.ignore)
   }
 
   static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+    /*****
+      There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
+      so just gonna check the vars are numbers then insert without escaping.
+    *****/
+    invariant(G.isNumber(page), 'page param must be a number')
+    invariant(G.isNumber(limit), 'limit param must be a number')
+
     const skip = page === 1 ? 0 : (page - 1) * limit
 
     return client
-      .query<QueryResults<Log>>('SELECT * FROM log LIMIT $limit START $skip ORDER BY createdAt DESC', {
-        limit,
-        skip,
-      })
+      .query<QueryResults<Log>>(`SELECT * FROM log ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`)
       .then(handleResultMultipleItems)
   }
 
@@ -66,12 +71,19 @@ class DB {
     limit: number,
     searchQuery: string
   ): Promise<readonly Log[]> {
+    /*****
+      There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
+      so just gonna check the vars are numbers then insert without escaping.
+    *****/
+    invariant(G.isNumber(page), 'page param must be a number')
+    invariant(G.isNumber(limit), 'limit param must be a number')
+
     const skip = page === 1 ? 0 : (page - 1) * limit
 
     return client
       .query<QueryResults<Log>>(
-        `SELECT *, string::lowercase(message) AS messageLC, string::lowercase(service) AS serviceLC, string::lowercase(error) AS errorLC, string::lowercase(otherAsStr) AS otherAsStrLC FROM log messageLC CONTAINS $sq OR serviceLC CONTAINS $sq OR errorLC CONTAINS $sq OR otherAsStrLC CONTAINS $sq LIMIT $limit START $skip ORDER BY createdAt DESC`,
-        { limit, skip, sq: searchQuery }
+        `SELECT * FROM log WHERE string::lowercase(message) CONTAINS $sq OR string::lowercase(service) CONTAINS $sq OR string::lowercase(error) CONTAINS $sq OR string::lowercase(otherAsStr) CONTAINS $sq ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
+        { sq: searchQuery.toLowerCase() }
       )
       .then(handleResultMultipleItems)
   }
@@ -81,12 +93,19 @@ class DB {
     limit: number,
     logLevel: Log['level']
   ): Promise<readonly Log[]> {
+    /*****
+      There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
+      so just gonna check the vars are numbers then insert without escaping.
+    *****/
+    invariant(G.isNumber(page), 'page param must be a number')
+    invariant(G.isNumber(limit), 'limit param must be a number')
+
     const skip = page === 1 ? 0 : (page - 1) * limit
 
     return client
       .query<QueryResults<Log>>(
-        `SELECT * FROM log WHERE level = $logLevel LIMIT $limit START $skip ORDER BY createdAt DESC`,
-        { limit, skip, logLevel }
+        `SELECT * FROM log WHERE level = $logLevel ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
+        { logLevel }
       )
       .then(handleResultMultipleItems)
   }
@@ -97,12 +116,19 @@ class DB {
     searchQuery: string,
     logLevel: Log['level']
   ): Promise<readonly Log[]> {
+    /*****
+      There seems to be a bug in the js client for surreal where it wont allow variables for limit or start,
+      so just gonna check the vars are numbers then insert without escaping.
+    *****/
+    invariant(G.isNumber(page), 'page param must be a number')
+    invariant(G.isNumber(limit), 'limit param must be a number')
+
     const skip = page === 1 ? 0 : (page - 1) * limit
 
     return client
       .query<QueryResults<Log>>(
-        `SELECT *, string::lowercase(message) AS messageLC, string::lowercase(service) AS serviceLC, string::lowercase(error) AS errorLC, string::lowercase(otherAsStr) AS otherAsStrLC FROM log WHERE level = $logLevel AND messageLC CONTAINS $sq OR serviceLC CONTAINS $sq OR errorLC CONTAINS $sq OR otherAsStrLC CONTAINS $sq LIMIT $limit START $skip ORDER BY createdAt DESC`,
-        { limit, skip, sq: searchQuery, logLevel }
+        `SELECT * FROM log WHERE level = $logLevel AND (string::lowercase(message) CONTAINS $sq OR string::lowercase(service) CONTAINS $sq OR string::lowercase(error) CONTAINS $sq OR string::lowercase(otherAsStr) CONTAINS $sq) ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
+        { sq: searchQuery.toLowerCase(), logLevel }
       )
       .then(handleResultMultipleItems)
   }
