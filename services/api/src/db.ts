@@ -2,7 +2,6 @@
 
 import { nullable, type Maybe } from 'pratica'
 import { F, G } from '@mobily/ts-belt'
-import type { MarkRequired } from 'ts-essentials'
 import Surreal, { type Result } from 'surrealdb.js'
 import invariant from 'tiny-invariant'
 
@@ -57,9 +56,17 @@ class DB {
   }
 
   static updateSettings(setting: Partial<Settings>): Promise<void> {
-    return client.update('settings:settings', setting).then(updatedSettings => {
-      EE.emit('settingsUpdate', updatedSettings)
-    })
+    return client
+      .query<QueryResults<Settings>>('UPDATE settings:settings MERGE $setting', { setting })
+      .then(handleResultSingleItem)
+      .then(updatedSettings =>
+        updatedSettings.cata({
+          Just: s => {
+            EE.emit('settingsUpdate', s)
+          },
+          Nothing: F.ignore,
+        })
+      )
   }
 
   static saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
@@ -205,7 +212,6 @@ class DB {
   ): Promise<void> {
     return (
       client
-        // Need to use MERGE for some reason
         .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
           postDataUpdates,
           uniqueId,

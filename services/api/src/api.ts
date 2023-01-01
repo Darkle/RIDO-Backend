@@ -88,8 +88,8 @@ DB.init().catch(err => console.error(err))
 
 // eslint-disable-next-line max-lines-per-function
 setTimeout(() => {
-  DB.updatePostData('derp3-foo-12', { mediaHasBeenDownloaded: false })
-  // DB.getPostsThatNeedMediaToBeDownloaded()
+  DB.updateSettings({ updateAllDay: false })
+    // DB.getPostsThatNeedMediaToBeDownloaded()
     .then(res => {
       // res.cata({
       // Just: h => console.log(h),

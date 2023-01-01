@@ -23,7 +23,8 @@ DEFINE TABLE settings SCHEMAFULL;
 
 DEFINE FIELD numberMediaDownloadsAtOnce ON TABLE settings TYPE int VALUE $value OR 2 ASSERT $value > 0;
 DEFINE FIELD numberImagesProcessAtOnce ON TABLE settings TYPE int VALUE $value OR 2 ASSERT $value > 0;
-DEFINE FIELD updateAllDay ON TABLE settings TYPE bool VALUE $value OR true;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD updateAllDay ON TABLE settings TYPE bool VALUE $value ?? true;
 DEFINE FIELD updateStartingHour ON TABLE settings TYPE int VALUE $value OR 1 ASSERT $value > 0 ASSERT $value < 23;
 DEFINE FIELD updateEndingHour ON TABLE settings TYPE int VALUE $value OR 7 ASSERT $value > 0 ASSERT $value < 23;
 DEFINE FIELD imageCompressionQuality ON TABLE settings TYPE int VALUE $value OR 80 ASSERT $value > 0 ASSERT $value <= 100;
@@ -52,10 +53,14 @@ DEFINE FIELD score ON TABLE post TYPE int;
 -- The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of _SECONDS_ since the epoch). It's UTC is GMT, aka no timezone.
 DEFINE FIELD timestamp ON TABLE post TYPE int ASSERT $value > 0;
 DEFINE FIELD mediaUrl ON TABLE post TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD mediaHasBeenDownloaded ON TABLE post TYPE bool VALUE $value OR false;
-DEFINE FIELD couldNotDownload ON TABLE post TYPE bool VALUE $value OR false;
-DEFINE FIELD postMediaImagesHaveBeenProcessed ON TABLE post TYPE bool VALUE $value OR false;
-DEFINE FIELD postThumbnailsCreated ON TABLE post TYPE bool VALUE $value OR false;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD mediaHasBeenDownloaded ON TABLE post TYPE bool VALUE $value ?? false;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD couldNotDownload ON TABLE post TYPE bool VALUE $value ?? false;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD postMediaImagesHaveBeenProcessed ON TABLE post TYPE bool VALUE $value ?? false;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD postThumbnailsCreated ON TABLE post TYPE bool VALUE $value ?? false;
 DEFINE FIELD postMediaImagesProcessingError ON TABLE post TYPE bool VALUE $value OR NULL;
 DEFINE FIELD downloadError ON TABLE post TYPE bool VALUE $value OR NULL;
 DEFINE FIELD mediaDownloadTries ON TABLE post TYPE int VALUE $value OR 0;
@@ -79,7 +84,8 @@ DEFINE FIELD feedId ON TABLE feed TYPE string VALUE function(){
 };
 DEFINE FIELD feedType ON TABLE feed TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD feedName ON TABLE feed TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD favourited ON TABLE feed TYPE bool VALUE $value OR false;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD favourited ON TABLE feed TYPE bool VALUE $value ?? false;
 DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value >= 1;
 -- updateCheck_LastPostSeen is only used for non-reddit feeds.
 DEFINE FIELD updateCheck_LastPostSeen ON TABLE feed TYPE string;
@@ -97,6 +103,7 @@ DEFINE FIELD feeds[*] ON TABLE tag TYPE record(Feed);
 DEFINE FIELD posts ON TABLE tag TYPE array VALUE $value OR NULL;
 DEFINE FIELD posts[*] ON TABLE tag TYPE record(Post);
 DEFINE FIELD tag ON TABLE tag TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD favourited ON TABLE tag TYPE bool VALUE $value OR false;
+-- https://github.com/surrealdb/surrealdb/issues/1439
+DEFINE FIELD favourited ON TABLE tag TYPE bool VALUE $value ?? false;
 
 DEFINE INDEX tag ON TABLE tag COLUMNS tag UNIQUE;
