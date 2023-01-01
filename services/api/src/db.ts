@@ -22,10 +22,8 @@ function ignoreResponse(
 ): void | Promise<never> {
   const res = results[0]
   if (!res) return
-  // @ts-expect-error meh
-  if (res.error) return Promise.reject(res.error)
-  // @ts-expect-error meh
-  if (res.status === 'ERR') return Promise.reject(res.detail)
+  if ('error' in res && res.error) return Promise.reject(res.error)
+  if ('status' in res && res.status === 'ERR') return Promise.reject(res.detail)
 }
 
 function handleResultMultipleItems<T>(
