@@ -88,12 +88,12 @@ DB.init().catch(err => console.error(err))
 
 // eslint-disable-next-line max-lines-per-function
 setTimeout(() => {
-  DB.updateSettings({ updateAllDay: false })
+  DB.getSettings()
     // DB.getPostsThatNeedMediaToBeDownloaded()
     .then(res => {
       // res.cata({
-      // Just: h => console.log(h),
-      // Nothing: () => console.log(`no data :-(`),
+      //   Just: h => console.log(h),
+      //   Nothing: () => console.log(`no data :-(`),
       // })
       console.log('res', res)
     })

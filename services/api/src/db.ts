@@ -8,14 +8,19 @@ import invariant from 'tiny-invariant'
 import { EE } from './events'
 import type { Feed, Log, Post, Settings, Tag } from './entities'
 
-const client = new Surreal('http://127.0.0.1:8000/rpc')
+const surrealDB = Surreal.Instance
 
 type QueryResults<T> = readonly Result<readonly T[]>[]
 
 type IncomingPost = Omit<Post, 'feed' | 'uniqueId' | 'tags'>
 
+/*****
+  NOTE: When we want to ignore the result AND we are also using using client.query, we need to check
+  for an error and throw the error manually as client.query doesnt throw on error but rather returns
+  a Result that could contain an error.
+*****/
 // eslint-disable-next-line complexity
-function ignoreResponse(
+function ignoreQueryResponse(
   results:
     | readonly Result[]
     | readonly { readonly detail: string; readonly status: string; readonly time: string }[]
@@ -23,10 +28,10 @@ function ignoreResponse(
   const res = results[0]
   if (!res) return
   if ('error' in res && res.error) return Promise.reject(res.error)
-  if ('status' in res && res.status === 'ERR') return Promise.reject(res.detail)
+  if ('status' in res && res.status === 'ERR') return Promise.reject(new Error(res.detail))
 }
 
-function handleResultMultipleItems<T>(
+function handleQueryResultMultipleItems<T>(
   results: readonly Result<readonly T[]>[]
 ): readonly T[] | Promise<never> {
   const res = results[0]
@@ -34,7 +39,7 @@ function handleResultMultipleItems<T>(
   return res.error ? Promise.reject(res.error) : res.result
 }
 
-function handleResultSingleItem<T>(results: readonly Result<readonly T[]>[]): Promise<never> | Maybe<T> {
+function handleQueryResultSingleItem<T>(results: readonly Result<readonly T[]>[]): Promise<never> | Maybe<T> {
   //NOTE: returning a Maybe when its single item (not an array) to force handle undefined
   const res = results[0]
   if (!res) return nullable(res)
@@ -42,21 +47,22 @@ function handleResultSingleItem<T>(results: readonly Result<readonly T[]>[]): Pr
 }
 
 class DB {
-  readonly close = client.close
+  readonly close = surrealDB.close
 
   static async init(): Promise<void> {
-    return client.use('rido', 'rido')
+    await surrealDB.connect('http://127.0.0.1:8000/rpc')
+    return surrealDB.use('rido', 'rido')
   }
 
   static getSettings(): Promise<Settings> {
     // dont need to use `Maybe` here as settings will always be there
-    return client.select<Settings>('settings:settings').then(s => s.at(0) as Settings)
+    return surrealDB.select<Settings>('settings').then(s => s.at(0) as Settings)
   }
 
   static updateSettings(setting: Partial<Settings>): Promise<void> {
-    return client
+    return surrealDB
       .query<QueryResults<Settings>>('UPDATE settings:settings MERGE $setting', { setting })
-      .then(handleResultSingleItem)
+      .then(handleQueryResultSingleItem)
       .then(updatedSettings =>
         updatedSettings.cata({
           Just: s => {
@@ -69,7 +75,7 @@ class DB {
 
   static saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
     const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
-    return client.create('log', { ...log, otherAsStr, createdAt: Date.now() }).then(F.ignore)
+    return surrealDB.create('log', { ...log, otherAsStr, createdAt: Date.now() }).then(F.ignore)
   }
 
   static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
@@ -83,9 +89,9 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return client
+    return surrealDB
       .query<QueryResults<Log>>(`SELECT * FROM log ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`)
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static findLogs_AllLevels_WithSearch_Paginated(
@@ -103,12 +109,12 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return client
+    return surrealDB
       .query<QueryResults<Log>>(
         `SELECT * FROM log WHERE string::lowercase(message) CONTAINS $sq OR string::lowercase(service) CONTAINS $sq OR string::lowercase(error) CONTAINS $sq OR string::lowercase(otherAsStr) CONTAINS $sq ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
         { sq: searchQuery.toLowerCase() }
       )
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static findLogs_LevelFilter_NoSearch_Paginated(
@@ -126,12 +132,12 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return client
+    return surrealDB
       .query<QueryResults<Log>>(
         `SELECT * FROM log WHERE level = $logLevel ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
         { logLevel }
       )
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static findLogs_LevelFilter_WithSearch_Paginated(
@@ -150,37 +156,32 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return client
+    return surrealDB
       .query<QueryResults<Log>>(
         `SELECT * FROM log WHERE level = $logLevel AND (string::lowercase(message) CONTAINS $sq OR string::lowercase(service) CONTAINS $sq OR string::lowercase(error) CONTAINS $sq OR string::lowercase(otherAsStr) CONTAINS $sq) ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
         { sq: searchQuery.toLowerCase(), logLevel }
       )
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static getAllPosts(): Promise<readonly Post[]> {
-    return client.select('post')
+    return surrealDB.select('post')
   }
 
   static getSinglePost(uniqueId: Post['uniqueId']): Promise<Maybe<Post>> {
-    return client
+    return surrealDB
       .query<QueryResults<Post>>(`SELECT * FROM post WHERE uniqueId = $uniqueId`, {
         uniqueId,
       })
-      .then(handleResultSingleItem)
+      .then(handleQueryResultSingleItem)
   }
 
   static addPost(post: IncomingPost): Promise<void> {
-    return client.create('post', post).then(F.ignore)
+    return surrealDB.create('post', post).then(F.ignore)
   }
 
   static batchAddPosts(posts: readonly IncomingPost[]): Promise<void> {
-    return (
-      client
-        .query('INSERT INTO post ($posts);', { posts })
-        // query doesnt throw but rather returns a result, so need to manually throw if err when ignoring
-        .then(ignoreResponse)
-    )
+    return surrealDB.query('INSERT INTO post ($posts);', { posts }).then(ignoreQueryResponse)
   }
 
   //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
@@ -189,66 +190,63 @@ class DB {
   // }
 
   static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
-    return client
+    return surrealDB
       .query<QueryResults<Post>>(
         `SELECT * FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
       )
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
-    return client
+    return surrealDB
       .query<QueryResults<Post>>(
         `SELECT * FROM post WHERE mediaHasBeenDownloaded = true AND couldNotDownload = false AND postMediaImagesHaveBeenProcessed = false`
       )
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static updatePostData(
     uniqueId: Post['uniqueId'],
     postDataUpdates: Partial<Omit<Post, 'uniqueId'>>
   ): Promise<void> {
-    return (
-      client
-        .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
-          postDataUpdates,
-          uniqueId,
-        })
-        // query doesnt throw but rather returns a result, so need to manually throw if err when ignoring
-        .then(ignoreResponse)
-    )
+    return surrealDB
+      .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
+        postDataUpdates,
+        uniqueId,
+      })
+      .then(ignoreQueryResponse)
   }
 
   static addFeed(feedName: Feed['feedName'], feedType: Feed['feedType']): Promise<void> {
-    return client.create('feed', { feedName, feedType }).then(F.ignore)
+    return surrealDB.create('feed', { feedName, feedType }).then(F.ignore)
   }
 
   static getAllFeeds(): Promise<readonly Feed[]> {
-    return client.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleResultMultipleItems)
+    return surrealDB.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleQueryResultMultipleItems)
   }
 
   static getSingleFeed(feedName: Feed['feedName'], feedType: Feed['feedName']): Promise<Maybe<Feed>> {
     const feedId = `${feedName}-${feedType}`
-    return client
+    return surrealDB
       .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $feedId', { feedId })
-      .then(handleResultSingleItem)
+      .then(handleQueryResultSingleItem)
   }
 
   static getFavouriteFeeds(): Promise<readonly Feed[]> {
-    return client
+    return surrealDB
       .query<QueryResults<Feed>>('SELECT * FROM feed WHERE favourited = true')
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static getFeedsThatNeedToBeUpdated(): Promise<readonly Feed[]> {
     const oneHourInMillisecs = 3_600_000
     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
 
-    return client
+    return surrealDB
       .query<QueryResults<Feed>>('SELECT * FROM feed WHERE lastUpdated < $anHourAgo', {
         anHourAgo: anHourAgo(),
       })
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 
   static updateFeedLastUpdatedTimeToNow(
@@ -257,15 +255,12 @@ class DB {
   ): Promise<void> {
     const feedId = `${feedName}-${feedType}`
 
-    return (
-      client
-        .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $feedId', {
-          nowMS: Date.now(),
-          feedId,
-        })
-        // query doesnt throw but rather returns a result, so need to manually throw if err when ignoring
-        .then(ignoreResponse)
-    )
+    return surrealDB
+      .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $feedId', {
+        nowMS: Date.now(),
+        feedId,
+      })
+      .then(ignoreQueryResponse)
   }
 
   // // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
@@ -278,19 +273,19 @@ class DB {
   // }
 
   static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
-    return client
+    return surrealDB
       .query<QueryResults<Tag>>('SELECT * FROM tag WHERE tag = $tag', { tag })
-      .then(handleResultSingleItem)
+      .then(handleQueryResultSingleItem)
   }
 
   static getAllTags(): Promise<readonly Tag[]> {
-    return client.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleResultMultipleItems)
+    return surrealDB.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleQueryResultMultipleItems)
   }
 
   static getFavouriteTags(): Promise<readonly Tag[]> {
-    return client
+    return surrealDB
       .query<QueryResults<Tag>>('SELECT * FROM tag WHERE favourited = true')
-      .then(handleResultMultipleItems)
+      .then(handleQueryResultMultipleItems)
   }
 }
 
@@ -303,7 +298,7 @@ class DB {
 const thing = (): Promise<void | readonly void[]> =>
   // console.log(DB.thing2())
   // DB.getAllPosts()
-  client
+  surrealDB
     .query(`select {1, 2, 3};`)
     .then(result => {
       console.log(result)
