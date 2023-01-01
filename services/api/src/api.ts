@@ -86,35 +86,53 @@ DB.init().catch(err => console.error(err))
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
+// eslint-disable-next-line max-lines-per-function
 setTimeout(() => {
-  // DB.getAllPosts()
-  //   .then(res => {
-  //     // res.cata({
-  //     //   Just: h => console.log(h),
-  //     //   Nothing: () => console.log(`no data :-(`),
-  //     // })
-  //     console.log('res', res)
-  //   })
-  // .then(() =>
-  DB.saveLog({
-    level: 'info',
-    message: 'chritsmas',
-    service: 'downloads',
-    error: 'no presents',
-    other: { foo: 'tesssst' },
-  })
-    // )
+  DB.updatePostData('derp3-foo-12', { mediaHasBeenDownloaded: false })
+  // DB.getPostsThatNeedMediaToBeDownloaded()
+    .then(res => {
+      // res.cata({
+      // Just: h => console.log(h),
+      // Nothing: () => console.log(`no data :-(`),
+      // })
+      console.log('res', res)
+    })
+    // .then(() => DB.addPost({
+    //       postId: `single-add`,
+    //       feedType: `derp3`,
+    //       feedName: 'usurp',
+    //       title: 'title of thing',
+    //       postUrl: 'httpasd.com',
+    //       score: 33,
+    //       timestamp: 333443,
+    //       mediaUrl: 'httpm.asd',
+    //       mediaHasBeenDownloaded: false,
+    //       couldNotDownload: false,
+    //       postMediaImagesHaveBeenProcessed: false,
+    //       postThumbnailsCreated: false,
+    //       mediaDownloadTries: 0,
+    //       downloadedMediaCount: 0,
+    //     }))
     // .then(() =>
-    //   DB.batchAddPosts([
-    //     {
-    //       postId: 'foo3',
-    //       feed: 'merp3',
-    //       feedType: 'derp3',
+    //   DB.saveLog({
+    //     level: 'debug',
+    //     message: 'chritsmas',
+    //     service: 'downloads',
+    //     error: 'no presents',
+    //     other: { foo: 'guide' },
+    //   })
+    // )
+    // eslint-disable-next-line max-lines-per-function
+    // .then(() =>
+    //   DB.batchAddPosts(
+    //     Array.from({ length: 20 }).map((_, idx) => ({
+    //       postId: `foo-${idx}`,
+    //       feedType: `derp3`,
     //       feedName: 'usurp',
     //       title: 'title of thing',
     //       postUrl: 'httpasd.com',
-    //       score: 11,
-    //       timestamp: 1,
+    //       score: idx,
+    //       timestamp: 1 + idx,
     //       mediaUrl: 'httpm.asd',
     //       mediaHasBeenDownloaded: false,
     //       couldNotDownload: false,
@@ -122,25 +140,8 @@ setTimeout(() => {
     //       postThumbnailsCreated: false,
     //       mediaDownloadTries: 0,
     //       downloadedMediaCount: 0,
-    //     },
-    //     {
-    //       postId: 'foo4',
-    //       feed: 'merp4',
-    //       feedType: 'derp4',
-    //       feedName: 'usurp',
-    //       title: 'title of thing',
-    //       postUrl: 'httpasd.com',
-    //       score: 11,
-    //       timestamp: 1,
-    //       mediaUrl: 'httpm.asd',
-    //       mediaHasBeenDownloaded: false,
-    //       couldNotDownload: false,
-    //       postMediaImagesHaveBeenProcessed: false,
-    //       postThumbnailsCreated: false,
-    //       mediaDownloadTries: 0,
-    //       downloadedMediaCount: 0,
-    //     },
-    //   ])
+    //     }))
+    //   )
     // )
     // .then(() => DB.getAllLogs_Paginated(1, 2))
     // .then(res => {

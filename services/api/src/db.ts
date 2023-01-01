@@ -13,6 +13,22 @@ const client = new Surreal('http://127.0.0.1:8000/rpc')
 
 type QueryResults<T> = readonly Result<readonly T[]>[]
 
+type IncomingPost = Omit<Post, 'feed' | 'uniqueId' | 'tags'>
+
+// eslint-disable-next-line complexity
+function ignoreResponse(
+  results:
+    | readonly Result[]
+    | readonly { readonly detail: string; readonly status: string; readonly time: string }[]
+): void | Promise<never> {
+  const res = results[0]
+  if (!res) return
+  // @ts-expect-error meh
+  if (res.error) return Promise.reject(res.error)
+  // @ts-expect-error meh
+  if (res.status === 'ERR') return Promise.reject(res.detail)
+}
+
 function handleResultMultipleItems<T>(
   results: readonly Result<readonly T[]>[]
 ): readonly T[] | Promise<never> {
@@ -149,24 +165,28 @@ class DB {
       .then(handleResultSingleItem)
   }
 
-  static addPost(post: Post): Promise<void> {
-    return client.create('post', { ...post }).then(F.ignore)
+  static addPost(post: IncomingPost): Promise<void> {
+    return client.create('post', post).then(F.ignore)
   }
 
-  static batchAddPosts(posts: readonly Post[]): Promise<void> {
-    return client.query('INSERT INTO post ($posts);', { posts }).then(F.ignore)
+  static batchAddPosts(posts: readonly IncomingPost[]): Promise<void> {
+    return (
+      client
+        .query('INSERT INTO post ($posts);', { posts })
+        // query doesnt throw but rather returns a result, so need to manually throw if err when ignoring
+        .then(ignoreResponse)
+    )
   }
 
-  static fetchAllPostIds(): Promise<readonly Post[]> {
-    return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
-  }
+  //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
+  // static fetchAllPostIds(): Promise<readonly Post[]> {
+  //   return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
+  // }
 
-  static getPostsThatNeedMediaToBeDownloaded(): Promise<
-    readonly Pick<Post, 'postId' | 'mediaUrl' | 'mediaDownloadTries'>[]
-  > {
+  static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
     return client
-      .query<QueryResults<Pick<Post, 'postId' | 'mediaUrl' | 'mediaDownloadTries'>>>(
-        `SELECT postId, mediaUrl, mediaDownloadTries FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
+      .query<QueryResults<Post>>(
+        `SELECT * FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
       )
       .then(handleResultMultipleItems)
   }
@@ -179,15 +199,20 @@ class DB {
       .then(handleResultMultipleItems)
   }
 
-  static updatePostInfo(postDataUpdates: MarkRequired<Partial<Post>, 'postId' | 'feedType'>): Promise<void> {
-    const uniqueId = `${postDataUpdates.feedType}-${postDataUpdates.postId}`
-
-    return client
-      .query('UPDATE post CONTENT $postDataUpdates WHERE uniqueId = $uniqueId', {
-        postDataUpdates,
-        uniqueId,
-      })
-      .then(F.ignore)
+  static updatePostData(
+    uniqueId: Post['uniqueId'],
+    postDataUpdates: Partial<Omit<Post, 'uniqueId'>>
+  ): Promise<void> {
+    return (
+      client
+        // Need to use MERGE for some reason
+        .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
+          postDataUpdates,
+          uniqueId,
+        })
+        // query doesnt throw but rather returns a result, so need to manually throw if err when ignoring
+        .then(ignoreResponse)
+    )
   }
 
   static addFeed(feedName: Feed['feedName'], feedType: Feed['feedType']): Promise<void> {
@@ -228,12 +253,15 @@ class DB {
   ): Promise<void> {
     const feedId = `${feedName}-${feedType}`
 
-    return client
-      .query('UPDATE feed CONTENT { lastUpdated: $now } WHERE feedId = $feedId', {
-        now: Date.now(),
-        feedId,
-      })
-      .then(F.ignore)
+    return (
+      client
+        .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $feedId', {
+          nowMS: Date.now(),
+          feedId,
+        })
+        // query doesnt throw but rather returns a result, so need to manually throw if err when ignoring
+        .then(ignoreResponse)
+    )
   }
 
   // // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
