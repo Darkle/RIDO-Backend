@@ -1,6 +1,7 @@
 lockfileVersion: 5.4
 
 specifiers:
+  '@types/better-sqlite3': ^7.6.3
   '@types/eventsource': ^1.1.10
   '@types/koa': ^2.13.5
   '@types/luxon': ^3.2.0
@@ -27,6 +28,7 @@ specifiers:
   wait-on: ^7.0.1
 
 devDependencies:
+  '@types/better-sqlite3': 7.6.3
   '@types/eventsource': 1.1.10
   '@types/koa': 2.13.5
   '@types/luxon': 3.2.0
@@ -181,6 +183,12 @@ packages:
 
   /@types/accepts/1.3.5:
     resolution: {integrity: sha512-jOdnI/3qTpHABjM5cx1Hc0sKsPoYCp+DP/GJRGtDlPd7fiV9oXGGIcjW/ZOxLIvjGz8MA+uMZI9metHlgqbgwQ==}
+    dependencies:
+      '@types/node': 18.11.18
+    dev: true
+
+  /@types/better-sqlite3/7.6.3:
+    resolution: {integrity: sha512-YS64N9SNDT/NAvou3QNdzAu3E2om/W/0dhORimtPGLef+zSK5l1vDzfsWb4xgXOgfhtOI5ZDTRxnvRPb22AIVQ==}
     dependencies:
       '@types/node': 18.11.18
     dev: true

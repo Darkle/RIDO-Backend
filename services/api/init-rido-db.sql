@@ -1,3 +1,7 @@
+PRAGMA foreign_keys = ON;
+
+PRAGMA journal_mode = WAL;
+
 CREATE TABLE IF NOT EXISTS Log(
   createdAt INTEGER NOT NULL,
   level TEXT COLLATE NOCASE CHECK(
@@ -17,6 +21,7 @@ CREATE TABLE IF NOT EXISTS Log(
   otherAsStr TEXT NULL
 );
 
+-- There isnt really a BOOLEAN type, but I'm labelling booleans as such just for better labelling. Sqlite doesnt mind (as long as not in strict mode)
 CREATE TABLE IF NOT EXISTS Settings(
   uniqueId TEXT NOT NULL,
   numberMediaDownloadsAtOnce INTEGER CHECK(numberMediaDownloadsAtOnce > 0) DEFAULT 2,
@@ -58,29 +63,29 @@ CREATE TABLE IF NOT EXISTS Post(
   feedDomain TEXT COLLATE NOCASE CHECK(length(feedDomain) > 0) CHECK(feedDomain LIKE '%.%') NOT NULL,
   feedId TEXT CHECK(length(feedDomain) > 0) CHECK(feedDomain LIKE '%.%') NOT NULL,
   title TEXT NOT NULL,
-  post_url TEXT CHECK(length(post_url) > 0) NOT NULL,
+  postUrl TEXT CHECK(length(postUrl) > 0) NOT NULL,
   score TEXT NOT NULL,
   timestamp INTEGER CHECK(timestamp > 0) NOT NULL,
-  media_url TEXT NOT NULL,
-  mediaHas_beenDownloaded BOOLEAN CHECK(
-    mediaHas_beenDownloaded = 0
-    OR mediaHas_beenDownloaded = 1
+  mediaUrl TEXT NOT NULL,
+  mediaHasBeenDownloaded BOOLEAN CHECK(
+    mediaHasBeenDownloaded = 0
+    OR mediaHasBeenDownloaded = 1
   ) DEFAULT 0,
-  could_notDownload BOOLEAN CHECK(
-    could_notDownload = 0
-    OR could_notDownload = 1
+  couldNotDownload BOOLEAN CHECK(
+    couldNotDownload = 0
+    OR couldNotDownload = 1
   ) DEFAULT 0,
-  postMediaImagesHave_beenProcessed BOOLEAN CHECK(
-    postMediaImagesHave_beenProcessed = 0
-    OR postMediaImagesHave_beenProcessed = 1
+  postMediaImagesHaveBeenProcessed BOOLEAN CHECK(
+    postMediaImagesHaveBeenProcessed = 0
+    OR postMediaImagesHaveBeenProcessed = 1
   ) DEFAULT 0,
-  post_thumbnailsCreated BOOLEAN CHECK(
-    post_thumbnailsCreated = 0
-    OR post_thumbnailsCreated = 1
+  postThumbnailsCreated BOOLEAN CHECK(
+    postThumbnailsCreated = 0
+    OR postThumbnailsCreated = 1
   ) DEFAULT 0,
   postMediaImagesProcessingError TEXT NULL,
   downloadError TEXT NULL,
-  mediaDownload_tries INTEGER CHECK(mediaDownload_tries > -1) DEFAULT 0,
+  mediaDownloadTries INTEGER CHECK(mediaDownloadTries > -1) DEFAULT 0,
   downloadedMediaCount INTEGER CHECK(downloadedMediaCount > -1) DEFAULT 0,
   downloadedMedia JSON NULL
 );
@@ -94,7 +99,7 @@ CREATE TABLE IF NOT EXISTS Feed(
     favourited = 0
     OR favourited = 1
   ) DEFAULT 0,
-  last_updated INTEGER CHECK(last_updated > 0) DEFAULT 1,
+  lastUpdated INTEGER CHECK(lastUpdated > 0) DEFAULT 1,
   updateCheck_LastPostSeen TEXT NULL,
   posts JSON NULL,
   tags JSON NULL

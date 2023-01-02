@@ -1,5 +1,7 @@
 import type { Jsonifiable } from 'type-fest'
 
+type DBTable = Settings | Log | Post | Feed | Tag
+
 interface Settings {
   readonly numberMediaDownloadsAtOnce: number
   readonly numberImagesProcessAtOnce: number
@@ -63,4 +65,4 @@ interface Tag {
   readonly favourited: boolean
 }
 
-export type { Log, Post, Feed, Tag, Settings }
+export type { Log, Post, Feed, Tag, Settings, DBTable }
