@@ -68,7 +68,6 @@ DEFINE FIELD downloadedMediaCount ON TABLE post TYPE int VALUE $value OR 0;
 DEFINE FIELD downloadedMedia ON TABLE post TYPE array VALUE $value OR NULL;
 DEFINE FIELD downloadedMedia[*] ON TABLE post TYPE string;
 
-DEFINE INDEX uniqueId ON TABLE post COLUMNS uniqueId UNIQUE;
 
 -- ------------------------------
 -- TABLE: feed
@@ -79,9 +78,6 @@ DEFINE FIELD tags ON TABLE feed TYPE array VALUE $value OR NULL;
 DEFINE FIELD tags[*] ON TABLE feed TYPE string;
 DEFINE FIELD posts ON TABLE feed TYPE array VALUE $value OR NULL;
 DEFINE FIELD posts[*] ON TABLE feed TYPE string;
--- DEFINE FIELD uniqueId ON TABLE feed TYPE string VALUE function(){
---   return this.feedDomain.toLowerCase() + '-' + this.feedId;
--- };
 DEFINE FIELD feedDomain ON TABLE feed TYPE string VALUE string::lowercase($value) ASSERT is::domain($value);
 DEFINE FIELD feedId ON TABLE feed TYPE string ASSERT string::length($value) > 1;
 -- https://github.com/surrealdb/surrealdb/issues/1439
@@ -90,7 +86,6 @@ DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value 
 -- updateCheck_LastPostSeen is only used for non-reddit feeds.
 DEFINE FIELD updateCheck_LastPostSeen ON TABLE feed TYPE string VALUE $value OR NULL;
 
-DEFINE INDEX uniqueId ON TABLE feed COLUMNS uniqueId UNIQUE;
 
 
 -- ------------------------------

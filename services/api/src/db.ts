@@ -195,46 +195,49 @@ class DB {
   static addPost(post: IncomingPost, feedDomain: Post['feedDomain'], feedId: Post['feedId']): Promise<void> {
     invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-    const postUniqueId = `${feedDomain}-${post.postId}`
     const postWithFeedIdSet = { ...post, feed: `${feedDomain}-${feedId}` }
 
-    return (
-      surrealdb
-        //TODO: do 2 queries here with a semicolon, the second being a where, where we say any post with feedId and feedDomain we SET to the feed
-        //TODO: make sure to do multiple queries in a transaction
-        //TODO: we also need to add all the posts to the feeds posts field
-        .query(
-          `BEGIN TRANSACTION; 
+    return surrealdb
+      .query(
+        `BEGIN TRANSACTION; 
            CREATE type::thing('post', $postUniqueId) CONTENT $postData;
            UPDATE feed SET posts += [$postUniqueId] WHERE feedDomain = $feedDomain AND feedId = $feedId;
            COMMIT TRANSACTION;`,
-          {
-            feedDomain,
-            postUniqueId,
-            postData: postWithFeedIdSet,
-          }
-        )
-        .then(ignoreQueryResponse)
-    )
+        {
+          feedDomain,
+          feedId,
+          postData: postWithFeedIdSet,
+        }
+      )
+      .then(ignoreQueryResponse)
   }
 
-  static batchAddPosts(posts: readonly IncomingPost[]): Promise<void> {
-    const postsWithGenId = posts.map(post => {
-      invariant(post.feedDomain.includes('.'), 'feedDomain is not a valid domain')
-      const postUniqueId = `${post.feedDomain}-${post.postId}`
-      return { ...post, id: postUniqueId }
+  // eslint-disable-next-line max-lines-per-function
+  static batchAddPosts(
+    posts: readonly IncomingPost[],
+    feedDomain: Post['feedDomain'],
+    feedId: Post['feedId']
+  ): Promise<void> {
+    const things = posts.map(post => {
+      invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+      //TODO: i need to add the feedDomain and feedId to the posts data
+
+      return { ...post }
     })
 
-    return (
-      surrealdb
-        //TODO: do 2 queries here with a semicolon, the second being a where, where we say any post with feedId and feedDomain we SET to the feed
-        //TODO: make sure to do multiple queries in a transaction
-        //TODO: we also need to add all the posts to the feeds posts field
-        .query('INSERT INTO post ($posts);', {
-          posts: postsWithGenId,
-        })
-        .then(ignoreQueryResponse)
-    )
+    return surrealdb
+      .query(
+        `BEGIN TRANSACTION; 
+           INSERT INTO post ($posts);
+           UPDATE feed SET posts += [$postUniqueId] WHERE feedDomain = $feedDomain AND feedId = $feedId;
+           COMMIT TRANSACTION;`,
+        {
+          feedDomain,
+          feedId,
+          posts: things,
+        }
+      )
+      .then(ignoreQueryResponse)
   }
 
   //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
@@ -259,13 +262,13 @@ class DB {
   }
 
   static updatePostData(
-    uniqueId: Post['uniqueId'],
-    postDataUpdates: Partial<Omit<Post, 'uniqueId'>>
+    feedDomain: Post['feedDomain'],
+    feedId: Post['feedId'],
+    postDataUpdates: Partial<Omit<Post>>
   ): Promise<void> {
     return surrealdb
       .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
         postDataUpdates,
-        uniqueId,
       })
       .then(ignoreQueryResponse)
   }
@@ -273,11 +276,8 @@ class DB {
   static addFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
     invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-    const feedUniqueId = `${feedDomain}-${feedId}`
-
     return surrealdb
       .query("CREATE type::thing('feed', $feedUniqueId) CONTENT $feedData", {
-        feedUniqueId,
         feedData: { feedId, feedDomain },
       })
       .then(ignoreQueryResponse)
@@ -289,8 +289,6 @@ class DB {
 
   static getSingleFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<Maybe<Feed>> {
     invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
-
-    const uniqueId = `${feedId}-${feedDomain}`
 
     return surrealdb
       .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $uniqueId', { uniqueId })
@@ -320,12 +318,9 @@ class DB {
   ): Promise<void> {
     invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-    const uniqueId = `${feedId}-${feedDomain}`
-
     return surrealdb
       .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $uniqueId', {
         nowMS: Date.now(),
-        uniqueId,
       })
       .then(ignoreQueryResponse)
   }
