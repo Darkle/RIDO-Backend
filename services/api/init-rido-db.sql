@@ -54,10 +54,10 @@ VALUES
   ("settings");
 
 CREATE TABLE IF NOT EXISTS Post(
+  -- Post uniqueId is `Post['feedDomain'] + '-' + Post['postId']`
   -- Check uniqueId contains a dash character
-  uniqueId TEXT PRIMARY KEY CHECK(length(postId) > 0) CHECK(feedDomain LIKE '%-%') NOT NULL,
+  uniqueId TEXT PRIMARY KEY CHECK(length(postId) > 0) CHECK(uniqueId LIKE '%-%') NOT NULL,
   postId TEXT CHECK(length(postId) > 0) NOT NULL,
-  feed TEXT NOT NULL,
   tags JSON NULL,
   -- Check feedDomain contains a dot character
   feedDomain TEXT COLLATE NOCASE CHECK(length(feedDomain) > 0) CHECK(feedDomain LIKE '%.%') NOT NULL,
@@ -91,8 +91,9 @@ CREATE TABLE IF NOT EXISTS Post(
 );
 
 CREATE TABLE IF NOT EXISTS Feed(
+  -- Feed uniqueId is `Feed['feedDomain'] + '-' + Feed['feedId']`
   -- Check uniqueId contains a dash character
-  uniqueId TEXT PRIMARY KEY CHECK(length(uniqueId) > 0) CHECK(feedDomain LIKE '%-%') NOT NULL,
+  uniqueId TEXT PRIMARY KEY CHECK(length(uniqueId) > 0) CHECK(uniqueId LIKE '%-%') NOT NULL,
   feedDomain TEXT COLLATE NOCASE CHECK(length(feedDomain) > 0) NOT NULL,
   feedId TEXT CHECK(length(feedId) > 0) NOT NULL,
   favourited BOOLEAN CHECK(

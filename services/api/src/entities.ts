@@ -23,9 +23,9 @@ interface Log {
 }
 
 interface Post {
-  readonly uniqueId: `${Post['feedDomain']}-${Post['postId']}`
+  // Post uniqueId is `${Post['feedDomain']}-${Post['postId']}`
+  readonly uniqueId: string
   readonly postId: string
-  readonly feed: string
   readonly tags?: readonly string[]
   readonly feedDomain: string
   readonly feedId: string
@@ -47,7 +47,8 @@ interface Post {
 }
 
 interface Feed {
-  readonly uniqueId: `${Feed['feedDomain']}-${Feed['feedId']}`
+  // Feed uniqueId is ${Feed['feedDomain']}-${Feed['feedId']}`
+  readonly uniqueId: string
   readonly tags?: readonly string[]
   readonly posts?: readonly string[]
   readonly feedDomain: string

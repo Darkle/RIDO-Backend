@@ -32,7 +32,7 @@ const returnSingleItemAsMaybe = (
   Array.isArray(results) ? results : nullable(results as undefined | DBTable)
 
 /*****
- This is a bit funky, but we are using a proxy for the db methods class to auto convert true/false input
+ This is a bit funky, but we are using a proxy for the db class methods to auto convert true/false input
  to 1/0 and vice versa for output as SQLITE DOESNT HAVE A GAAAHHHD DAMNN BOOLEAN TYPE ಠ╭╮ಠ.
 
  Here we also convert single item results to Maybe's cause why not do that here too right?.
@@ -53,7 +53,7 @@ function autoCastValuesToFromDB(classRef: DBInstanceType): DBInstanceType {
 
             // Check if its a promise
             if ('then' in func && 'catch' in func) {
-              // @ts-expect-error ramda is just too hard to get the types right for, so im giving up here ¯\_(ツ)_/¯
+              // @ts-expect-error ramda is just too hard to get the types right for, so im giving up here ¯\_(ツ)_/¯. None of this affects the db class though as this is hidden to typescript.
               return func.then(dbValueCasting).then(returnSingleItemAsMaybe)
             }
 
