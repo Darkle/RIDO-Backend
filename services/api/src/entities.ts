@@ -21,6 +21,7 @@ interface Log {
 }
 
 interface Post {
+  readonly uniqueId: `${Post['feedDomain']}-${Post['postId']}`
   readonly postId: string
   readonly feed: string
   readonly tags?: readonly string[]
@@ -44,6 +45,7 @@ interface Post {
 }
 
 interface Feed {
+  readonly uniqueId: `${Feed['feedDomain']}-${Feed['feedId']}`
   readonly tags?: readonly string[]
   readonly posts?: readonly string[]
   readonly feedDomain: string

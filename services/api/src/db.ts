@@ -1,16 +1,18 @@
-// import path from 'path'
+import path from 'path'
 
 import { nullable, type Maybe } from 'pratica'
 import { F, G } from '@mobily/ts-belt'
-import Surreal, { type Result } from 'surrealdb.js'
 import invariant from 'tiny-invariant'
+import { Sequelize } from 'sequelize'
 
 import { EE } from './events'
 import type { Feed, Log, Post, Settings, Tag } from './entities'
+import { getEnvFilePath } from './utils'
 
-const surrealdb = Surreal.Instance
+const dbLogging = process.env['LOG_DB_QUERIES'] === 'true' ? console.log : false
+const dbFilePath = path.join(getEnvFilePath(process.env['DATA_PATH']), 'RIDO.db')
 
-type QueryResults<T> = readonly Result<readonly T[]>[]
+const sequelize = new Sequelize({ dialect: 'sqlite', storage: dbFilePath, logging: dbLogging })
 
 type IncomingPost = Omit<
   Post,
@@ -62,12 +64,7 @@ function handleQueryResultSingleItem<T>(results: readonly Result<readonly T[]>[]
 }
 
 class DB {
-  readonly close = surrealdb.close
-
-  static async init(): Promise<void> {
-    await surrealdb.connect('http://127.0.0.1:8000/rpc')
-    return surrealdb.use('rido', 'rido')
-  }
+  readonly close = sequelize.close
 
   static getSettings(): Promise<Settings> {
     // dont need to use `Maybe` here as settings will always be there

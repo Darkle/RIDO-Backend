@@ -1,6 +1,6 @@
 const fs = require('fs')
 const path = require('path')
-const { execSync } = require('child_process')
+const { execFileSync } = require('node:child_process')
 
 require('dotenv-extended').load({
   // only two levels up as the cwd is the dir the process started in
@@ -19,7 +19,7 @@ const ridoProjectRootFolder = path.resolve(process.cwd(), '..', '..')
 // start from project root, not sub project process cwd
 const getEnvFilePath = (pth = '') => (isAbsolutePath(pth) ? pth : path.join(ridoProjectRootFolder, pth))
 
-const dbDir = getEnvFilePath(process.env['EDGEDB_SERVER_DATADIR'])
+const dbDir = getEnvFilePath(process.env['DATA_PATH'])
 const mediaDir = getEnvFilePath(process.env['MEDIA_DOWNLOADS_FOLDER'])
 
 const dbDirExists = fs.existsSync(dbDir)
@@ -32,3 +32,11 @@ if (!mediaDirExists) {
 if (!dbDirExists) {
   fs.mkdirSync(dbDir, { recursive: true })
 }
+
+const ridoDBPath = path.join(dbDir, 'RIDO.db')
+
+const ridoDbInitSQLFilePath = path.join(process.cwd(), 'init-rido-db.sql')
+
+execFileSync('sqlite3', [ridoDBPath, `.read ${ridoDbInitSQLFilePath}`])
+
+console.log(`RIDO DB's initialized`)
