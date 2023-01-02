@@ -22,11 +22,10 @@ interface Log {
 
 interface Post {
   readonly postId: string
-  readonly feed: Feed
-  readonly tags?: readonly Tag[]
-  readonly feedType: string
-  readonly feedName: string
-  readonly uniqueId: string
+  readonly feed: string
+  readonly tags?: readonly string[]
+  readonly feedDomain: string
+  readonly feedId: string
   readonly title: string
   readonly postUrl: string
   readonly score: number
@@ -37,28 +36,27 @@ interface Post {
   readonly couldNotDownload: boolean
   readonly postMediaImagesHaveBeenProcessed: boolean
   readonly postThumbnailsCreated: boolean
-  readonly postMediaImagesProcessingError?: boolean
-  readonly downloadError?: boolean
+  readonly postMediaImagesProcessingError?: string
+  readonly downloadError?: string
   readonly mediaDownloadTries: number
   readonly downloadedMediaCount: number
   readonly downloadedMedia?: readonly string[]
 }
 
 interface Feed {
-  readonly tags?: readonly Tag[]
-  readonly posts?: readonly Post[]
+  readonly tags?: readonly string[]
+  readonly posts?: readonly string[]
+  readonly feedDomain: string
   readonly feedId: string
-  readonly feedType: string
-  readonly feedName: string
   readonly favourited: boolean
   readonly lastUpdated: number
   // updateCheck_LastPostSeen is only used for non-reddit feeds.
-  readonly updateCheck_LastPostSeen: string
+  readonly updateCheck_LastPostSeen?: string
 }
 
 interface Tag {
-  readonly feeds?: readonly Feed[]
-  readonly posts?: readonly Post[]
+  readonly feeds?: readonly string[]
+  readonly posts?: readonly string[]
   readonly tag: string
   readonly favourited: boolean
 }

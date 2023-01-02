@@ -88,8 +88,30 @@ DB.init().catch(err => console.error(err))
 
 // eslint-disable-next-line max-lines-per-function
 setTimeout(() => {
-  DB.getSettings()
+  // DB.addPost({
+  //   postId: `asthe7`,
+  //   feedDomain: `reddit.com`,
+  //   feedId: 'aww',
+  //   title: 'title of thing',
+  //   postUrl: 'http://asd.com',
+  //   score: 33,
+  //   timestamp: 333443,
+  //   mediaUrl: 'htt://pm.asd',
+  // })
+  DB.addFeed('aww', 'reddit.com')
     // DB.getPostsThatNeedMediaToBeDownloaded()
+    // DB.batchAddPosts(
+    //   Array.from({ length: 200 }).map((_, idx) => ({
+    //     postId: `foo-${idx}`,
+    //     feedDomain: `reddit.com`,
+    //     feedId: 'aww',
+    //     title: 'title of thing',
+    //     postUrl: 'http://asd.com',
+    //     score: idx,
+    //     timestamp: 1 + idx,
+    //     mediaUrl: 'htt://pm.asd',
+    //   }))
+    // )
     .then(res => {
       // res.cata({
       //   Just: h => console.log(h),
@@ -99,8 +121,8 @@ setTimeout(() => {
     })
     // .then(() => DB.addPost({
     //       postId: `single-add`,
-    //       feedType: `derp3`,
-    //       feedName: 'usurp',
+    //       feedDomain: `foo.com`,
+    //       feedId: 'usurp',
     //       title: 'title of thing',
     //       postUrl: 'httpasd.com',
     //       score: 33,
@@ -122,13 +144,12 @@ setTimeout(() => {
     //     other: { foo: 'guide' },
     //   })
     // )
-    // eslint-disable-next-line max-lines-per-function
     // .then(() =>
     //   DB.batchAddPosts(
-    //     Array.from({ length: 20 }).map((_, idx) => ({
+    //     Array.from({ length: 200 }).map((_, idx) => ({
     //       postId: `foo-${idx}`,
-    //       feedType: `derp3`,
-    //       feedName: 'usurp',
+    //       feedDomain: `foo.com`,
+    //       feedId: 'usurp',
     //       title: 'title of thing',
     //       postUrl: 'httpasd.com',
     //       score: idx,

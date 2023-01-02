@@ -39,14 +39,14 @@ CREATE settings:settings;
 DEFINE TABLE post SCHEMAFULL;
 
 DEFINE FIELD postId ON TABLE post TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD feed ON TABLE post TYPE record(Feed);
+DEFINE FIELD feed ON TABLE post string;
 DEFINE FIELD tags ON TABLE post TYPE array VALUE $value OR NULL;
-DEFINE FIELD tags[*] ON TABLE post TYPE record(Tag);
-DEFINE FIELD feedType ON TABLE post TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD feedName ON TABLE post TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD uniqueId ON TABLE post TYPE string VALUE function(){
-  return this.feedType.toLowerCase() + '-' + this.postId;
-};
+DEFINE FIELD tags[*] ON TABLE post TYPE string;
+DEFINE FIELD feedDomain ON TABLE post TYPE string VALUE string::lowercase($value) ASSERT is::domain($value);
+DEFINE FIELD feedId ON TABLE post TYPE string ASSERT string::length($value) > 1;
+-- DEFINE FIELD uniqueId ON TABLE post TYPE string VALUE function(){
+--   return this.feedDomain.toLowerCase() + '-' + this.postId;
+-- };
 DEFINE FIELD title ON TABLE post TYPE string;
 DEFINE FIELD postUrl ON TABLE post TYPE string ASSERT string::length($value) > 1;
 DEFINE FIELD score ON TABLE post TYPE int;
@@ -61,8 +61,8 @@ DEFINE FIELD couldNotDownload ON TABLE post TYPE bool VALUE $value ?? false;
 DEFINE FIELD postMediaImagesHaveBeenProcessed ON TABLE post TYPE bool VALUE $value ?? false;
 -- https://github.com/surrealdb/surrealdb/issues/1439
 DEFINE FIELD postThumbnailsCreated ON TABLE post TYPE bool VALUE $value ?? false;
-DEFINE FIELD postMediaImagesProcessingError ON TABLE post TYPE bool VALUE $value OR NULL;
-DEFINE FIELD downloadError ON TABLE post TYPE bool VALUE $value OR NULL;
+DEFINE FIELD postMediaImagesProcessingError ON TABLE post TYPE string VALUE $value OR NULL;
+DEFINE FIELD downloadError ON TABLE post TYPE string VALUE $value OR NULL;
 DEFINE FIELD mediaDownloadTries ON TABLE post TYPE int VALUE $value OR 0;
 DEFINE FIELD downloadedMediaCount ON TABLE post TYPE int VALUE $value OR 0;
 DEFINE FIELD downloadedMedia ON TABLE post TYPE array VALUE $value OR NULL;
@@ -76,21 +76,21 @@ DEFINE INDEX uniqueId ON TABLE post COLUMNS uniqueId UNIQUE;
 DEFINE TABLE feed SCHEMAFULL;
 
 DEFINE FIELD tags ON TABLE feed TYPE array VALUE $value OR NULL;
-DEFINE FIELD tags[*] ON TABLE feed TYPE record(Tag);
+DEFINE FIELD tags[*] ON TABLE feed TYPE string;
 DEFINE FIELD posts ON TABLE feed TYPE array VALUE $value OR NULL;
-DEFINE FIELD posts[*] ON TABLE feed TYPE record(Post);
-DEFINE FIELD feedId ON TABLE feed TYPE string VALUE function(){
-  return this.feedType.toLowerCase() + '-' + this.feedName;
-};
-DEFINE FIELD feedType ON TABLE feed TYPE string ASSERT string::length($value) > 1;
-DEFINE FIELD feedName ON TABLE feed TYPE string ASSERT string::length($value) > 1;
+DEFINE FIELD posts[*] ON TABLE feed TYPE string;
+-- DEFINE FIELD uniqueId ON TABLE feed TYPE string VALUE function(){
+--   return this.feedDomain.toLowerCase() + '-' + this.feedId;
+-- };
+DEFINE FIELD feedDomain ON TABLE feed TYPE string VALUE string::lowercase($value) ASSERT is::domain($value);
+DEFINE FIELD feedId ON TABLE feed TYPE string ASSERT string::length($value) > 1;
 -- https://github.com/surrealdb/surrealdb/issues/1439
 DEFINE FIELD favourited ON TABLE feed TYPE bool VALUE $value ?? false;
 DEFINE FIELD lastUpdated ON TABLE feed TYPE int VALUE $value OR 1 ASSERT $value >= 1;
 -- updateCheck_LastPostSeen is only used for non-reddit feeds.
-DEFINE FIELD updateCheck_LastPostSeen ON TABLE feed TYPE string;
+DEFINE FIELD updateCheck_LastPostSeen ON TABLE feed TYPE string VALUE $value OR NULL;
 
-DEFINE INDEX feedId ON TABLE feed COLUMNS feedId UNIQUE;
+DEFINE INDEX uniqueId ON TABLE feed COLUMNS uniqueId UNIQUE;
 
 
 -- ------------------------------
@@ -99,9 +99,9 @@ DEFINE INDEX feedId ON TABLE feed COLUMNS feedId UNIQUE;
 DEFINE TABLE tag SCHEMAFULL;
 
 DEFINE FIELD feeds ON TABLE tag TYPE array VALUE $value OR NULL;
-DEFINE FIELD feeds[*] ON TABLE tag TYPE record(Feed);
+DEFINE FIELD feeds[*] ON TABLE tag TYPE string;
 DEFINE FIELD posts ON TABLE tag TYPE array VALUE $value OR NULL;
-DEFINE FIELD posts[*] ON TABLE tag TYPE record(Post);
+DEFINE FIELD posts[*] ON TABLE tag TYPE string;
 DEFINE FIELD tag ON TABLE tag TYPE string ASSERT string::length($value) > 1;
 -- https://github.com/surrealdb/surrealdb/issues/1439
 DEFINE FIELD favourited ON TABLE tag TYPE bool VALUE $value ?? false;

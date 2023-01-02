@@ -8,11 +8,26 @@ import invariant from 'tiny-invariant'
 import { EE } from './events'
 import type { Feed, Log, Post, Settings, Tag } from './entities'
 
-const surrealDB = Surreal.Instance
+const surrealdb = Surreal.Instance
 
 type QueryResults<T> = readonly Result<readonly T[]>[]
 
-type IncomingPost = Omit<Post, 'feed' | 'uniqueId' | 'tags'>
+type IncomingPost = Omit<
+  Post,
+  | 'feed'
+  | 'tags'
+  | 'feedDomain'
+  | 'feedId'
+  | 'mediaHasBeenDownloaded'
+  | 'couldNotDownload'
+  | 'postMediaImagesHaveBeenProcessed'
+  | 'postThumbnailsCreated'
+  | 'postMediaImagesProcessingError'
+  | 'downloadError'
+  | 'mediaDownloadTries'
+  | 'downloadedMediaCount'
+  | 'downloadedMedia'
+>
 
 /*****
   NOTE: When we want to ignore the result AND we are also using using client.query, we need to check
@@ -47,20 +62,20 @@ function handleQueryResultSingleItem<T>(results: readonly Result<readonly T[]>[]
 }
 
 class DB {
-  readonly close = surrealDB.close
+  readonly close = surrealdb.close
 
   static async init(): Promise<void> {
-    await surrealDB.connect('http://127.0.0.1:8000/rpc')
-    return surrealDB.use('rido', 'rido')
+    await surrealdb.connect('http://127.0.0.1:8000/rpc')
+    return surrealdb.use('rido', 'rido')
   }
 
   static getSettings(): Promise<Settings> {
     // dont need to use `Maybe` here as settings will always be there
-    return surrealDB.select<Settings>('settings').then(s => s.at(0) as Settings)
+    return surrealdb.select<Settings>('settings').then(s => s.at(0) as Settings)
   }
 
   static updateSettings(setting: Partial<Settings>): Promise<void> {
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Settings>>('UPDATE settings:settings MERGE $setting', { setting })
       .then(handleQueryResultSingleItem)
       .then(updatedSettings =>
@@ -75,7 +90,7 @@ class DB {
 
   static saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
     const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
-    return surrealDB.create('log', { ...log, otherAsStr, createdAt: Date.now() }).then(F.ignore)
+    return surrealdb.create('log', { ...log, otherAsStr, createdAt: Date.now() }).then(F.ignore)
   }
 
   static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
@@ -89,7 +104,7 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Log>>(`SELECT * FROM log ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`)
       .then(handleQueryResultMultipleItems)
   }
@@ -109,7 +124,7 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Log>>(
         `SELECT * FROM log WHERE string::lowercase(message) CONTAINS $sq OR string::lowercase(service) CONTAINS $sq OR string::lowercase(error) CONTAINS $sq OR string::lowercase(otherAsStr) CONTAINS $sq ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
         { sq: searchQuery.toLowerCase() }
@@ -132,7 +147,7 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Log>>(
         `SELECT * FROM log WHERE level = $logLevel ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
         { logLevel }
@@ -156,7 +171,7 @@ class DB {
 
     const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Log>>(
         `SELECT * FROM log WHERE level = $logLevel AND (string::lowercase(message) CONTAINS $sq OR string::lowercase(service) CONTAINS $sq OR string::lowercase(error) CONTAINS $sq OR string::lowercase(otherAsStr) CONTAINS $sq) ORDER BY createdAt DESC LIMIT ${limit} START ${skip}`,
         { sq: searchQuery.toLowerCase(), logLevel }
@@ -165,23 +180,61 @@ class DB {
   }
 
   static getAllPosts(): Promise<readonly Post[]> {
-    return surrealDB.select('post')
+    return surrealdb.select('post')
   }
 
-  static getSinglePost(uniqueId: Post['uniqueId']): Promise<Maybe<Post>> {
-    return surrealDB
-      .query<QueryResults<Post>>(`SELECT * FROM post WHERE uniqueId = $uniqueId`, {
-        uniqueId,
+  static getSinglePost(feedDomain: Post['feedDomain'], postId: Post['postId']): Promise<Maybe<Post>> {
+    return surrealdb
+      .query<QueryResults<Post>>(`SELECT * FROM post WHERE feedDomain = $feedDomain AND postId = $postId`, {
+        feedDomain,
+        postId,
       })
       .then(handleQueryResultSingleItem)
   }
 
-  static addPost(post: IncomingPost): Promise<void> {
-    return surrealDB.create('post', post).then(F.ignore)
+  static addPost(post: IncomingPost, feedDomain: Post['feedDomain'], feedId: Post['feedId']): Promise<void> {
+    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+
+    const postUniqueId = `${feedDomain}-${post.postId}`
+    const postWithFeedIdSet = { ...post, feed: `${feedDomain}-${feedId}` }
+
+    return (
+      surrealdb
+        //TODO: do 2 queries here with a semicolon, the second being a where, where we say any post with feedId and feedDomain we SET to the feed
+        //TODO: make sure to do multiple queries in a transaction
+        //TODO: we also need to add all the posts to the feeds posts field
+        .query(
+          `BEGIN TRANSACTION; 
+           CREATE type::thing('post', $postUniqueId) CONTENT $postData;
+           UPDATE feed SET posts += [$postUniqueId] WHERE feedDomain = $feedDomain AND feedId = $feedId;
+           COMMIT TRANSACTION;`,
+          {
+            feedDomain,
+            postUniqueId,
+            postData: postWithFeedIdSet,
+          }
+        )
+        .then(ignoreQueryResponse)
+    )
   }
 
   static batchAddPosts(posts: readonly IncomingPost[]): Promise<void> {
-    return surrealDB.query('INSERT INTO post ($posts);', { posts }).then(ignoreQueryResponse)
+    const postsWithGenId = posts.map(post => {
+      invariant(post.feedDomain.includes('.'), 'feedDomain is not a valid domain')
+      const postUniqueId = `${post.feedDomain}-${post.postId}`
+      return { ...post, id: postUniqueId }
+    })
+
+    return (
+      surrealdb
+        //TODO: do 2 queries here with a semicolon, the second being a where, where we say any post with feedId and feedDomain we SET to the feed
+        //TODO: make sure to do multiple queries in a transaction
+        //TODO: we also need to add all the posts to the feeds posts field
+        .query('INSERT INTO post ($posts);', {
+          posts: postsWithGenId,
+        })
+        .then(ignoreQueryResponse)
+    )
   }
 
   //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
@@ -190,7 +243,7 @@ class DB {
   // }
 
   static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Post>>(
         `SELECT * FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
       )
@@ -198,7 +251,7 @@ class DB {
   }
 
   static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Post>>(
         `SELECT * FROM post WHERE mediaHasBeenDownloaded = true AND couldNotDownload = false AND postMediaImagesHaveBeenProcessed = false`
       )
@@ -209,7 +262,7 @@ class DB {
     uniqueId: Post['uniqueId'],
     postDataUpdates: Partial<Omit<Post, 'uniqueId'>>
   ): Promise<void> {
-    return surrealDB
+    return surrealdb
       .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
         postDataUpdates,
         uniqueId,
@@ -217,23 +270,35 @@ class DB {
       .then(ignoreQueryResponse)
   }
 
-  static addFeed(feedName: Feed['feedName'], feedType: Feed['feedType']): Promise<void> {
-    return surrealDB.create('feed', { feedName, feedType }).then(F.ignore)
+  static addFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
+    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+
+    const feedUniqueId = `${feedDomain}-${feedId}`
+
+    return surrealdb
+      .query("CREATE type::thing('feed', $feedUniqueId) CONTENT $feedData", {
+        feedUniqueId,
+        feedData: { feedId, feedDomain },
+      })
+      .then(ignoreQueryResponse)
   }
 
   static getAllFeeds(): Promise<readonly Feed[]> {
-    return surrealDB.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleQueryResultMultipleItems)
+    return surrealdb.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleQueryResultMultipleItems)
   }
 
-  static getSingleFeed(feedName: Feed['feedName'], feedType: Feed['feedName']): Promise<Maybe<Feed>> {
-    const feedId = `${feedName}-${feedType}`
-    return surrealDB
-      .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $feedId', { feedId })
+  static getSingleFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<Maybe<Feed>> {
+    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+
+    const uniqueId = `${feedId}-${feedDomain}`
+
+    return surrealdb
+      .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $uniqueId', { uniqueId })
       .then(handleQueryResultSingleItem)
   }
 
   static getFavouriteFeeds(): Promise<readonly Feed[]> {
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Feed>>('SELECT * FROM feed WHERE favourited = true')
       .then(handleQueryResultMultipleItems)
   }
@@ -242,7 +307,7 @@ class DB {
     const oneHourInMillisecs = 3_600_000
     const anHourAgo = (): number => Date.now() - oneHourInMillisecs
 
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Feed>>('SELECT * FROM feed WHERE lastUpdated < $anHourAgo', {
         anHourAgo: anHourAgo(),
       })
@@ -250,15 +315,17 @@ class DB {
   }
 
   static updateFeedLastUpdatedTimeToNow(
-    feedName: Feed['feedName'],
-    feedType: Feed['feedName']
+    feedId: Feed['feedId'],
+    feedDomain: Feed['feedDomain']
   ): Promise<void> {
-    const feedId = `${feedName}-${feedType}`
+    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-    return surrealDB
-      .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $feedId', {
+    const uniqueId = `${feedId}-${feedDomain}`
+
+    return surrealdb
+      .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $uniqueId', {
         nowMS: Date.now(),
-        feedId,
+        uniqueId,
       })
       .then(ignoreQueryResponse)
   }
@@ -273,17 +340,17 @@ class DB {
   // }
 
   static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Tag>>('SELECT * FROM tag WHERE tag = $tag', { tag })
       .then(handleQueryResultSingleItem)
   }
 
   static getAllTags(): Promise<readonly Tag[]> {
-    return surrealDB.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleQueryResultMultipleItems)
+    return surrealdb.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleQueryResultMultipleItems)
   }
 
   static getFavouriteTags(): Promise<readonly Tag[]> {
-    return surrealDB
+    return surrealdb
       .query<QueryResults<Tag>>('SELECT * FROM tag WHERE favourited = true')
       .then(handleQueryResultMultipleItems)
   }
@@ -298,7 +365,7 @@ class DB {
 const thing = (): Promise<void | readonly void[]> =>
   // console.log(DB.thing2())
   // DB.getAllPosts()
-  surrealDB
+  surrealdb
     .query(`select {1, 2, 3};`)
     .then(result => {
       console.log(result)
