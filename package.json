@@ -34,6 +34,7 @@
     "@types/node": "^18.11.18",
     "@types/node-static": "^0.7.7",
     "@types/ramda": "^0.28.20",
+    "@types/rethinkdb": "^2.3.17",
     "@types/sharp": "^0.31.1",
     "@typescript-eslint/eslint-plugin": "^5.47.1",
     "@typescript-eslint/parser": "^5.47.1",

@@ -2,10 +2,12 @@
   "name": "api",
   "scripts": {
     "//": "NOTE: NODE_ENV=\"${NODE_ENV:-development}\" assigns NODE_ENV if it exist (eg test), else defaults to development",
-    "dev": "NODE_ENV=\"${NODE_ENV:-development}\" node --require ./src/pre-boot.cjs --require @swc-node/register --watch ./src/api.ts",
+    "dev": "NODE_ENV=\"${NODE_ENV:-development}\" pnpm run db-init && node --require ./src/pre-boot.cjs --require @swc-node/register --watch ./src/api.ts",
+    "///": "NOTE: here we start rethinkdb if its not already running",
+    "db-init": "! pgrep -x rethinkdb && rethinkdb --directory ../../data --server-name rido --daemon || true",
     "inspect": "NODE_ENV=development node --require ./src/pre-boot.cjs --require @swc-node/register --inspect ./src/api.ts",
-    "///": "NOTE: in the docker file, run db-init before start",
-    "start": "NODE_ENV=production node --require ./src/pre-boot.cjs --require @swc-node/register ./src/api.ts"
+    "////": "NOTE: in the docker file, run db-init before start",
+    "start": "NODE_ENV=production pnpm run db-init && node --require ./src/pre-boot.cjs --require @swc-node/register ./src/api.ts"
   },
   "engines": {
     "node": ">=18.2.0",
@@ -20,7 +22,6 @@
     "@trpc/server": "^10.7.0",
     "dotenv-extended": "^2.9.0",
     "http-status-codes": "^2.2.0",
-    "knex": "^2.3.0",
     "koa": "^2.14.1",
     "luxon": "^3.2.0",
     "microtime": "^3.1.1",
@@ -28,7 +29,7 @@
     "node-static": "^0.7.11",
     "pratica": "^2.1.0",
     "ramda": "^0.28.0",
-    "sqlite3": "^5.1.4",
+    "rethinkdb-ts": "^2.5.0",
     "stream": "^0.0.2",
     "superjson": "^1.12.1",
     "tiny-invariant": "^1.3.1",

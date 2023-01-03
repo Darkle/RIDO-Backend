@@ -32,11 +32,3 @@ if (!mediaDirExists) {
 if (!dbDirExists) {
   fs.mkdirSync(dbDir, { recursive: true })
 }
-
-const ridoDBPath = path.join(dbDir, 'RIDO.db')
-
-const ridoDbInitSQLFilePath = path.join(process.cwd(), 'init-rido-db.sql')
-
-execFileSync('sqlite3', [ridoDBPath, `.read ${ridoDbInitSQLFilePath}`])
-
-console.log(`RIDO DB's initialized`)

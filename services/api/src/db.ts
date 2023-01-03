@@ -2,17 +2,17 @@ import path from 'path'
 
 import { F, G } from '@mobily/ts-belt'
 import invariant from 'tiny-invariant'
-import Knex from 'knex'
+// import RethinkDB from 'rethinkdb'
+import { r, type Connection } from 'rethinkdb-ts'
 
 import { EE } from './events'
-import type { Feed, Log, Post, Settings, Tag } from './entities'
+import type { DBTable, Feed, Log, Post, Settings, Tag } from './entities'
 import { getEnvFilePath } from './utils'
-import { autoCastValuesToFromDB } from './dbValAutoCasting'
-import type { Maybe } from 'pratica'
+import { nullable, type Maybe } from 'pratica'
 
-const dbFilePath = path.join(getEnvFilePath(process.env['DATA_PATH']), 'RIDO.db')
-
-const knex = Knex({ client: 'sqlite3', connection: { filename: dbFilePath } })
+// eslint-disable-next-line functional/no-let
+let connection: Connection
+// const r = RethinkDB.db('rido')
 
 type IncomingPost = Omit<
   Post,
@@ -32,257 +32,304 @@ type IncomingPost = Omit<
   | 'downloadedMedia'
 >
 
-class DBMethods {
-  constructor() {
-    return autoCastValuesToFromDB(this)
+const defaultSettings = {
+  uniqueId: 'settings',
+  numberMediaDownloadsAtOnce: 2,
+  numberImagesProcessAtOnce: 2,
+  updateAllDay: true,
+  updateStartingHour: 1,
+  /* eslint-disable @typescript-eslint/no-magic-numbers */
+  updateEndingHour: 7,
+  imageCompressionQuality: 80,
+  maxImageWidthDorNonArchiveImage: 1400,
+  /* eslint-enable @typescript-eslint/no-magic-numbers */
+}
+
+// function getFirstItemFromCursor<T>(cursor: RethinkDB.Cursor): Promise<Maybe<T>> {
+//   return cursor.next<T>().then(nullable)
+// }
+
+/* eslint-disable functional/prefer-tacit */
+
+class DB {
+  // eslint-disable-next-line max-lines-per-function
+  static init(): Promise<void> {
+    const createDB = (): Promise<void> =>
+      r
+        .dbList()
+        .run()
+        .then(dbs => (dbs.includes('rido') ? F.ignore() : r.dbCreate('rido').run().then(F.ignore)))
+
+    const insertDefaultSettings = (): Promise<void> =>
+      r.table('Settings').insert(defaultSettings).run().then(F.ignore)
+
+    const createTables = (): Promise<void> =>
+      r
+        .tableList()
+        .run()
+        .then(tables =>
+          tables.includes('Settings')
+            ? F.ignore()
+            : Promise.all([
+                r.tableCreate('Settings', { primaryKey: 'uniqueId' }).run().then(insertDefaultSettings),
+                r.tableCreate('Log').run(),
+                r.tableCreate('Post', { primaryKey: 'uniqueId' }).run(),
+                r.tableCreate('Feed', { primaryKey: 'uniqueId' }).run(),
+                r.tableCreate('Tag', { primaryKey: 'tag' }).run(),
+              ]).then(F.ignore)
+        )
+
+    return r.connectPool({ host: 'localhost', db: 'rido' }).then(createDB).then(createTables)
   }
 
-  readonly close = knex.destroy
+  readonly close = connection.close
 
-  getSettings(): Promise<Maybe<Settings>> {
-    return knex<Settings>('Settings').where('uniqueId', 'settings').first<Maybe<Settings>>()
+  static getSettings(): Promise<Settings> {
+    return (
+      r
+        .table<Settings>('Settings')
+        .run()
+        // No need for Maybe here as settings will always be there
+        .then(results => results[0] as Settings)
+    )
   }
 
-  updateSettings(setting: Partial<Settings>): Promise<void> {
-    return knex('Settings').where('uniqueId', 'settings').update(setting).then(F.ignore)
+  static updateSettings(setting: Partial<Settings>): Promise<void> {
+    return r.table('Settings').filter(r.row('uniqueId').eq('settings')).update(setting).run().then(F.ignore)
   }
 
-  saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
+  static saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
     const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
 
-    return knex('Log')
+    return r
+      .table('Log')
       .insert({ ...log, otherAsStr, createdAt: Date.now() })
+      .run()
       .then(F.ignore)
   }
 
-  getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
-    const skip = page === 1 ? 0 : (page - 1) * limit
+  // static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return knex<Log>('Log').orderBy('createdAt', 'desc').limit(limit).offset(skip)
-  }
-
-  findLogs_AllLevels_WithSearch_Paginated(
-    page: number,
-    limit: number,
-    searchQuery: string
-  ): Promise<readonly Log[]> {
-    const skip = page === 1 ? 0 : (page - 1) * limit
-    const sq = `%${searchQuery.toLowerCase()}%`
-
-    return knex<Log>('Log')
-      .whereILike('message', sq)
-      .orWhereILike('service', sq)
-      .orWhereILike('error', sq)
-      .orWhereILike('otherAsStr', sq)
-      .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .offset(skip)
-  }
-
-  findLogs_LevelFilter_NoSearch_Paginated(
-    page: number,
-    limit: number,
-    logLevel: Log['level']
-  ): Promise<readonly Log[]> {
-    const skip = page === 1 ? 0 : (page - 1) * limit
-
-    return knex<Log>('Log').where({ level: logLevel }).orderBy('createdAt', 'desc').limit(limit).offset(skip)
-  }
-
-  findLogs_LevelFilter_WithSearch_Paginated(
-    page: number,
-    limit: number,
-    searchQuery: string,
-    logLevel: Log['level']
-  ): Promise<readonly Log[]> {
-    const skip = page === 1 ? 0 : (page - 1) * limit
-    const sq = `%${searchQuery.toLowerCase()}%`
-
-    return knex<Log>('Log')
-      .where({ level: logLevel })
-      .andWhere(function () {
-        this.whereILike('message', sq)
-          .orWhereILike('service', sq)
-          .orWhereILike('error', sq)
-          .orWhereILike('otherAsStr', sq)
-      })
-      .orderBy('createdAt', 'desc')
-      .limit(limit)
-      .offset(skip)
-  }
-
-  getAllPosts(): Promise<readonly Post[]> {
-    return knex<Post>('Post')
-  }
-
-  getSinglePost(feedDomain: Post['feedDomain'], postId: Post['postId']): Promise<Maybe<Post>> {
-    return knex<Post>('Post').where({ feedDomain, postId }).first<Maybe<Post>>()
-  }
-
-  // eslint-disable-next-line max-lines-per-function
-  async batchAddPosts(
-    posts: readonly IncomingPost[],
-    feedDomain: Post['feedDomain'],
-    feedId: Post['feedId']
-  ): Promise<void> {
-    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
-
-    const postsOwnerFeed = await knex<Feed>('Feed').where({ feedDomain, feedId }).first()
-
-    invariant(postsOwnerFeed, 'There is no owner feed for these posts')
-
-    const postsReadyForDB = posts.map(post => ({
-      ...post,
-      feedDomain,
-      feedId,
-      uniqueId: `${feedDomain}-${post.postId}`,
-    }))
-
-    //TODO: Check whats the max amount of posts insert can do.
-    return knex<Post>('Post')
-      .insert(postsReadyForDB)
-      .returning('postId')
-      .onConflict()
-      .ignore()
-      .then(res =>
-        knex<Feed>('Feed')
-          .select('posts')
-          .where({ feedDomain, feedId })
-          .first()
-          .then(feedPosts => {
-            const currentFeedPosts = Array.isArray(feedPosts) ? feedPosts : []
-            const insertedPostIds = res.map(post => post.postId)
-
-            return knex<Feed>('Feed')
-              .where({ feedDomain, feedId })
-              .jsonSet('posts', '$', JSON.stringify([...currentFeedPosts, ...insertedPostIds]))
-          })
-      )
-      .then(res => console.log(res))
-      .then(F.ignore)
-  }
-
-  // //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
-  // // fetchAllPostIds(): Promise<readonly Post[]> {
-  // //   return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
-  // // }
-
-  // getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
-  //   return surrealdb
-  //     .query<QueryResults<Post>>(
-  //       `SELECT * FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
-  //     )
-  //     .then(handleQueryResultMultipleItems)
+  //   return knex<Log>('Log').orderBy('createdAt', 'desc').limit(limit).offset(skip)
   // }
 
-  // getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
-  //   return surrealdb
-  //     .query<QueryResults<Post>>(
-  //       `SELECT * FROM post WHERE mediaHasBeenDownloaded = true AND couldNotDownload = false AND postMediaImagesHaveBeenProcessed = false`
-  //     )
-  //     .then(handleQueryResultMultipleItems)
+  // static findLogs_AllLevels_WithSearch_Paginated(
+  //   page: number,
+  //   limit: number,
+  //   searchQuery: string
+  // ): Promise<readonly Log[]> {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
+  //   const sq = `%${searchQuery.toLowerCase()}%`
+
+  //   return knex<Log>('Log')
+  //     .whereILike('message', sq)
+  //     .orWhereILike('service', sq)
+  //     .orWhereILike('error', sq)
+  //     .orWhereILike('otherAsStr', sq)
+  //     .orderBy('createdAt', 'desc')
+  //     .limit(limit)
+  //     .offset(skip)
   // }
 
-  // updatePostData(
+  // static findLogs_LevelFilter_NoSearch_Paginated(
+  //   page: number,
+  //   limit: number,
+  //   logLevel: Log['level']
+  // ): Promise<readonly Log[]> {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
+
+  //   return knex<Log>('Log').where({ level: logLevel }).orderBy('createdAt', 'desc').limit(limit).offset(skip)
+  // }
+
+  // static findLogs_LevelFilter_WithSearch_Paginated(
+  //   page: number,
+  //   limit: number,
+  //   searchQuery: string,
+  //   logLevel: Log['level']
+  // ): Promise<readonly Log[]> {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
+  //   const sq = `%${searchQuery.toLowerCase()}%`
+
+  //   return knex<Log>('Log')
+  //     .where({ level: logLevel })
+  //     .andWhere(function () {
+  //       this.whereILike('message', sq)
+  //         .orWhereILike('service', sq)
+  //         .orWhereILike('error', sq)
+  //         .orWhereILike('otherAsStr', sq)
+  //     })
+  //     .orderBy('createdAt', 'desc')
+  //     .limit(limit)
+  //     .offset(skip)
+  // }
+
+  // static getAllPosts(): Promise<readonly Post[]> {
+  //   return knex<Post>('Post')
+  // }
+
+  // static getSinglePost(feedDomain: Post['feedDomain'], postId: Post['postId']): Promise<Maybe<Post>> {
+  //   return knex<Post>('Post').where({ feedDomain, postId }).first<Maybe<Post>>()
+  // }
+
+  // // eslint-disable-next-line max-lines-per-function
+  // static async batchAddPosts(
+  //   posts: readonly IncomingPost[],
   //   feedDomain: Post['feedDomain'],
-  //   feedId: Post['feedId'],
-  //   postDataUpdates: Partial<Omit<Post>>
+  //   feedId: Post['feedId']
   // ): Promise<void> {
-  //   return surrealdb
-  //     .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
-  //       postDataUpdates,
-  //     })
-  //     .then(ignoreQueryResponse)
-  // }
-
-  addFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
-    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
-
-    const uniqueId = `${feedDomain}-${feedId}`
-
-    // Lowercase feedId for reddit as they may have different casing when input
-    const fId = feedDomain === 'reddit.com' ? feedId.toLowerCase() : feedId
-
-    return knex<Feed>('Feed')
-      .insert({ feedId: fId, feedDomain, uniqueId })
-      .onConflict()
-      .ignore()
-      .then(F.ignore)
-  }
-
-  // getAllFeeds(): Promise<readonly Feed[]> {
-  //   return surrealdb.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleQueryResultMultipleItems)
-  // }
-
-  // getSingleFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<Maybe<Feed>> {
   //   invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-  //   return surrealdb
-  //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $uniqueId', { uniqueId })
-  //     .then(handleQueryResultSingleItem)
+  //   const postsOwnerFeed = await knex<Feed>('Feed').where({ feedDomain, feedId }).first()
+
+  //   invariant(postsOwnerFeed, 'There is no owner feed for these posts')
+
+  //   const postsReadyForDB = posts.map(post => ({
+  //     ...post,
+  //     feedDomain,
+  //     feedId,
+  //     uniqueId: `${feedDomain}-${post.postId}`,
+  //   }))
+
+  //   //TODO: Check whats the max amount of posts insert can do.
+  //   return knex<Post>('Post')
+  //     .insert(postsReadyForDB)
+  //     .returning('postId')
+  //     .onConflict()
+  //     .ignore()
+  //     .then(res =>
+  //       knex<Feed>('Feed')
+  //         .select('posts')
+  //         .where({ feedDomain, feedId })
+  //         .first()
+  //         .then(feedPosts => {
+  //           const currentFeedPosts = Array.isArray(feedPosts) ? feedPosts : []
+  //           const insertedPostIds = res.map(post => post.postId)
+
+  //           return knex<Feed>('Feed')
+  //             .where({ feedDomain, feedId })
+  //             .jsonSet('posts', '$', JSON.stringify([...currentFeedPosts, ...insertedPostIds]))
+  //         })
+  //     )
+  //     .then(res => console.log(res))
+  //     .then(F.ignore)
   // }
 
-  // getFavouriteFeeds(): Promise<readonly Feed[]> {
-  //   return surrealdb
-  //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE favourited = true')
-  //     .then(handleQueryResultMultipleItems)
-  // }
-
-  // getFeedsThatNeedToBeUpdated(): Promise<readonly Feed[]> {
-  //   const oneHourInMillisecs = 3_600_000
-  //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
-
-  //   return surrealdb
-  //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE lastUpdated < $anHourAgo', {
-  //       anHourAgo: anHourAgo(),
-  //     })
-  //     .then(handleQueryResultMultipleItems)
-  // }
-
-  // updateFeedLastUpdatedTimeToNow(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
-  //   invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
-
-  //   return surrealdb
-  //     .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $uniqueId', {
-  //       nowMS: Date.now(),
-  //     })
-  //     .then(ignoreQueryResponse)
-  // }
-
-  // // // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
-  // // // getFeedTagsAssociatedWithFeed() {
-  // // //   return e.select()
+  // // //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
+  // // // static fetchAllPostIds(): Promise<readonly Post[]> {
+  // // //   return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
   // // // }
 
-  // // getAllFeedTags(): Promise<readonly BaseTag[]> {
-  // //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
+  // // static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
+  // //   return surrealdb
+  // //     .query<QueryResults<Post>>(
+  // //       `SELECT * FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
+  // //     )
+  // //     .then(handleQueryResultMultipleItems)
   // // }
 
-  // getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
-  //   return surrealdb
-  //     .query<QueryResults<Tag>>('SELECT * FROM tag WHERE tag = $tag', { tag })
-  //     .then(handleQueryResultSingleItem)
+  // // static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
+  // //   return surrealdb
+  // //     .query<QueryResults<Post>>(
+  // //       `SELECT * FROM post WHERE mediaHasBeenDownloaded = true AND couldNotDownload = false AND postMediaImagesHaveBeenProcessed = false`
+  // //     )
+  // //     .then(handleQueryResultMultipleItems)
+  // // }
+
+  // // static updatePostData(
+  // //   feedDomain: Post['feedDomain'],
+  // //   feedId: Post['feedId'],
+  // //   postDataUpdates: Partial<Omit<Post>>
+  // // ): Promise<void> {
+  // //   return surrealdb
+  // //     .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
+  // //       postDataUpdates,
+  // //     })
+  // //     .then(ignoreQueryResponse)
+  // // }
+
+  // static addFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
+  //   invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+
+  //   const uniqueId = `${feedDomain}-${feedId}`
+
+  //   // Lowercase feedId for reddit as they may have different casing when input
+  //   const fId = feedDomain === 'reddit.com' ? feedId.toLowerCase() : feedId
+
+  //   return knex<Feed>('Feed')
+  //     .insert({ feedId: fId, feedDomain, uniqueId })
+  //     .onConflict()
+  //     .ignore()
+  //     .then(F.ignore)
   // }
 
-  // getAllTags(): Promise<readonly Tag[]> {
-  //   return surrealdb.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleQueryResultMultipleItems)
-  // }
+  // // static getAllFeeds(): Promise<readonly Feed[]> {
+  // //   return surrealdb.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleQueryResultMultipleItems)
+  // // }
 
-  // getFavouriteTags(): Promise<readonly Tag[]> {
-  //   return surrealdb
-  //     .query<QueryResults<Tag>>('SELECT * FROM tag WHERE favourited = true')
-  //     .then(handleQueryResultMultipleItems)
-  // }
+  // // static getSingleFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<Maybe<Feed>> {
+
+  // //   return surrealdb
+  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $uniqueId', { uniqueId })
+  // //     .then(handleQueryResultSingleItem)
+  // // }
+
+  // // static getFavouriteFeeds(): Promise<readonly Feed[]> {
+  // //   return surrealdb
+  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE favourited = true')
+  // //     .then(handleQueryResultMultipleItems)
+  // // }
+
+  // // static getFeedsThatNeedToBeUpdated(): Promise<readonly Feed[]> {
+  // //   const oneHourInMillisecs = 3_600_000
+  // //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
+
+  // //   return surrealdb
+  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE lastUpdated < $anHourAgo', {
+  // //       anHourAgo: anHourAgo(),
+  // //     })
+  // //     .then(handleQueryResultMultipleItems)
+  // // }
+
+  // // static updateFeedLastUpdatedTimeToNow(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
+
+  // //   return surrealdb
+  // //     .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $uniqueId', {
+  // //       nowMS: Date.now(),
+  // //     })
+  // //     .then(ignoreQueryResponse)
+  // // }
+
+  // // // // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
+  // // // // static getFeedTagsAssociatedWithFeed() {
+  // // // //   return e.select()
+  // // // // }
+
+  // // //static  getAllFeedTags(): Promise<readonly BaseTag[]> {
+  // // //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
+  // // // }
+
+  // // static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
+  // //   return surrealdb
+  // //     .query<QueryResults<Tag>>('SELECT * FROM tag WHERE tag = $tag', { tag })
+  // //     .then(handleQueryResultSingleItem)
+  // // }
+
+  // // static getAllTags(): Promise<readonly Tag[]> {
+  // //   return surrealdb.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleQueryResultMultipleItems)
+  // // }
+
+  // // static getFavouriteTags(): Promise<readonly Tag[]> {
+  // //   return surrealdb
+  // //     .query<QueryResults<Tag>>('SELECT * FROM tag WHERE favourited = true')
+  // //     .then(handleQueryResultMultipleItems)
+  // // }
 }
 
 // const delay = (): Promise<unknown> =>
 //   new Promise(resolve => {
 //     setTimeout(resolve)
 //   })
-
-const DB = new DBMethods()
-
-type DBInstanceType = typeof DB
 
 // eslint-disable-next-line max-lines-per-function
 const thing = (): Promise<void | readonly void[]> =>

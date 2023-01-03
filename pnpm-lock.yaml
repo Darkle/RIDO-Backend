@@ -1,7 +1,6 @@
 lockfileVersion: 5.4
 
 specifiers:
-  '@types/better-sqlite3': ^7.6.3
   '@types/eventsource': ^1.1.10
   '@types/koa': ^2.13.5
   '@types/luxon': ^3.2.0
@@ -9,6 +8,7 @@ specifiers:
   '@types/node': ^18.11.18
   '@types/node-static': ^0.7.7
   '@types/ramda': ^0.28.20
+  '@types/rethinkdb': ^2.3.17
   '@types/sharp': ^0.31.1
   '@typescript-eslint/eslint-plugin': ^5.47.1
   '@typescript-eslint/parser': ^5.47.1
@@ -28,7 +28,6 @@ specifiers:
   wait-on: ^7.0.1
 
 devDependencies:
-  '@types/better-sqlite3': 7.6.3
   '@types/eventsource': 1.1.10
   '@types/koa': 2.13.5
   '@types/luxon': 3.2.0
@@ -36,6 +35,7 @@ devDependencies:
   '@types/node': 18.11.18
   '@types/node-static': 0.7.7
   '@types/ramda': 0.28.20
+  '@types/rethinkdb': 2.3.17
   '@types/sharp': 0.31.1
   '@typescript-eslint/eslint-plugin': 5.47.1_axni7f4fgvh6tlufnh6hwgsifq
   '@typescript-eslint/parser': 5.47.1_iukboom6ndih5an6iafl45j2fe
@@ -187,12 +187,6 @@ packages:
       '@types/node': 18.11.18
     dev: true
 
-  /@types/better-sqlite3/7.6.3:
-    resolution: {integrity: sha512-YS64N9SNDT/NAvou3QNdzAu3E2om/W/0dhORimtPGLef+zSK5l1vDzfsWb4xgXOgfhtOI5ZDTRxnvRPb22AIVQ==}
-    dependencies:
-      '@types/node': 18.11.18
-    dev: true
-
   /@types/body-parser/1.19.2:
     resolution: {integrity: sha512-ALYone6pm6QmwZoAgeyNksccT9Q4AWZQ6PvfwR37GT6r6FWUPguq6sUmNGSMV2Wr761oQoBxwGGa6DR5o1DC9g==}
     dependencies:
@@ -326,6 +320,12 @@ packages:
 
   /@types/range-parser/1.2.4:
     resolution: {integrity: sha512-EEhsLsD6UsDM1yFhAvy0Cjr6VwmpMWqFBCb9w07wVugF7w9nfajxLuVmngTIpgS6svCnm6Vaw+MZhoDCKnOfsw==}
+    dev: true
+
+  /@types/rethinkdb/2.3.17:
+    resolution: {integrity: sha512-+ca0JPz1qznhM+OUPf/XUqYKp3WOIm3Kak8TaIyA6k82JEZd1Vl10u1HRhJmsOV4riVwLr8TPpYCLpupEkMz5w==}
+    dependencies:
+      '@types/node': 18.11.18
     dev: true
 
   /@types/semver/7.3.13:
