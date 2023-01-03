@@ -145,7 +145,18 @@ class DBMethods {
       .onConflict()
       .ignore()
       .then(res =>
-        knex<Feed>('Feed').select('posts').where({ feedDomain, feedId }).jsonExtract('posts', '$').first()
+        knex<Feed>('Feed')
+          .select('posts')
+          .where({ feedDomain, feedId })
+          .first()
+          .then(feedPosts => {
+            const currentFeedPosts = Array.isArray(feedPosts) ? feedPosts : []
+            const insertedPostIds = res.map(post => post.postId)
+
+            return knex<Feed>('Feed')
+              .where({ feedDomain, feedId })
+              .jsonSet('posts', '$', JSON.stringify([...currentFeedPosts, ...insertedPostIds]))
+          })
       )
       .then(res => console.log(res))
       .then(F.ignore)
