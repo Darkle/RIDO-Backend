@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { DB } from '../db'
 import { trpc } from '../api'
-import { PostZSchema } from '../ZodSchemas'
+import { IncommingPostZSchema } from '../ZodSchemas'
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type,max-lines-per-function
 const postRoutes = () =>
@@ -44,7 +44,7 @@ const postRoutes = () =>
       )
       .mutation(({ input }) => DB.updatePostInfo(input)),
     batchAddPosts: trpc.procedure
-      .input(z.array(PostZSchema))
+      .input(z.array(IncommingPostZSchema))
       .mutation(({ input }) => DB.batchAddPosts(input)),
   })
 

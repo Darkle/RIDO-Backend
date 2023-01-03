@@ -107,6 +107,8 @@ module.exports = {
     'import/no-relative-packages': 'off',
     'extra-rules/potential-point-free': 'error',
     'eslint-comments/disable-enable-pair': 'off',
+    'eslint-comments/no-unused-enable': 2,
+    'eslint-comments/no-unused-disable': 2,
     'no-secrets/no-secrets': ['error', { tolerance: 4.5 }],
     'security/detect-non-literal-fs-filename': 'off',
     'security/detect-object-injection': 'off',

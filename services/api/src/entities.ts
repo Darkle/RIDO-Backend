@@ -22,12 +22,14 @@ interface Log {
   readonly otherAsStr?: string
 }
 
+type IncomingLog = Omit<Log, 'createdAt'>
+
 interface Post {
-  // Post uniqueId is `${Post['feedDomain']}-${Post['postId']}`
-  readonly uniqueId: string
+  readonly uniqueId: `${Post['feedDomain']}-${Post['postId']}`
   readonly postId: string
   readonly tags?: readonly string[]
-  readonly feedDomain: string
+  // Making sure it includes a dot - some minor string type checking for domain
+  readonly feedDomain: `${string}.${string}`
   readonly feedId: string
   readonly title: string
   readonly postUrl: string
@@ -46,18 +48,41 @@ interface Post {
   readonly downloadedMedia?: readonly string[]
 }
 
+type IncomingPost = Omit<
+  Post,
+  | 'uniqueId'
+  | 'feed'
+  | 'tags'
+  | 'feedDomain'
+  | 'feedId'
+  | 'mediaHasBeenDownloaded'
+  | 'couldNotDownload'
+  | 'postMediaImagesHaveBeenProcessed'
+  | 'postThumbnailsCreated'
+  | 'postMediaImagesProcessingError'
+  | 'downloadError'
+  | 'mediaDownloadTries'
+  | 'downloadedMediaCount'
+  | 'downloadedMedia'
+>
+
 interface Feed {
-  // Feed uniqueId is ${Feed['feedDomain']}-${Feed['feedId']}`
-  readonly uniqueId: string
+  readonly uniqueId: `${Feed['feedDomain']}-${Feed['feedId']}`
   readonly tags?: readonly string[]
   readonly posts?: readonly string[]
-  readonly feedDomain: string
+  // Making sure it includes a dot - some minor string type checking for domain
+  readonly feedDomain: `${string}.${string}`
   readonly feedId: string
   readonly favourited: boolean
-  readonly lastUpdated: number
+  readonly updateCheck_lastUpdated: number
   // updateCheck_LastPostSeen is only used for non-reddit feeds.
   readonly updateCheck_LastPostSeen?: string
 }
+
+type IncomingFeed = Omit<
+  Feed,
+  'uniqueId' | 'tags' | 'posts' | 'favourited' | 'updateCheck_lastUpdated' | 'updateCheck_LastPostSeen'
+>
 
 interface Tag {
   readonly feeds?: readonly string[]
@@ -66,4 +91,4 @@ interface Tag {
   readonly favourited: boolean
 }
 
-export type { Log, Post, Feed, Tag, Settings, DBTable }
+export type { Log, Post, Feed, Tag, Settings, DBTable, IncomingPost, IncomingLog, IncomingFeed }

@@ -86,7 +86,6 @@ DB.init().catch(err => console.error(err))
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
-// eslint-disable-next-line max-lines-per-function
 setTimeout(() => {
   DB.getSettings()
     //   // DB.addPost({
@@ -124,8 +123,8 @@ setTimeout(() => {
     .then(() => DB.getSettings())
     .then(res => {
       // res.cata({
-        // Just: h => console.log(h),
-        // Nothing: () => console.log(`no data :-(`),
+      // Just: h => console.log(h),
+      // Nothing: () => console.log(`no data :-(`),
       // })
       console.log('res', res)
     })

@@ -6,31 +6,13 @@ import invariant from 'tiny-invariant'
 import { r, type Connection } from 'rethinkdb-ts'
 
 import { EE } from './events'
-import type { DBTable, Feed, Log, Post, Settings, Tag } from './entities'
+import type { DBTable, Feed, IncomingLog, Log, Post, Settings, Tag } from './entities'
 import { getEnvFilePath } from './utils'
 import { nullable, type Maybe } from 'pratica'
 
 // eslint-disable-next-line functional/no-let
 let connection: Connection
 // const r = RethinkDB.db('rido')
-
-type IncomingPost = Omit<
-  Post,
-  | 'uniqueId'
-  | 'feed'
-  | 'tags'
-  | 'feedDomain'
-  | 'feedId'
-  | 'mediaHasBeenDownloaded'
-  | 'couldNotDownload'
-  | 'postMediaImagesHaveBeenProcessed'
-  | 'postThumbnailsCreated'
-  | 'postMediaImagesProcessingError'
-  | 'downloadError'
-  | 'mediaDownloadTries'
-  | 'downloadedMediaCount'
-  | 'downloadedMedia'
->
 
 const defaultSettings = {
   uniqueId: 'settings',
@@ -45,12 +27,6 @@ const defaultSettings = {
   /* eslint-enable @typescript-eslint/no-magic-numbers */
 }
 
-// function getFirstItemFromCursor<T>(cursor: RethinkDB.Cursor): Promise<Maybe<T>> {
-//   return cursor.next<T>().then(nullable)
-// }
-
-/* eslint-disable functional/prefer-tacit */
-
 class DB {
   // eslint-disable-next-line max-lines-per-function
   static init(): Promise<void> {
@@ -60,7 +36,7 @@ class DB {
         .run()
         .then(dbs => (dbs.includes('rido') ? F.ignore() : r.dbCreate('rido').run().then(F.ignore)))
 
-    const insertDefaultSettings = (): Promise<void> =>
+    const createDefaultSettings = (): Promise<void> =>
       r.table('Settings').insert(defaultSettings).run().then(F.ignore)
 
     const createTables = (): Promise<void> =>
@@ -71,7 +47,7 @@ class DB {
           tables.includes('Settings')
             ? F.ignore()
             : Promise.all([
-                r.tableCreate('Settings', { primaryKey: 'uniqueId' }).run().then(insertDefaultSettings),
+                r.tableCreate('Settings', { primaryKey: 'uniqueId' }).run(),
                 r.tableCreate('Log').run(),
                 r.tableCreate('Post', { primaryKey: 'uniqueId' }).run(),
                 r.tableCreate('Feed', { primaryKey: 'uniqueId' }).run(),
@@ -79,7 +55,11 @@ class DB {
               ]).then(F.ignore)
         )
 
-    return r.connectPool({ host: 'localhost', db: 'rido' }).then(createDB).then(createTables)
+    return r
+      .connectPool({ host: 'localhost', db: 'rido' })
+      .then(createDB)
+      .then(createTables)
+      .then(createDefaultSettings)
   }
 
   readonly close = connection.close
@@ -98,7 +78,7 @@ class DB {
     return r.table('Settings').filter(r.row('uniqueId').eq('settings')).update(setting).run().then(F.ignore)
   }
 
-  static saveLog(log: Omit<Log, 'createdAt'>): Promise<void> {
+  static saveLog(log: IncomingLog): Promise<void> {
     const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
 
     return r
@@ -285,7 +265,7 @@ class DB {
   // //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
 
   // //   return surrealdb
-  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE lastUpdated < $anHourAgo', {
+  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE updateCheck_lastUpdated < $anHourAgo', {
   // //       anHourAgo: anHourAgo(),
   // //     })
   // //     .then(handleQueryResultMultipleItems)
@@ -294,7 +274,7 @@ class DB {
   // // static updateFeedLastUpdatedTimeToNow(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
 
   // //   return surrealdb
-  // //     .query('UPDATE feed set lastUpdated = $nowMS WHERE feedId = $uniqueId', {
+  // //     .query('UPDATE feed set updateCheck_lastUpdated = $nowMS WHERE feedId = $uniqueId', {
   // //       nowMS: Date.now(),
   // //     })
   // //     .then(ignoreQueryResponse)
@@ -331,7 +311,6 @@ class DB {
 //     setTimeout(resolve)
 //   })
 
-// eslint-disable-next-line max-lines-per-function
 const thing = (): Promise<void | readonly void[]> =>
   // console.log(DB.thing2())
   // DB.getAllPosts()
@@ -379,4 +358,4 @@ const thing = (): Promise<void | readonly void[]> =>
     })
 
 export { thing, DB }
-export type { DBInstanceType }
+export type { IncomingPost }

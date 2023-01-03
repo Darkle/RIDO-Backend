@@ -1,8 +1,18 @@
-import { z } from 'zod'
+import { z, type ZodSchema } from 'zod'
+import type { Log, IncomingPost, Settings, IncomingFeed, Tag } from './entities'
 
-const LogZSchema = z.object({
+// From https://zod.dev/?id=json-type
+const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
+type Literal = z.infer<typeof literalSchema>
+type Json = Literal | { readonly [key: string]: Json } | readonly Json[]
+const jsonSchema: z.ZodType<Json> = z.lazy(() =>
+  z.union([literalSchema, z.array(jsonSchema), z.record(jsonSchema)])
+)
+
+const incomingLogZodSchema: ZodSchema<Omit<Log, 'otherAsStr'>> = z.object({
   createdAt: z.number().positive(),
   level: z.union([
+    z.literal('fatal'),
     z.literal('error'),
     z.literal('warn'),
     z.literal('info'),
@@ -12,75 +22,71 @@ const LogZSchema = z.object({
   message: z.string().optional(),
   service: z.string().optional(),
   error: z.string().optional(),
-  other: z.unknown().optional(),
+  other: jsonSchema,
 })
 
 const defaultSearchResultLimit = 100
 
-const logSearchZSchema = z.object({
+const logSearchZodSchema = z.object({
   page: z.number().default(1),
   limit: z.number().optional().default(defaultSearchResultLimit),
   searchQuery: z.string().optional(),
   logLevelFilter: z.enum(['all', 'error', 'warn', 'info', 'debug', 'trace']).default('all'),
 })
 
-const PostZSchema = z.object({
+const incomingPostZodSchema: ZodSchema<IncomingPost> = z.object({
   postId: z.string().min(2),
-  subreddit: z.string().min(2),
   title: z.string().min(2),
   postUrl: z.string().url(),
   score: z.number(),
   timestamp: z.number().positive(),
   mediaUrl: z.string().url(),
-  mediaHasBeenDownloaded: z.boolean(),
-  couldNotDownload: z.boolean(),
-  postMediaImagesHaveBeenProcessed: z.boolean(),
+  mediaHasBeenDownloaded: z.boolean().default(false).optional(),
+  couldNotDownload: z.boolean().default(false).optional(),
+  postMediaImagesHaveBeenProcessed: z.boolean().default(false).optional(),
   postMediaImagesProcessingError: z.string().optional(),
-  postThumbnailsCreated: z.boolean(),
-  mediaDownloadTries: z.number().gt(-1).default(0),
-  downloadedMediaCount: z.number().gt(-1).default(0),
+  postThumbnailsCreated: z.boolean().default(false).optional(),
+  mediaDownloadTries: z.number().gt(-1).default(0).optional(),
+  downloadedMediaCount: z.number().gt(-1).default(0).optional(),
   downloadError: z.string().optional(),
   downloadedMedia: z.array(z.string()).optional(),
 })
+
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 
-const SettingsZSchema = z
+const incomingSettingsZodSchema: ZodSchema<Partial<Settings>> = z
   .object({
-    uniqueId: z.literal('settings').optional(),
     numberMediaDownloadsAtOnce: z.number().positive(),
     numberImagesProcessAtOnce: z.number().positive(),
     updateAllDay: z.boolean(),
-    updateStartingHour: z.number(),
-    updateEndingHour: z.number(),
+    updateStartingHour: z.number().min(0).max(23),
+    updateEndingHour: z.number().min(0).max(23),
     imageCompressionQuality: z.number().min(1).max(100),
     archiveImageCompressionQuality: z.number().min(1).max(100),
     maxImageWidthForNonArchiveImage: z.number().positive(),
   })
   // will never be adding new one, so can all be partial
   .partial()
+
 /* eslint-enable @typescript-eslint/no-magic-numbers */
 
-const SubGroupZSchema = z.object({
-  subGroup: z.string().min(1),
-  favourited: z.boolean(),
+const incomingFeedZodSchema: ZodSchema<IncomingFeed> = z.object({
+  // https://zod.dev/?id=custom-schemas
+  feedDomain: z.custom<IncomingFeed['feedDomain']>(val =>
+    typeof val === 'string' ? /\./u.test(val) && val.length : false
+  ),
+  feedId: z.string().min(1),
 })
 
-const SubredditZSchema = z.object({
-  subreddit: z.string().min(1),
-  favourited: z.boolean(),
-  lastUpdated: z.number().gt(-1),
-})
-
-const TagZSchema = z.object({
+const TagZodSchema: ZodSchema<Pick<Tag, 'tag'>> = z.object({
   tag: z.string().min(1),
-  favourited: z.boolean(),
 })
+
 export {
-  LogZSchema,
-  PostZSchema,
-  SettingsZSchema,
-  SubGroupZSchema,
-  SubredditZSchema,
-  TagZSchema,
-  logSearchZSchema,
+  incomingLogZodSchema,
+  incomingPostZodSchema,
+  incomingSettingsZodSchema,
+  incomingFeedZodSchema,
+  TagZodSchema,
+  logSearchZodSchema,
 }
