@@ -1,5 +1,5 @@
 import { z, type ZodSchema } from 'zod'
-import type { Log, IncomingPost, Settings, IncomingFeed, Tag } from './entities'
+import type { IncomingPost, Settings, IncomingFeed, Tag, IncomingLog } from './entities'
 
 // From https://zod.dev/?id=json-type
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
@@ -9,7 +9,7 @@ const jsonSchema: z.ZodType<Json> = z.lazy(() =>
   z.union([literalSchema, z.array(jsonSchema), z.record(jsonSchema)])
 )
 
-const incomingLogZodSchema: ZodSchema<Omit<Log, 'otherAsStr'>> = z.object({
+const incomingLogZodSchema: ZodSchema<IncomingLog> = z.object({
   createdAt: z.number().positive(),
   level: z.union([
     z.literal('fatal'),
@@ -73,7 +73,7 @@ const incomingSettingsZodSchema: ZodSchema<Partial<Settings>> = z
 const incomingFeedZodSchema: ZodSchema<IncomingFeed> = z.object({
   // https://zod.dev/?id=custom-schemas
   feedDomain: z.custom<IncomingFeed['feedDomain']>(val =>
-    typeof val === 'string' ? /\./u.test(val) && val.length : false
+    typeof val === 'string' ? val.includes('.') && val.length : false
   ),
   feedId: z.string().min(1),
 })

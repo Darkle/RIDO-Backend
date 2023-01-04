@@ -48,23 +48,7 @@ interface Post {
   readonly downloadedMedia?: readonly string[]
 }
 
-type IncomingPost = Omit<
-  Post,
-  | 'uniqueId'
-  | 'feed'
-  | 'tags'
-  | 'feedDomain'
-  | 'feedId'
-  | 'mediaHasBeenDownloaded'
-  | 'couldNotDownload'
-  | 'postMediaImagesHaveBeenProcessed'
-  | 'postThumbnailsCreated'
-  | 'postMediaImagesProcessingError'
-  | 'downloadError'
-  | 'mediaDownloadTries'
-  | 'downloadedMediaCount'
-  | 'downloadedMedia'
->
+type IncomingPost = Pick<Post, 'postId' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl'>
 
 interface Feed {
   readonly uniqueId: `${Feed['feedDomain']}-${Feed['feedId']}`
@@ -79,10 +63,7 @@ interface Feed {
   readonly updateCheck_LastPostSeen?: string
 }
 
-type IncomingFeed = Omit<
-  Feed,
-  'uniqueId' | 'tags' | 'posts' | 'favourited' | 'updateCheck_lastUpdated' | 'updateCheck_LastPostSeen'
->
+type IncomingFeed = Pick<Feed, 'feedDomain' | 'feedId'>
 
 interface Tag {
   readonly feeds?: readonly string[]
