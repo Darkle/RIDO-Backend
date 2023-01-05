@@ -37,22 +37,38 @@ class DB {
         .then(dbs => (dbs.includes('rido') ? F.ignore() : r.dbCreate('rido').run().then(F.ignore)))
 
     const createDefaultSettings = (): Promise<void> =>
-      r.table('Settings').insert(defaultSettings).run().then(F.ignore)
+      r
+        .table<Settings>('Settings')
+        .run()
+        .then(results =>
+          results[0] ? F.ignore() : r.table('Settings').insert(defaultSettings).run().then(F.ignore)
+        )
 
     const createTables = (): Promise<void> =>
       r
         .tableList()
         .run()
         .then(tables =>
-          tables.includes('Settings')
-            ? F.ignore()
-            : Promise.all([
+          !tables.length
+            ? Promise.all([
                 r.tableCreate('Settings', { primaryKey: 'uniqueId' }).run(),
                 r.tableCreate('Log').run(),
                 r.tableCreate('Post', { primaryKey: 'uniqueId' }).run(),
                 r.tableCreate('Feed', { primaryKey: 'uniqueId' }).run(),
                 r.tableCreate('Tag', { primaryKey: 'tag' }).run(),
               ]).then(F.ignore)
+            : F.ignore()
+        )
+
+    const createTableIndexes = (): Promise<void> =>
+      r
+        .table('Log')
+        .indexList()
+        .run()
+        .then(indexes =>
+          !indexes.length
+            ? Promise.all([r.table('Log').indexCreate('level').run()]).then(F.ignore)
+            : F.ignore()
         )
 
     return r
@@ -60,6 +76,7 @@ class DB {
       .then(createDB)
       .then(createTables)
       .then(createDefaultSettings)
+      .then(createTableIndexes)
   }
 
   readonly close = connection.close
@@ -79,7 +96,7 @@ class DB {
   }
 
   static saveLog(log: IncomingLog): Promise<void> {
-    const otherAsStr = log.otherAsStr ? log.otherAsStr : log.other ? JSON.stringify(log.other) : ''
+    const otherAsStr = log.other ? JSON.stringify(log.other) : ''
 
     return r
       .table('Log')
@@ -88,11 +105,11 @@ class DB {
       .then(F.ignore)
   }
 
-  // static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
+  static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
 
-  //   return knex<Log>('Log').orderBy('createdAt', 'desc').limit(limit).offset(skip)
-  // }
+    return r.table<Log>('Log').orderBy('createdAt', 'desc').limit(limit).skip(skip).run()
+  }
 
   // static findLogs_AllLevels_WithSearch_Paginated(
   //   page: number,

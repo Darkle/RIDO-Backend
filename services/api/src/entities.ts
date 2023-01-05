@@ -22,7 +22,7 @@ interface Log {
   readonly otherAsStr?: string
 }
 
-type IncomingLog = Omit<Log, 'createdAt'>
+type IncomingLog = Omit<Log, 'createdAt' | 'otherAsStr'>
 
 interface Post {
   readonly uniqueId: `${Post['feedDomain']}-${Post['postId']}`
