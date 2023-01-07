@@ -2,17 +2,14 @@ import path from 'path'
 
 import { F, G } from '@mobily/ts-belt'
 import invariant from 'tiny-invariant'
-// import RethinkDB from 'rethinkdb'
-import { r, type Connection } from 'rethinkdb-ts'
+import neo4j, { type QueryResult, type Session } from 'neo4j-driver'
 
 import { EE } from './events'
 import type { DBTable, Feed, IncomingLog, Log, Post, Settings, Tag } from './entities'
 import { getEnvFilePath } from './utils'
 import { nullable, type Maybe } from 'pratica'
 
-// eslint-disable-next-line functional/no-let
-let connection: Connection
-// const r = RethinkDB.db('rido')
+const driver = neo4j.driver('neo4j://localhost', neo4j.auth.basic('neo4j', 'foo'))
 
 const defaultSettings = {
   uniqueId: 'settings',
@@ -27,89 +24,78 @@ const defaultSettings = {
   /* eslint-enable @typescript-eslint/no-magic-numbers */
 }
 
+/* eslint-disable functional/no-try-statement,functional/no-throw-statement */
+
 class DB {
   // eslint-disable-next-line max-lines-per-function
-  static init(): Promise<void> {
-    const createDB = (): Promise<void> =>
-      r
-        .dbList()
-        .run()
-        .then(dbs => (dbs.includes('rido') ? F.ignore() : r.dbCreate('rido').run().then(F.ignore)))
+  static async init(): Promise<void> {
+    const session = driver.session({ database: 'rido' })
 
     const createDefaultSettings = (): Promise<void> =>
-      r
-        .table<Settings>('Settings')
-        .run()
-        .then(results =>
-          results[0] ? F.ignore() : r.table('Settings').insert(defaultSettings).run().then(F.ignore)
+      session
+        .run(
+          `MERGE (settings:Settings {uniqueId : $uniqueId})
+              ON CREATE SET numberMediaDownloadsAtOnce = $numberMediaDownloadsAtOnce
+              ON CREATE SET numberImagesProcessAtOnce = $numberImagesProcessAtOnce
+              ON CREATE SET updateAllDay = $updateAllDay
+              ON CREATE SET updateStartingHour = $updateStartingHour
+              ON CREATE SET updateEndingHour = $updateEndingHour
+              ON CREATE SET imageCompressionQuality = $imageCompressionQuality
+              ON CREATE SET maxImageWidthDorNonArchiveImage = $maxImageWidthDorNonArchiveImage
+        `,
+          defaultSettings
         )
+        .then(F.ignore)
 
-    const createTables = (): Promise<void> =>
-      r
-        .tableList()
-        .run()
-        .then(tables =>
-          !tables.length
-            ? Promise.all([
-                r.tableCreate('Settings', { primaryKey: 'uniqueId' }).run(),
-                r.tableCreate('Log').run(),
-                r.tableCreate('Post', { primaryKey: 'uniqueId' }).run(),
-                r.tableCreate('Feed', { primaryKey: 'uniqueId' }).run(),
-                r.tableCreate('Tag', { primaryKey: 'tag' }).run(),
-              ]).then(F.ignore)
-            : F.ignore()
-        )
+    try {
+      await createDefaultSettings()
+    } catch (error) {
+      await session.close()
+      throw error
+    }
 
-    const createTableIndexes = (): Promise<void> =>
-      r
-        .table('Log')
-        .indexList()
-        .run()
-        .then(indexes =>
-          !indexes.length
-            ? Promise.all([r.table('Log').indexCreate('level').run()]).then(F.ignore)
-            : F.ignore()
-        )
-
-    return r
-      .connectPool({ host: 'localhost', db: 'rido' })
-      .then(createDB)
-      .then(createTables)
-      .then(createDefaultSettings)
-      .then(createTableIndexes)
+    await session.close()
   }
 
-  readonly close = connection.close
+  readonly close = driver.close
 
-  static getSettings(): Promise<Settings> {
-    return (
-      r
-        .table<Settings>('Settings')
-        .run()
-        // No need for Maybe here as settings will always be there
-        .then(results => results[0] as Settings)
-    )
+  static async getSettings(): Promise<QueryResult<Settings>> {
+    const session = driver.session({ database: 'rido' })
+
+    let results
+
+    try {
+      results = await session.run(`MATCH (settings:Settings {uniqueId: 'settings'}) LIMIT 1`)
+    } catch (error) {
+      await session.close()
+      throw error
+    }
+
+    await session.close()
+
+    return results
   }
 
-  static updateSettings(setting: Partial<Settings>): Promise<void> {
-    return r.table('Settings').filter(r.row('uniqueId').eq('settings')).update(setting).run().then(F.ignore)
-  }
+  // static updateSettings(setting: Partial<Settings>): Promise<void> {
+  //   return r.table('Settings').filter(r.row('uniqueId').eq('settings')).update(setting).run().then(F.ignore)
+  // }
 
-  static saveLog(log: IncomingLog): Promise<void> {
-    const otherAsStr = log.other ? JSON.stringify(log.other) : ''
+  // static saveLog(log: IncomingLog): Promise<void> {
+  //   const otherAsStr = log.other ? JSON.stringify(log.other) : ''
 
-    return r
-      .table('Log')
-      .insert({ ...log, otherAsStr, createdAt: Date.now() })
-      .run()
-      .then(F.ignore)
-  }
+  //   return r
+  //     .table('Log')
+  //     .insert({ ...log, otherAsStr, createdAt: Date.now() })
+  //     .run()
+  //     .then(F.ignore)
+  // }
 
-  static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
-    const skip = page === 1 ? 0 : (page - 1) * limit
+  // static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+  //   const skip = page === 1 ? 0 : (page - 1) * limit
 
-    return r.table<Log>('Log').orderBy('createdAt', 'desc').limit(limit).skip(skip).run()
-  }
+  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  //   return r.table<Log>('Log').orderBy(r.desc('createdAt')).limit(limit).skip(skip).run()
+  // }
 
   // static findLogs_AllLevels_WithSearch_Paginated(
   //   page: number,
@@ -119,14 +105,23 @@ class DB {
   //   const skip = page === 1 ? 0 : (page - 1) * limit
   //   const sq = `%${searchQuery.toLowerCase()}%`
 
-  //   return knex<Log>('Log')
-  //     .whereILike('message', sq)
-  //     .orWhereILike('service', sq)
-  //     .orWhereILike('error', sq)
-  //     .orWhereILike('otherAsStr', sq)
-  //     .orderBy('createdAt', 'desc')
-  //     .limit(limit)
-  //     .offset(skip)
+  //   return (
+  //     r
+  //       .table<Log>('Log')
+  //       // .filter((log:Log) => log.message)
+  //       .filter(r.js('(function (user) { return user.age > 30; })'))
+  //       // .filter(r.row('message').downcase().match(sq).or(r.row('message').downcase().match(sq)))
+
+  //       // .whereILike('message', sq)
+  //       // .orWhereILike('service', sq)
+  //       // .orWhereILike('error', sq)
+  //       // .orWhereILike('otherAsStr', sq)
+  //       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+  //       .orderBy(r.desc('createdAt'))
+  //       .limit(limit)
+  //       .skip(skip)
+  //       .run()
+  //   )
   // }
 
   // static findLogs_LevelFilter_NoSearch_Paginated(
@@ -136,7 +131,7 @@ class DB {
   // ): Promise<readonly Log[]> {
   //   const skip = page === 1 ? 0 : (page - 1) * limit
 
-  //   return knex<Log>('Log').where({ level: logLevel }).orderBy('createdAt', 'desc').limit(limit).offset(skip)
+  //   return knex<Log>('Log').where({ level: logLevel }).orderBy(r.desc('createdAt')).limit(limit).offset(skip)
   // }
 
   // static findLogs_LevelFilter_WithSearch_Paginated(
@@ -156,7 +151,7 @@ class DB {
   //         .orWhereILike('error', sq)
   //         .orWhereILike('otherAsStr', sq)
   //     })
-  //     .orderBy('createdAt', 'desc')
+  //     .orderBy(r.desc('createdAt'))
   //     .limit(limit)
   //     .offset(skip)
   // }
@@ -250,7 +245,7 @@ class DB {
 
   //   const uniqueId = `${feedDomain}-${feedId}`
 
-  //   // Lowercase feedId for reddit as they may have different casing when input
+  //   // Lowercase feedId for reddit as they may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
   //   const fId = feedDomain === 'reddit.com' ? feedId.toLowerCase() : feedId
 
   //   return knex<Feed>('Feed')
@@ -375,4 +370,3 @@ const thing = (): Promise<void | readonly void[]> =>
     })
 
 export { thing, DB }
-export type { IncomingPost }

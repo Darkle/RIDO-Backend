@@ -25,12 +25,10 @@ interface Log {
 type IncomingLog = Omit<Log, 'createdAt' | 'otherAsStr'>
 
 interface Post {
-  readonly uniqueId: `${Post['feedDomain']}-${Post['postId']}`
+  readonly uniqueId: `${Feed['domain']}-${Post['postId']}`
   readonly postId: string
-  readonly tags?: readonly string[]
-  // Making sure it includes a dot - some minor string type checking for domain
-  readonly feedDomain: `${string}.${string}`
-  readonly feedId: string
+  readonly tags?: readonly Tag[]
+  readonly feed: Feed
   readonly title: string
   readonly postUrl: string
   readonly score: number
@@ -51,23 +49,25 @@ interface Post {
 type IncomingPost = Pick<Post, 'postId' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl'>
 
 interface Feed {
-  readonly uniqueId: `${Feed['feedDomain']}-${Feed['feedId']}`
-  readonly tags?: readonly string[]
-  readonly posts?: readonly string[]
-  // Making sure it includes a dot - some minor string type checking for domain
-  readonly feedDomain: `${string}.${string}`
-  readonly feedId: string
+  readonly uniqueId: `${Feed['domain']}-${Feed['name']}`
+  readonly tags?: readonly Tag[]
+  readonly posts?: readonly Post[]
+  // Making sure it includes a dot (some minor string type checking so that it looks like a domain)
+  readonly domain: `${string}.${string}`
+  readonly name: string
   readonly favourited: boolean
+  // Feeds that come from forums may require a browser to scrape
+  readonly requiresBrowserForSraping?: boolean
   readonly updateCheck_lastUpdated: number
   // updateCheck_LastPostSeen is only used for non-reddit feeds.
   readonly updateCheck_LastPostSeen?: string
 }
 
-type IncomingFeed = Pick<Feed, 'feedDomain' | 'feedId'>
+type IncomingFeed = Pick<Feed, 'domain' | 'name'>
 
 interface Tag {
-  readonly feeds?: readonly string[]
-  readonly posts?: readonly string[]
+  readonly feeds?: readonly Feed[]
+  readonly posts?: readonly Post[]
   readonly tag: string
   readonly favourited: boolean
 }

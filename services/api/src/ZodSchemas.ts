@@ -72,10 +72,10 @@ const incomingSettingsZodSchema: ZodSchema<Partial<Settings>> = z
 
 const incomingFeedZodSchema: ZodSchema<IncomingFeed> = z.object({
   // https://zod.dev/?id=custom-schemas
-  feedDomain: z.custom<IncomingFeed['feedDomain']>(val =>
+  domain: z.custom<IncomingFeed['domain']>(val =>
     typeof val === 'string' ? val.includes('.') && val.length : false
   ),
-  feedId: z.string().min(1),
+  name: z.string().min(1),
 })
 
 const TagZodSchema: ZodSchema<Pick<Tag, 'tag'>> = z.object({

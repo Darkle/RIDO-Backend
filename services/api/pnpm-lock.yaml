@@ -12,11 +12,11 @@ specifiers:
   koa: ^2.14.1
   luxon: ^3.2.0
   microtime: ^3.1.1
+  neo4j-driver: ^5.3.0
   node-graceful-shutdown: ^1.1.5
   node-static: ^0.7.11
   pratica: ^2.1.0
   ramda: ^0.28.0
-  rethinkdb-ts: ^2.5.0
   stream: ^0.0.2
   superjson: ^1.12.1
   tiny-invariant: ^1.3.1
@@ -41,11 +41,11 @@ dependencies:
   koa: 2.14.1
   luxon: 3.2.0
   microtime: 3.1.1
+  neo4j-driver: 5.3.0
   node-graceful-shutdown: 1.1.5
   node-static: 0.7.11
   pratica: 2.1.0
   ramda: 0.28.0
-  rethinkdb-ts: 2.5.0
   stream: 0.0.2
   superjson: 1.12.1
   tiny-invariant: 1.3.1
@@ -61,6 +61,13 @@ devDependencies:
   type-fest: 3.5.0
 
 packages:
+
+  /@babel/runtime/7.20.7:
+    resolution: {integrity: sha512-UF0tvkUtxwAgZ5W/KrkHf0Rn0fdnLDU9ScxBrEVNUprE/MzirjK4MJUX1/BVDv00Sv8cljtukVK1aky++X1SjQ==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      regenerator-runtime: 0.13.11
+    dev: false
 
   /@colors/colors/1.5.0:
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
@@ -1378,8 +1385,19 @@ packages:
       typpy: 2.3.11
     dev: false
 
+  /base64-js/1.5.1:
+    resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
+    dev: false
+
   /buffer-from/1.1.2:
     resolution: {integrity: sha512-E+XQCRwSbaaiChtv6k6Dwgc+bx+Bs6vuKJHHl5kox/BaKbhiXzqQOwK4cO22yElGp2OCmjwVhT3HmxgyPGnJfQ==}
+    dev: false
+
+  /buffer/6.0.3:
+    resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
+    dependencies:
+      base64-js: 1.5.1
+      ieee754: 1.2.1
     dev: false
 
   /cache-content-type/1.0.1:
@@ -1628,6 +1646,10 @@ packages:
     resolution: {integrity: sha512-feERVo9iWxvnejp3SEfm/+oNG517npqL2/PIA8ORjyOZjGC7TwCRQsZylciLS64i6pJ0wRYz3rkXLRwbtFa8Ng==}
     dev: false
 
+  /ieee754/1.2.1:
+    resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
+    dev: false
+
   /inherits/2.0.4:
     resolution: {integrity: sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==}
     dev: false
@@ -1789,6 +1811,27 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
+  /neo4j-driver-bolt-connection/5.3.0:
+    resolution: {integrity: sha512-/JMlyf2nBjyqNBBHmXh0eHkkUu+PHok5A0wUh+lcwcXKAzR95tHvDYPthlPp1zXVfK2XbaiV4iO2rVQuzpbCVA==}
+    dependencies:
+      buffer: 6.0.3
+      neo4j-driver-core: 5.3.0
+      string_decoder: 1.3.0
+    dev: false
+
+  /neo4j-driver-core/5.3.0:
+    resolution: {integrity: sha512-MGxHCU0Pt13ElxYZkObWoxZ8O5y0Guf/R3rcogDUktG6cp69rc+lWxZAR7HbsL+gc8NrdJlIxR7dIud7B3bhAA==}
+    dev: false
+
+  /neo4j-driver/5.3.0:
+    resolution: {integrity: sha512-u3+idq50BZj4zN9kVBbWA7u5H5/v837PP+iWbHElWgUbCCD1LX7E4V5Yq3g25XHm/CJu8Qfq9gfWCBbYCxgWBw==}
+    dependencies:
+      '@babel/runtime': 7.20.7
+      neo4j-driver-bolt-connection: 5.3.0
+      neo4j-driver-core: 5.3.0
+      rxjs: 7.8.0
+    dev: false
+
   /node-addon-api/5.0.0:
     resolution: {integrity: sha512-CvkDw2OEnme7ybCykJpVcKH+uAOLV2qLqiyla128dN9TkEWfrYmxG6C2boDe5KcNQqZF3orkqzGgOMvZ/JNekA==}
     dev: false
@@ -1877,6 +1920,10 @@ packages:
       util-deprecate: 1.0.2
     dev: false
 
+  /regenerator-runtime/0.13.11:
+    resolution: {integrity: sha512-kY1AZVr2Ra+t+piVaJ4gxaFaReZVH40AKNo7UCX6W+dEwBo/2oZJzqfuN1qLq1oL45o56cPaTXELwrTh8Fpggg==}
+    dev: false
+
   /resolve/1.22.1:
     resolution: {integrity: sha512-nBpuuYuY5jFsli/JIs1oldw6fOQCBioohqWZg/2hiaOybXOft4lonv85uDOKXdf8rhyK159cxU5cDcK/NKk8zw==}
     hasBin: true
@@ -1886,9 +1933,10 @@ packages:
       supports-preserve-symlinks-flag: 1.0.0
     dev: false
 
-  /rethinkdb-ts/2.5.0:
-    resolution: {integrity: sha512-KK67yAIuNN5WUWG67a1kc5RsliRHQ/BVhrsGhkp2yBN1pMQbV+nSu9lrXe30ww/OTeYsX2DZDDcZbBx9CprAFg==}
-    engines: {node: '>=12.x <=18.x'}
+  /rxjs/7.8.0:
+    resolution: {integrity: sha512-F2+gxDshqmIub1KdvZkaEfGDwLNpPvk9Fs6LD/MyQxNgMds/WH9OdDDXOmxUZpME+iSK3rQCctkL0DYyytUqMg==}
+    dependencies:
+      tslib: 2.4.1
     dev: false
 
   /safe-buffer/5.2.1:
