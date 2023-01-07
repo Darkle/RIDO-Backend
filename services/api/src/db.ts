@@ -2,14 +2,17 @@ import path from 'path'
 
 import { F, G } from '@mobily/ts-belt'
 import invariant from 'tiny-invariant'
-import neo4j, { type QueryResult, type Session } from 'neo4j-driver'
+import { Sequelize } from 'sequelize'
 
 import { EE } from './events'
 import type { DBTable, Feed, IncomingLog, Log, Post, Settings, Tag } from './entities'
 import { getEnvFilePath } from './utils'
 import { nullable, type Maybe } from 'pratica'
 
-const driver = neo4j.driver('neo4j://localhost', neo4j.auth.basic('neo4j', 'foo'))
+const dbFilePath = path.join(getEnvFilePath(process.env['DATA_PATH']), 'rido.db')
+const dbLogging = process.env['LOG_DB_QUERIES'] === 'true' ? console.log : false
+
+const S = new Sequelize({ dialect: 'sqlite', storage: dbFilePath, logging: dbLogging })
 
 const defaultSettings = {
   uniqueId: 'settings',
@@ -57,7 +60,7 @@ class DB {
     await session.close()
   }
 
-  readonly close = driver.close
+  readonly close = S.close
 
   static async getSettings(): Promise<QueryResult<Settings>> {
     const session = driver.session({ database: 'rido' })
