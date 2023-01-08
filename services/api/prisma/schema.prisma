@@ -9,3 +9,82 @@ datasource db {
   provider = "sqlite"
   url      = env("DB_FILE_PATH")
 }
+
+model Settings {
+  uniqueId                        String  @id
+  numberMediaDownloadsAtOnce      Int     @default(2)
+  numberImagesProcessAtOnce       Int     @default(2)
+  updateAllDay                    Boolean @default(true)
+  updateStartingHour              Int     @default(1)
+  updateEndingHour                Int     @default(7)
+  imageCompressionQuality         Int     @default(80)
+  archiveImageCompressionQuality  Int     @default(80)
+  maxImageWidthForNonArchiveImage Int     @default(1400)
+}
+
+model Log {
+  uniqueId  String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  level     String
+  message   String?
+  service   String?
+  error     String?
+  other     String?
+
+  @@map("Logs")
+}
+
+model Post {
+  uniqueId                         String   @id @default(cuid())
+  postId                           String
+  title                            String
+  postUrl                          String
+  score                            Int
+  timestamp                        DateTime
+  mediaUrl                         String
+  mediaHasBeenDownloaded           Boolean  @default(false)
+  couldNotDownload                 Boolean  @default(false)
+  postMediaImagesHaveBeenProcessed Boolean  @default(false)
+  postThumbnailsCreated            Boolean  @default(false)
+  postMediaImagesProcessingError   String?
+  downloadError                    String?
+  mediaDownloadTries               Int      @default(0)
+  downloadedMediaCount             Int      @default(0)
+  /// downloadedMedia is a JSON stringified array of strings
+  downloadedMedia                  String
+  tags                             Tag[]
+  feed                             Feed     @relation(fields: [feedId], references: [uniqueId])
+  feedId                           String
+
+  @@unique([feedId, postId])
+  @@index([uniqueId, postId, feedId, timestamp])
+  @@map("Posts")
+}
+
+model Feed {
+  uniqueId                  String  @id @default(cuid())
+  domain                    String
+  name                      String
+  favourited                Boolean @default(false)
+  /// Feeds that come from forums may require a browser to scrape
+  requiresBrowserForSraping Boolean @default(false)
+  /// updateCheck_lastUpdated can be a simple unix timestamp, dont need timezone data
+  updateCheck_lastUpdated   Int     @default(0)
+  /// updateCheck_LastPostSeen is only used for non-reddit feeds.
+  updateCheck_LastPostSeen  String?
+  tags                      Tag[]
+  posts                     Post[]
+
+  @@unique([domain, name])
+  @@index([uniqueId, domain])
+  @@map("Feeds")
+}
+
+model Tag {
+  tag        String  @id
+  favourited Boolean @default(false)
+  feeds      Feed[]
+  posts      Post[]
+
+  @@map("Tags")
+}

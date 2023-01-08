@@ -12,7 +12,7 @@ interface Settings {
 }
 
 interface Log {
-  readonly createdAt: number
+  readonly createdAt: Date
   readonly level: 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace'
   readonly message?: string
   readonly service?: string
@@ -20,16 +20,15 @@ interface Log {
   readonly other?: string
 }
 
-type IncomingLog = Omit<Log, 'createdAt' | 'otherAsStr'>
+type IncomingLog = Omit<Log, 'createdAt'>
 
 interface Post {
-  readonly uniqueId: number
+  readonly uniqueId: string
   readonly postId: string
   readonly title: string
   readonly postUrl: string
   readonly score: number
-  // The timestamp is taken from the post's created_utc property, which is a unix timestamp (ie the number of _SECONDS_ since the epoch). It's UTC is GMT, aka no timezone.
-  readonly timestamp: number
+  readonly timestamp: Date
   readonly mediaUrl: string
   readonly mediaHasBeenDownloaded: boolean
   readonly couldNotDownload: boolean
@@ -39,7 +38,7 @@ interface Post {
   readonly downloadError?: string
   readonly mediaDownloadTries: number
   readonly downloadedMediaCount: number
-  readonly downloadedMedia?: readonly string[]
+  readonly downloadedMedia: string
   readonly tags?: readonly Tag[]
   readonly feed: Feed
 }
@@ -47,13 +46,13 @@ interface Post {
 type IncomingPost = Pick<Post, 'postId' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl'>
 
 interface Feed {
-  readonly uniqueId: number
+  readonly uniqueId: string
   // Making sure it includes a dot (some minor string type checking so that it looks like a domain)
   readonly domain: `${string}.${string}`
   readonly name: string
   readonly favourited: boolean
   // Feeds that come from forums may require a browser to scrape
-  readonly requiresBrowserForSraping?: boolean
+  readonly requiresBrowserForSraping: boolean
   readonly updateCheck_lastUpdated: number
   // updateCheck_LastPostSeen is only used for non-reddit feeds.
   readonly updateCheck_LastPostSeen?: string
