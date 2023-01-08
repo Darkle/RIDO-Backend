@@ -63,10 +63,10 @@ class DB {
       })
   }
 
-  static saveLog(log: IncomingLog): Promise<void> {
+  static async saveLog(log: IncomingLog): Promise<void> {
     const otherAsStr = log.other ? JSON.stringify(log.other) : undefined
 
-    return prisma.log.create({ data: { ...log, other: otherAsStr } }).then(F.ignore)
+    await prisma.log.create({ data: { ...log, other: otherAsStr } })
   }
 
   static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
@@ -145,6 +145,13 @@ class DB {
     return prisma.post.findFirst({ where: { feedDomain, postId } }).then(nullable)
   }
 
+  static getSinglePostWithItsFeedAttatched(
+    feedDomain: Post['feedDomain'],
+    postId: Post['postId']
+  ): Promise<Maybe<Post>> {
+    return prisma.post.findFirst({ where: { feedDomain, postId }, include: { feed: true } }).then(nullable)
+  }
+
   //TODO: Check whats the max amount of posts insert can do.
   static async batchAddPosts(
     // eslint-disable-next-line functional/prefer-readonly-type
@@ -177,28 +184,22 @@ class DB {
     })
   }
 
-  static updatePostData(
+  static async updatePostData(
     feedDomain: Post['feedDomain'],
     postId: Post['postId'],
     postDataUpdates: PostDataUpdates
   ): Promise<void> {
-    return prisma.post
-      .update({ where: { feedDomain_postId: { feedDomain, postId } }, data: postDataUpdates })
-      .then(F.ignore)
+    await prisma.post.update({ where: { feedDomain_postId: { feedDomain, postId } }, data: postDataUpdates })
   }
 
-  static addFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
+  static async addFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
     invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
     // Lowercase feed name for reddit as user may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
     const name = feedDomain === 'reddit.com' ? feedName.toLowerCase() : feedName
 
-    return DB.getSingleFeed(feedName, feedDomain).then(res =>
-      res.cata({
-        Just: F.ignore,
-        Nothing: () => prisma.feed.create({ data: { domain: feedDomain, name } }).then(F.ignore),
-      })
-    )
+    // Using createMany to easily ignore duplicate
+    await prisma.feed.createMany({ data: { domain: feedDomain, name }, skipDuplicates: true })
   }
 
   static getAllFeeds(): Promise<readonly Feed[]> {
@@ -209,10 +210,8 @@ class DB {
     return prisma.feed.findFirst({ where: { name: feedName, domain: feedDomain } }).then(nullable)
   }
 
-  static removeFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
-    return prisma.feed
-      .delete({ where: { name_and_domain: { name: feedName, domain: feedDomain } } })
-      .then(F.ignore)
+  static async removeFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
+    await prisma.feed.delete({ where: { name_and_domain: { name: feedName, domain: feedDomain } } })
   }
 
   static getFavouriteFeeds(): Promise<readonly Feed[]> {
@@ -226,31 +225,19 @@ class DB {
     return prisma.feed.findMany({ where: { updateCheck_lastUpdated: { lt: anHourAgo() } } })
   }
 
-  static updateFeedLastUpdatedTimeToNow(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
-    return prisma.feed
-      .update({
-        where: { name_and_domain: { name: feedName, domain: feedDomain } },
-        data: { updateCheck_lastUpdated: Date.now() },
-      })
-      .then(F.ignore)
+  static async updateFeedLastUpdatedTimeToNow(
+    feedName: Feed['name'],
+    feedDomain: Feed['domain']
+  ): Promise<void> {
+    await prisma.feed.update({
+      where: { name_and_domain: { name: feedName, domain: feedDomain } },
+      data: { updateCheck_lastUpdated: Date.now() },
+    })
   }
 
-  // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
-  // static getTagsAssociatedWithFeed() {
-  //   return e.select()
-  // }
-
-  // static  getAllFeedTags(): Promise<readonly BaseTag[]> {
-  //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
-  // }
-
-  static addTag(tag: Tag['tag']): Promise<void> {
-    return DB.getSingleTag(tag).then(res =>
-      res.cata({
-        Just: F.ignore,
-        Nothing: () => prisma.tag.create({ data: { tag } }).then(F.ignore),
-      })
-    )
+  static async addTag(tag: Tag['tag']): Promise<void> {
+    // Using createMany to easily ignore duplicate
+    await prisma.tag.createMany({ data: { tag }, skipDuplicates: true })
   }
 
   static getSingleTag(tag: Tag['tag']): Promise<Maybe<Tag>> {

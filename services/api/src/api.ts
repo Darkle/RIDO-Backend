@@ -88,6 +88,7 @@ DB.init().catch(err => console.error(err))
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
+// eslint-disable-next-line @typescript-eslint/no-magic-numbers
 const randomPosts = Array.from({ length: 20 }).map((_, idx) => ({
   postId: `post-id${idx}`,
   feedDomain: 'reddit.com',
@@ -99,8 +100,9 @@ const randomPosts = Array.from({ length: 20 }).map((_, idx) => ({
 }))
 
 setTimeout(() => {
-  DB.batchAddPosts(randomPosts, 'reddit.com', 'aww')
-    // DB.addFeed('aww', 'reddit.com')
+  // DB.batchAddPosts(randomPosts, 'reddit.com', 'aww')
+  // DB.getSinglePostWithItsFeedAttatched('reddit.com', `post-id1`)
+    DB.addTag('myFavs')
     // DB.getSettings()
     // DB.getSingleFeed('aww', 'reddit.com')
     //   // DB.addPost({
@@ -129,8 +131,8 @@ setTimeout(() => {
     //     // )
     .then(res => {
       // res.cata({
-      // Just: h => console.log(h),
-      // Nothing: () => console.log(`no data :-(`),
+        // Just: h => console.log(h),
+        // Nothing: () => console.log(`no data :-(`),
       // })
       console.log('res', res)
     })
