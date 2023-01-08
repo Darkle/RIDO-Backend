@@ -1,11 +1,13 @@
 {
   "name": "api",
   "scripts": {
-    "dev": "NODE_ENV=development pnpm run db-init && node --require ./src/env-loader.cjs --require @swc-node/register --watch ./src/api.ts",
-    "db-init": "node ./src/setup.cjs && dotenv-extended --path=../../.env --defaults=../../.env.defaults --schema=./../.env.schema --errorOnMissing=true --errorOnRegex=true --assignToProcessEnv=true printenv DB_FILE_PATH",
+    "dev": "NODE_ENV=development pnpm run setup && node --require ./src/env-loader.cjs --require @swc-node/register --watch ./src/api.ts",
+    "load-env-cli": "dotenv-extended --path=../../.env --defaults=../../.env.defaults --schema=./../.env.schema --errorOnMissing=true --errorOnRegex=true --assignToProcessEnv=true",
+    "//": "NOTE: dont use && as that loses the previous commands env vars. dotenv-extended cli can start processes.",
+    "setup": "node ./src/setup.cjs",
     "inspect": "NODE_ENV=development node --require ./src/env-loader.cjs --require @swc-node/register --inspect ./src/api.ts",
-    "//": "NOTE: in the docker file, run db-init before start",
-    "start": "NODE_ENV=production pnpm run db-init && node --require ./src/env-loader.cjs --require @swc-node/register ./src/api.ts"
+    "///": "NOTE: in the docker file, run setup before start",
+    "start": "NODE_ENV=production pnpm run setup && node --require ./src/env-loader.cjs --require @swc-node/register ./src/api.ts"
   },
   "engines": {
     "node": ">=18.2.0",

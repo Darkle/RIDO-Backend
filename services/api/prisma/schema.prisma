@@ -11,7 +11,7 @@ datasource db {
 }
 
 model Settings {
-  uniqueId                        String  @id
+  uniqueId                        String  @id @default("settings")
   numberMediaDownloadsAtOnce      Int     @default(2)
   numberImagesProcessAtOnce       Int     @default(2)
   updateAllDay                    Boolean @default(true)
@@ -24,7 +24,8 @@ model Settings {
 
 model Log {
   uniqueId  String   @id @default(cuid())
-  createdAt DateTime @default(now())
+  // https://stackoverflow.com/questions/381371 https://stackoverflow.com/questions/200309/
+  createdAt DateTime @default(dbgenerated("(datetime('now', 'localtime'))"))
   level     String
   message   String?
   service   String?
@@ -35,26 +36,26 @@ model Log {
 }
 
 model Post {
-  uniqueId                         String   @id @default(cuid())
+  uniqueId                         String       @id @default(cuid())
   postId                           String
   title                            String
   postUrl                          String
   score                            Int
   timestamp                        DateTime
   mediaUrl                         String
-  mediaHasBeenDownloaded           Boolean  @default(false)
-  couldNotDownload                 Boolean  @default(false)
-  postMediaImagesHaveBeenProcessed Boolean  @default(false)
-  postThumbnailsCreated            Boolean  @default(false)
+  mediaHasBeenDownloaded           Boolean      @default(false)
+  couldNotDownload                 Boolean      @default(false)
+  postMediaImagesHaveBeenProcessed Boolean      @default(false)
+  postThumbnailsCreated            Boolean      @default(false)
   postMediaImagesProcessingError   String?
   downloadError                    String?
-  mediaDownloadTries               Int      @default(0)
-  downloadedMediaCount             Int      @default(0)
+  mediaDownloadTries               Int          @default(0)
+  downloadedMediaCount             Int          @default(0)
   /// downloadedMedia is a JSON stringified array of strings
   downloadedMedia                  String
-  tags                             Tag[]
-  feed                             Feed     @relation(fields: [feedId], references: [uniqueId])
+  feed                             Feed         @relation(fields: [feedId], references: [uniqueId], onDelete: Cascade)
   feedId                           String
+  tags                             Tags_Posts[]
 
   @@unique([feedId, postId])
   @@index([uniqueId, postId, feedId, timestamp])
@@ -62,18 +63,19 @@ model Post {
 }
 
 model Feed {
-  uniqueId                  String  @id @default(cuid())
+  uniqueId                  String       @id @default(cuid())
   domain                    String
+  /// This should be lowercased when the domain is reddit.com
   name                      String
-  favourited                Boolean @default(false)
+  favourited                Boolean      @default(false)
   /// Feeds that come from forums may require a browser to scrape
-  requiresBrowserForSraping Boolean @default(false)
+  requiresBrowserForSraping Boolean      @default(false)
   /// updateCheck_lastUpdated can be a simple unix timestamp, dont need timezone data
-  updateCheck_lastUpdated   Int     @default(0)
+  updateCheck_lastUpdated   Int          @default(0)
   /// updateCheck_LastPostSeen is only used for non-reddit feeds.
   updateCheck_LastPostSeen  String?
-  tags                      Tag[]
   posts                     Post[]
+  tags                      Tags_Feeds[]
 
   @@unique([domain, name])
   @@index([uniqueId, domain])
@@ -81,10 +83,30 @@ model Feed {
 }
 
 model Tag {
-  tag        String  @id
-  favourited Boolean @default(false)
-  feeds      Feed[]
-  posts      Post[]
+  tag        String       @id
+  favourited Boolean      @default(false)
+  posts      Tags_Posts[]
+  feeds      Tags_Feeds[]
 
   @@map("Tags")
+}
+
+// Join tables:
+
+model Tags_Posts {
+  post   Post   @relation(fields: [postId], references: [uniqueId], onUpdate: Cascade, onDelete: Cascade)
+  postId String
+  tag    Tag    @relation(fields: [tagId], references: [tag], onUpdate: Cascade, onDelete: Cascade)
+  tagId  String
+
+  @@id([postId, tagId])
+}
+
+model Tags_Feeds {
+  post   Feed   @relation(fields: [feedId], references: [uniqueId], onUpdate: Cascade, onDelete: Cascade)
+  feedId String
+  tag    Tag    @relation(fields: [tagId], references: [tag], onUpdate: Cascade, onDelete: Cascade)
+  tagId  String
+
+  @@id([feedId, tagId])
 }

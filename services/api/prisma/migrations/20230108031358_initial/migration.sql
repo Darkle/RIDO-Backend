@@ -1,6 +1,6 @@
 -- CreateTable
 CREATE TABLE "Settings" (
-    "uniqueId" TEXT NOT NULL PRIMARY KEY,
+    "uniqueId" TEXT NOT NULL PRIMARY KEY DEFAULT 'settings',
     "numberMediaDownloadsAtOnce" INTEGER NOT NULL DEFAULT 2,
     "numberImagesProcessAtOnce" INTEGER NOT NULL DEFAULT 2,
     "updateAllDay" BOOLEAN NOT NULL DEFAULT true,
@@ -14,7 +14,8 @@ CREATE TABLE "Settings" (
 -- CreateTable
 CREATE TABLE "Logs" (
     "uniqueId" TEXT NOT NULL PRIMARY KEY,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
+    "level" TEXT NOT NULL,
     "message" TEXT,
     "service" TEXT,
     "error" TEXT,
@@ -40,7 +41,7 @@ CREATE TABLE "Posts" (
     "downloadedMediaCount" INTEGER NOT NULL DEFAULT 0,
     "downloadedMedia" TEXT NOT NULL,
     "feedId" TEXT NOT NULL,
-    CONSTRAINT "Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds" ("uniqueId") ON DELETE RESTRICT ON UPDATE CASCADE
+    CONSTRAINT "Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
@@ -61,19 +62,23 @@ CREATE TABLE "Tags" (
 );
 
 -- CreateTable
-CREATE TABLE "_PostToTag" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL,
-    CONSTRAINT "_PostToTag_A_fkey" FOREIGN KEY ("A") REFERENCES "Posts" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "_PostToTag_B_fkey" FOREIGN KEY ("B") REFERENCES "Tags" ("tag") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE "Tags_Posts" (
+    "postId" TEXT NOT NULL,
+    "tagId" TEXT NOT NULL,
+
+    PRIMARY KEY ("postId", "tagId"),
+    CONSTRAINT "Tags_Posts_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Tags_Posts_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags" ("tag") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateTable
-CREATE TABLE "_FeedToTag" (
-    "A" TEXT NOT NULL,
-    "B" TEXT NOT NULL,
-    CONSTRAINT "_FeedToTag_A_fkey" FOREIGN KEY ("A") REFERENCES "Feeds" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "_FeedToTag_B_fkey" FOREIGN KEY ("B") REFERENCES "Tags" ("tag") ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE "Tags_Feeds" (
+    "feedId" TEXT NOT NULL,
+    "tagId" TEXT NOT NULL,
+
+    PRIMARY KEY ("feedId", "tagId"),
+    CONSTRAINT "Tags_Feeds_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "Tags_Feeds_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags" ("tag") ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- CreateIndex
@@ -87,15 +92,3 @@ CREATE INDEX "Feeds_uniqueId_domain_idx" ON "Feeds"("uniqueId", "domain");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Feeds_domain_name_key" ON "Feeds"("domain", "name");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_PostToTag_AB_unique" ON "_PostToTag"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_PostToTag_B_index" ON "_PostToTag"("B");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_FeedToTag_AB_unique" ON "_FeedToTag"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_FeedToTag_B_index" ON "_FeedToTag"("B");

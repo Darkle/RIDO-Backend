@@ -7,10 +7,4 @@
 - you need to use [pnpm](https://pnpm.io/) instead of npm as there are a fair few pnpm specific things in the repo
 
 - If you ever want to change the format/compression of the images downloaded in bulk, install [sharp-cli](https://github.com/vseventer/sharp-cli), then run something like this: `find . -name "*.avif" -execdir bash -c 'file="{}"; sharp -i "$file" -o "$PWD" --format webp' \;`
-
-- On a fresh setup for development, to set up the db, do the following in the services/api directory:
-  1. Run `pnpm exec dotenv-extended --path=../../.env --defaults=../../.env.defaults edgedb project init --non-interactive`
-  2. Run `edgedb migration create`
-  3. Run `edgedb migrate`
-  4. Run `npx @edgedb/generate interfaces` (pnpx or pnpm exec doesnt seem to work)
-  5. Run `npx @edgedb/generate edgeql-js`
+- If you need to use the prisma cli, run `pnpm run load-env-cli <prisma command here>`. `pnpm run load-env-cli` loads the env vars so that they are available on the command line. We dont use `&&` as that would lose all the env vars for the next command. dotenv-extended can call other processes, which is what `pnpm run load-env-cli` is running.
