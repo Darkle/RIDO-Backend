@@ -22,19 +22,10 @@ model Settings {
   maxImageWidthForNonArchiveImage Int     @default(1400)
 }
 
-enum LogLevel {
-  fatal
-  error
-  warn
-  info
-  debug
-  trace
-}
-
 model Log {
   uniqueId  String   @id @default(uuid())
   createdAt DateTime @default(now()) @db.Timestamptz(3)
-  level     LogLevel
+  level     String
   message   String?
   service   String?
   error     String?
@@ -111,7 +102,7 @@ model Tags_Posts {
 }
 
 model Tags_Feeds {
-  post   Feed   @relation(fields: [feedId], references: [uniqueId], onUpdate: Cascade, onDelete: Cascade)
+  feed   Feed   @relation(fields: [feedId], references: [uniqueId], onUpdate: Cascade, onDelete: Cascade)
   feedId String
   tag    Tag    @relation(fields: [tagId], references: [tag], onUpdate: Cascade, onDelete: Cascade)
   tagId  String

@@ -13,7 +13,7 @@ type IncomingLog = Pick<Log, 'level'> &
 
 type IncomingPost = Pick<
   Post,
-  'postId' | 'feedDomain' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl' | 'feedId'
+  'postId' | 'feedDomain' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl'
 >
 
 type PostDataUpdates = Partial<
@@ -80,14 +80,15 @@ class DB {
     searchQuery: string
   ): Promise<readonly Log[]> {
     const skip = page === 1 ? 0 : (page - 1) * limit
+    const sq = searchQuery.toLowerCase()
 
     return prisma.log.findMany({
       where: {
         OR: [
-          { message: { contains: searchQuery } },
-          { service: { contains: searchQuery } },
-          { error: { contains: searchQuery } },
-          { other: { contains: searchQuery } },
+          { message: { contains: sq, mode: 'insensitive' } },
+          { service: { contains: sq, mode: 'insensitive' } },
+          { error: { contains: sq, mode: 'insensitive' } },
+          { other: { contains: sq, mode: 'insensitive' } },
         ],
       },
       orderBy: { createdAt: 'desc' },
@@ -118,14 +119,15 @@ class DB {
     logLevel: Log['level']
   ): Promise<readonly Log[]> {
     const skip = page === 1 ? 0 : (page - 1) * limit
+    const sq = searchQuery.toLowerCase()
 
     return prisma.log.findMany({
       where: {
         OR: [
-          { message: { contains: searchQuery } },
-          { service: { contains: searchQuery } },
-          { error: { contains: searchQuery } },
-          { other: { contains: searchQuery } },
+          { message: { contains: sq, mode: 'insensitive' } },
+          { service: { contains: sq, mode: 'insensitive' } },
+          { error: { contains: sq, mode: 'insensitive' } },
+          { other: { contains: sq, mode: 'insensitive' } },
           { AND: { level: logLevel } },
         ],
       },
@@ -143,9 +145,10 @@ class DB {
     return prisma.post.findFirst({ where: { feedDomain, postId } }).then(nullable)
   }
 
-  // eslint-disable-next-line max-lines-per-function
+  //TODO: Check whats the max amount of posts insert can do.
   static async batchAddPosts(
-    posts: readonly IncomingPost[],
+    // eslint-disable-next-line functional/prefer-readonly-type
+    posts: IncomingPost[],
     feedDomain: Post['feedDomain'],
     feedName: Feed['name']
   ): Promise<void> {
@@ -155,30 +158,9 @@ class DB {
 
     invariant(postsOwnerFeed, 'There is no owner feed for these posts')
 
-    //TODO: i need to connect each post to its feed
-    const postsForDB = posts.map(data => prisma.post.create({ data }))
+    const postsForDB = posts.map(post => ({ ...post, feedId: postsOwnerFeed.uniqueId }))
 
-    //TODO: Check whats the max amount of posts insert can do.
-    // return knex<Post>('Post')
-    //   .insert(postsReadyForDB)
-    //   .returning('postId')
-    //   .onConflict()
-    //   .ignore()
-    //   .then(res =>
-    //     knex<Feed>('Feed')
-    //       .select('posts')
-    //       .where({ feedDomain, feedId })
-    //       .first()
-    //       .then(feedPosts => {
-    //         const currentFeedPosts = Array.isArray(feedPosts) ? feedPosts : []
-    //         const insertedPostIds = res.map(post => post.postId)
-    //         return knex<Feed>('Feed')
-    //           .where({ feedDomain, feedId })
-    //           .jsonSet('posts', '$', JSON.stringify([...currentFeedPosts, ...insertedPostIds]))
-    //       })
-    //   )
-    //   .then(res => console.log(res))
-    //   .then(F.ignore)
+    await prisma.post.createMany({ data: postsForDB, skipDuplicates: true })
   }
 
   static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
@@ -254,7 +236,7 @@ class DB {
   }
 
   // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
-  // static getFeedTagsAssociatedWithFeed() {
+  // static getTagsAssociatedWithFeed() {
   //   return e.select()
   // }
 

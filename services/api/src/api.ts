@@ -88,10 +88,21 @@ DB.init().catch(err => console.error(err))
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
+const randomPosts = Array.from({ length: 20 }).map((_, idx) => ({
+  postId: `post-id${idx}`,
+  feedDomain: 'reddit.com',
+  title: 'post-title',
+  postUrl: 'http://foo.com',
+  score: idx,
+  timestamp: new Date(),
+  mediaUrl: 'http://media.com',
+}))
+
 setTimeout(() => {
-  // DB.batchAddPosts([], 'reddit.com', 'aww')
-  // DB.addFeed('aww', 'reddit.com')
-  DB.getSingleFeed('aww', 'reddit.com')
+  DB.batchAddPosts(randomPosts, 'reddit.com', 'aww')
+    // DB.addFeed('aww', 'reddit.com')
+    // DB.getSettings()
+    // DB.getSingleFeed('aww', 'reddit.com')
     //   // DB.addPost({
     //   //   postId: `asthe7`,
     //   //   feedDomain: `reddit.com`,
@@ -117,11 +128,11 @@ setTimeout(() => {
     //     //   }))
     //     // )
     .then(res => {
-      res.cata({
-        Just: h => console.log(h),
-        Nothing: () => console.log(`no data :-(`),
-      })
-      // console.log('res', res)
+      // res.cata({
+      // Just: h => console.log(h),
+      // Nothing: () => console.log(`no data :-(`),
+      // })
+      console.log('res', res)
     })
     // .then(() => DB.updateSettings({ numberImagesProcessAtOnce: 333 }))
     // .then(() => DB.getSettings())

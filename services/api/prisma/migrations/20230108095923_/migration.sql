@@ -1,6 +1,3 @@
--- CreateEnum
-CREATE TYPE "LogLevel" AS ENUM ('fatal', 'error', 'warn', 'info', 'debug', 'trace');
-
 -- CreateTable
 CREATE TABLE "Settings" (
     "uniqueId" TEXT NOT NULL DEFAULT 'settings',
@@ -20,7 +17,7 @@ CREATE TABLE "Settings" (
 CREATE TABLE "Logs" (
     "uniqueId" TEXT NOT NULL,
     "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "level" "LogLevel" NOT NULL,
+    "level" TEXT NOT NULL,
     "message" TEXT,
     "service" TEXT,
     "error" TEXT,
@@ -75,6 +72,14 @@ CREATE TABLE "Tags" (
 );
 
 -- CreateTable
+CREATE TABLE "Feed_Posts" (
+    "postId" TEXT NOT NULL,
+    "feedId" TEXT NOT NULL,
+
+    CONSTRAINT "Feed_Posts_pkey" PRIMARY KEY ("postId","feedId")
+);
+
+-- CreateTable
 CREATE TABLE "Tags_Posts" (
     "postId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
@@ -104,6 +109,12 @@ CREATE UNIQUE INDEX "Feeds_domain_name_key" ON "Feeds"("domain", "name");
 
 -- AddForeignKey
 ALTER TABLE "Posts" ADD CONSTRAINT "Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Feed_Posts" ADD CONSTRAINT "Feed_Posts_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Feed_Posts" ADD CONSTRAINT "Feed_Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Tags_Posts" ADD CONSTRAINT "Tags_Posts_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
