@@ -88,102 +88,104 @@ DB.init().catch(err => console.error(err))
 // export { appRouter, trpc, trpcRouterCaller }
 // export type { AppRouter }
 
-// setTimeout(() => {
-//   DB.getSettings()
-//     //   // DB.addPost({
-//     //   //   postId: `asthe7`,
-//     //   //   feedDomain: `reddit.com`,
-//     //   //   feedId: 'aww',
-//     //   //   title: 'title of thing',
-//     //   //   postUrl: 'http://asd.com',
-//     //   //   score: 33,
-//     //   //   timestamp: 333443,
-//     //   //   mediaUrl: 'htt://pm.asd',
-//     //   // })
-//     //   DB.addFeed('aww', 'reddit.com')
-//     //     // DB.getPostsThatNeedMediaToBeDownloaded()
-//     //     // DB.batchAddPosts(
-//     //     //   Array.from({ length: 200 }).map((_, idx) => ({
-//     //     //     postId: `foo-${idx}`,
-//     //     //     feedDomain: `reddit.com`,
-//     //     //     feedId: 'aww',
-//     //     //     title: 'title of thing',
-//     //     //     postUrl: 'http://asd.com',
-//     //     //     score: idx,
-//     //     //     timestamp: 1 + idx,
-//     //     //     mediaUrl: 'htt://pm.asd',
-//     //     //   }))
-//     //     // )
-//     .then(res => {
-//       res.cata({
-//         Just: h => console.log(h),
-//         Nothing: () => console.log(`no data :-(`),
-//       })
-//       // console.log('res', res)
-//     })
-//     // .then(() => DB.updateSettings({ numberImagesProcessAtOnce: 333 }))
-//     // .then(() => DB.getSettings())
-//     // .then(res => {
-//     //   // res.cata({
-//     //   // Just: h => console.log(h),
-//     //   // Nothing: () => console.log(`no data :-(`),
-//     //   // })
-//     //   console.log('res', res)
-//     // })
-//     //     // .then(() => DB.addPost({
-//     //     //       postId: `single-add`,
-//     //     //       feedDomain: `foo.com`,
-//     //     //       feedId: 'usurp',
-//     //     //       title: 'title of thing',
-//     //     //       postUrl: 'httpasd.com',
-//     //     //       score: 33,
-//     //     //       timestamp: 333443,
-//     //     //       mediaUrl: 'httpm.asd',
-//     //     //       mediaHasBeenDownloaded: false,
-//     //     //       couldNotDownload: false,
-//     //     //       postMediaImagesHaveBeenProcessed: false,
-//     //     //       postThumbnailsCreated: false,
-//     //     //       mediaDownloadTries: 0,
-//     //     //       downloadedMediaCount: 0,
-//     //     //     }))
-//     //     // .then(() =>
-//     //     //   DB.saveLog({
-//     //     //     level: 'debug',
-//     //     //     message: 'chritsmas',
-//     //     //     service: 'downloads',
-//     //     //     error: 'no presents',
-//     //     //     other: { foo: 'guide' },
-//     //     //   })
-//     //     // )
-//     // .then(() =>
-//     //   DB.batchAddPosts(
-//     //     // Array.from({ length: 100_000 }).map((_, idx) => ({
-//     //     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-//     //     Array.from({ length: 300 }).map((_, idx) => ({
-//     //       postId: `foo-${idx}`,
-//     //       title: 'title of thing',
-//     //       postUrl: 'http://asd.com',
-//     //       score: idx,
-//     //       timestamp: 1 + idx,
-//     //       mediaUrl: 'https://pm.asd',
-//     //       mediaHasBeenDownloaded: false,
-//     //       couldNotDownload: false,
-//     //       postMediaImagesHaveBeenProcessed: false,
-//     //       postThumbnailsCreated: false,
-//     //       mediaDownloadTries: 0,
-//     //       downloadedMediaCount: 0,
-//     //     })),
-//     //     `reddit.com`,
-//     //     'aww'
-//     //   )
-//     // )
-//     //     // .then(() => DB.getAllLogs_Paginated(1, 2))
-//     //     // .then(res => {
-//     //     //   console.log('res', res)
-//     //     // })
-//     .catch(err => {
-//       console.log('in error catch')
-//       console.error(err)
-//     })
-//   // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-// }, 1000)
+setTimeout(() => {
+  // DB.batchAddPosts([], 'reddit.com', 'aww')
+  // DB.addFeed('aww', 'reddit.com')
+  DB.getSingleFeed('aww', 'reddit.com')
+    //   // DB.addPost({
+    //   //   postId: `asthe7`,
+    //   //   feedDomain: `reddit.com`,
+    //   //   feedId: 'aww',
+    //   //   title: 'title of thing',
+    //   //   postUrl: 'http://asd.com',
+    //   //   score: 33,
+    //   //   timestamp: 333443,
+    //   //   mediaUrl: 'htt://pm.asd',
+    //   // })
+    //   DB.addFeed('aww', 'reddit.com')
+    //     // DB.getPostsThatNeedMediaToBeDownloaded()
+    //     // DB.batchAddPosts(
+    //     //   Array.from({ length: 200 }).map((_, idx) => ({
+    //     //     postId: `foo-${idx}`,
+    //     //     feedDomain: `reddit.com`,
+    //     //     feedId: 'aww',
+    //     //     title: 'title of thing',
+    //     //     postUrl: 'http://asd.com',
+    //     //     score: idx,
+    //     //     timestamp: 1 + idx,
+    //     //     mediaUrl: 'htt://pm.asd',
+    //     //   }))
+    //     // )
+    .then(res => {
+      res.cata({
+        Just: h => console.log(h),
+        Nothing: () => console.log(`no data :-(`),
+      })
+      // console.log('res', res)
+    })
+    // .then(() => DB.updateSettings({ numberImagesProcessAtOnce: 333 }))
+    // .then(() => DB.getSettings())
+    // .then(res => {
+    //   // res.cata({
+    //   // Just: h => console.log(h),
+    //   // Nothing: () => console.log(`no data :-(`),
+    //   // })
+    //   console.log('res', res)
+    // })
+    //     // .then(() => DB.addPost({
+    //     //       postId: `single-add`,
+    //     //       feedDomain: `foo.com`,
+    //     //       feedId: 'usurp',
+    //     //       title: 'title of thing',
+    //     //       postUrl: 'httpasd.com',
+    //     //       score: 33,
+    //     //       timestamp: 333443,
+    //     //       mediaUrl: 'httpm.asd',
+    //     //       mediaHasBeenDownloaded: false,
+    //     //       couldNotDownload: false,
+    //     //       postMediaImagesHaveBeenProcessed: false,
+    //     //       postThumbnailsCreated: false,
+    //     //       mediaDownloadTries: 0,
+    //     //       downloadedMediaCount: 0,
+    //     //     }))
+    //     // .then(() =>
+    //     //   DB.saveLog({
+    //     //     level: 'debug',
+    //     //     message: 'chritsmas',
+    //     //     service: 'downloads',
+    //     //     error: 'no presents',
+    //     //     other: { foo: 'guide' },
+    //     //   })
+    //     // )
+    // .then(() =>
+    //   DB.batchAddPosts(
+    //     // Array.from({ length: 100_000 }).map((_, idx) => ({
+    //     // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    //     Array.from({ length: 300 }).map((_, idx) => ({
+    //       postId: `foo-${idx}`,
+    //       title: 'title of thing',
+    //       postUrl: 'http://asd.com',
+    //       score: idx,
+    //       timestamp: 1 + idx,
+    //       mediaUrl: 'https://pm.asd',
+    //       mediaHasBeenDownloaded: false,
+    //       couldNotDownload: false,
+    //       postMediaImagesHaveBeenProcessed: false,
+    //       postThumbnailsCreated: false,
+    //       mediaDownloadTries: 0,
+    //       downloadedMediaCount: 0,
+    //     })),
+    //     `reddit.com`,
+    //     'aww'
+    //   )
+    // )
+    //     // .then(() => DB.getAllLogs_Paginated(1, 2))
+    //     // .then(res => {
+    //     //   console.log('res', res)
+    //     // })
+    .catch(err => {
+      console.log('in error catch')
+      console.error(err)
+    })
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+}, 1000)

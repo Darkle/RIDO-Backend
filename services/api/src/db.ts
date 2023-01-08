@@ -1,5 +1,3 @@
-import path from 'path'
-
 import { F, G } from '@mobily/ts-belt'
 import invariant from 'tiny-invariant'
 import { PrismaClient, type Feed, type Log, type Post, type Settings, type Tag } from '@prisma/client'
@@ -37,16 +35,16 @@ const prisma = new PrismaClient({
 })
 
 class DB {
-  static async init(): Promise<void> {
-    await prisma.$executeRaw`PRAGMA journal_mode=WAL;`
-    // .then(() => prisma.settings.findFirst({ where: { uniqueId: 'settings' } }))
-    // .then(nullable)
-    // .then(res =>
-    //   res.cata({
-    //     Just: F.ignore,
-    //     Nothing: () => prisma.settings.create({ data: {} }).then(F.ignore),
-    //   })
-    // )
+  static init(): Promise<void> {
+    return prisma.settings
+      .findFirst({ where: { uniqueId: 'settings' } })
+      .then(nullable)
+      .then(res =>
+        res.cata({
+          Just: F.ignore,
+          Nothing: () => prisma.settings.create({ data: {} }).then(F.ignore),
+        })
+      )
   }
 
   readonly close = prisma.$disconnect
@@ -56,7 +54,11 @@ class DB {
   }
 
   static updateSettings(setting: Partial<Settings>): Promise<void> {
-    return prisma.settings.update({ where: { uniqueId: 'settings' }, data: setting }).then(F.ignore)
+    return prisma.settings
+      .update({ where: { uniqueId: 'settings' }, data: setting })
+      .then(updatedSettings => {
+        EE.emit('settingsUpdate', updatedSettings)
+      })
   }
 
   static saveLog(log: IncomingLog): Promise<void> {
@@ -140,44 +142,42 @@ class DB {
   }
 
   // eslint-disable-next-line max-lines-per-function
-  // static async batchAddPosts(
-  //   posts: readonly IncomingPost[],
-  //   feedDomain: Post['feedDomain'],
-  //   feedId: Post['feedId']
-  // ): Promise<void> {
-  //   invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+  static async batchAddPosts(
+    posts: readonly IncomingPost[],
+    feedDomain: Post['feedDomain'],
+    feedName: Feed['name']
+  ): Promise<void> {
+    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-  //   const postsOwnerFeed = await knex<Feed>('Feed').where({ feedDomain, feedId }).first()
+    const postsOwnerFeed = await prisma.feed.findFirst({ where: { domain: feedDomain, name: feedName } })
 
-  //   invariant(postsOwnerFeed, 'There is no owner feed for these posts')
+    invariant(postsOwnerFeed, 'There is no owner feed for these posts')
 
-  //   //TODO: Check whats the max amount of posts insert can do.
-  //   return knex<Post>('Post')
-  //     .insert(postsReadyForDB)
-  //     .returning('postId')
-  //     .onConflict()
-  //     .ignore()
-  //     .then(res =>
-  //       knex<Feed>('Feed')
-  //         .select('posts')
-  //         .where({ feedDomain, feedId })
-  //         .first()
-  //         .then(feedPosts => {
-  //           const currentFeedPosts = Array.isArray(feedPosts) ? feedPosts : []
-  //           const insertedPostIds = res.map(post => post.postId)
-  //           return knex<Feed>('Feed')
-  //             .where({ feedDomain, feedId })
-  //             .jsonSet('posts', '$', JSON.stringify([...currentFeedPosts, ...insertedPostIds]))
-  //         })
-  //     )
-  //     .then(res => console.log(res))
-  //     .then(F.ignore)
-  // }
+    //TODO: i need to connect each post to its feed
+    const postsForDB = posts.map(data => prisma.post.create({ data }))
 
-  //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
-  // static fetchAllPostIds(): Promise<readonly Post[]> {
-  //   return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
-  // }
+    //TODO: Check whats the max amount of posts insert can do.
+    // return knex<Post>('Post')
+    //   .insert(postsReadyForDB)
+    //   .returning('postId')
+    //   .onConflict()
+    //   .ignore()
+    //   .then(res =>
+    //     knex<Feed>('Feed')
+    //       .select('posts')
+    //       .where({ feedDomain, feedId })
+    //       .first()
+    //       .then(feedPosts => {
+    //         const currentFeedPosts = Array.isArray(feedPosts) ? feedPosts : []
+    //         const insertedPostIds = res.map(post => post.postId)
+    //         return knex<Feed>('Feed')
+    //           .where({ feedDomain, feedId })
+    //           .jsonSet('posts', '$', JSON.stringify([...currentFeedPosts, ...insertedPostIds]))
+    //       })
+    //   )
+    //   .then(res => console.log(res))
+    //   .then(F.ignore)
+  }
 
   static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
     return prisma.post.findMany({ where: { mediaHasBeenDownloaded: false, couldNotDownload: false } })
@@ -206,10 +206,15 @@ class DB {
   static addFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
     invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
 
-    // Lowercase feedId for reddit as they may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
+    // Lowercase feed name for reddit as user may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
     const name = feedDomain === 'reddit.com' ? feedName.toLowerCase() : feedName
 
-    return prisma.feed.create({ data: { domain: feedDomain, name } }).then(F.ignore)
+    return DB.getSingleFeed(feedName, feedDomain).then(res =>
+      res.cata({
+        Just: F.ignore,
+        Nothing: () => prisma.feed.create({ data: { domain: feedDomain, name } }).then(F.ignore),
+      })
+    )
   }
 
   static getAllFeeds(): Promise<readonly Feed[]> {
@@ -218,6 +223,12 @@ class DB {
 
   static getSingleFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<Maybe<Feed>> {
     return prisma.feed.findFirst({ where: { name: feedName, domain: feedDomain } }).then(nullable)
+  }
+
+  static removeFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
+    return prisma.feed
+      .delete({ where: { name_and_domain: { name: feedName, domain: feedDomain } } })
+      .then(F.ignore)
   }
 
   static getFavouriteFeeds(): Promise<readonly Feed[]> {
@@ -249,7 +260,16 @@ class DB {
   //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
   // }
 
-  static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
+  static addTag(tag: Tag['tag']): Promise<void> {
+    return DB.getSingleTag(tag).then(res =>
+      res.cata({
+        Just: F.ignore,
+        Nothing: () => prisma.tag.create({ data: { tag } }).then(F.ignore),
+      })
+    )
+  }
+
+  static getSingleTag(tag: Tag['tag']): Promise<Maybe<Tag>> {
     return prisma.tag.findFirst({ where: { tag } }).then(nullable)
   }
 
@@ -262,55 +282,4 @@ class DB {
   }
 }
 
-// const delay = (): Promise<unknown> =>
-//   new Promise(resolve => {
-//     setTimeout(resolve)
-//   })
-
-const thing = (): Promise<void | readonly void[]> =>
-  // console.log(DB.thing2())
-  // DB.getAllPosts()
-  DB.getSettings()
-    .then(res => {
-      res.cata({
-        Just: h => console.log(h),
-        Nothing: () => console.log(`no data :-(`),
-      })
-      // console.log(res)
-    })
-    // surrealdb
-    //   .query(`select {1, 2, 3};`)
-    //   .then(result => {
-    //     console.log(result)
-    //   })
-    // DB.addSubreddit('merp')
-    //   .then(() =>
-    //     Promise.all(
-    //       // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment,@typescript-eslint/no-magic-numbers
-    //       [...Array(30)].map((_, idx) =>
-    //         delay().then(() =>
-    //           DB.addPost({
-    //             postId: `asd-${idx}`,
-    //             couldNotDownload: false,
-    //             downloadedMediaCount: 0,
-    //             mediaDownloadTries: 0,
-    //             mediaHasBeenDownloaded: false,
-    //             mediaUrl: 'http://asd.com',
-    //             postMediaImagesHaveBeenProcessed: false,
-    //             postThumbnailsCreated: false,
-    //             postUrl: 'http://xcv.com',
-    //             score: 2,
-    //             subreddit: 'merp',
-    //             timestamp: Date.now(),
-    //             title: 'hello',
-    //           })
-    //         )
-    //       )
-    //     )
-    //   )
-    .catch(err => {
-      console.log('caught in catch:')
-      console.error(err)
-    })
-
-export { thing, DB }
+export { DB }
