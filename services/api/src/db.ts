@@ -2,160 +2,155 @@ import path from 'path'
 
 import { F, G } from '@mobily/ts-belt'
 import invariant from 'tiny-invariant'
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, type Feed, type Log, type Post, type Settings, type Tag } from '@prisma/client'
+import type { Jsonifiable } from 'type-fest'
 
 import { EE } from './events'
-import type { DBTable, Feed, IncomingLog, Log, Post, Settings, Tag } from './entities'
-import { getEnvFilePath } from './utils'
 import { nullable, type Maybe } from 'pratica'
 
-// const dbFilePath = path.join(getEnvFilePath(process.env['DATA_PATH']), 'rido.db')
-// const dbLogging = process.env['LOG_DB_QUERIES'] === 'true' ? console.log : false
+type IncomingLog = Pick<Log, 'level'> &
+  Partial<Pick<Log, 'message' | 'error' | 'service'>> & { readonly other?: Jsonifiable }
 
-const prisma = new PrismaClient()
+type IncomingPost = Pick<
+  Post,
+  'postId' | 'feedDomain' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl' | 'feedId'
+>
 
-const defaultSettings = {
-  uniqueId: 'settings',
-  numberMediaDownloadsAtOnce: 2,
-  numberImagesProcessAtOnce: 2,
-  updateAllDay: true,
-  updateStartingHour: 1,
-  /* eslint-disable @typescript-eslint/no-magic-numbers */
-  updateEndingHour: 7,
-  imageCompressionQuality: 80,
-  maxImageWidthDorNonArchiveImage: 1400,
-  /* eslint-enable @typescript-eslint/no-magic-numbers */
-}
+type PostDataUpdates = Partial<
+  Pick<
+    Post,
+    | 'mediaHasBeenDownloaded'
+    | 'couldNotDownload'
+    | 'postMediaImagesHaveBeenProcessed'
+    | 'postThumbnailsCreated'
+    | 'postMediaImagesProcessingError'
+    | 'downloadError'
+    | 'mediaDownloadTries'
+    | 'downloadedMediaCount'
+    | 'downloadedMedia'
+  >
+>
+
+const prisma = new PrismaClient({
+  // https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/logging#the-log-option
+  log: process.env['LOG_ALL_DB_QUERIES'] === 'true' ? ['query', 'info', 'warn', 'error'] : undefined,
+})
 
 class DB {
+  static async init(): Promise<void> {
+    await prisma.$executeRaw`PRAGMA journal_mode=WAL;`
+    // .then(() => prisma.settings.findFirst({ where: { uniqueId: 'settings' } }))
+    // .then(nullable)
+    // .then(res =>
+    //   res.cata({
+    //     Just: F.ignore,
+    //     Nothing: () => prisma.settings.create({ data: {} }).then(F.ignore),
+    //   })
+    // )
+  }
+
+  readonly close = prisma.$disconnect
+
+  static async getSettings(): Promise<Maybe<Settings>> {
+    return prisma.settings.findFirst().then(nullable)
+  }
+
+  static updateSettings(setting: Partial<Settings>): Promise<void> {
+    return prisma.settings.update({ where: { uniqueId: 'settings' }, data: setting }).then(F.ignore)
+  }
+
+  static saveLog(log: IncomingLog): Promise<void> {
+    const otherAsStr = log.other ? JSON.stringify(log.other) : undefined
+
+    return prisma.log.create({ data: { ...log, other: otherAsStr } }).then(F.ignore)
+  }
+
+  static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+    return prisma.log.findMany({ orderBy: { createdAt: 'desc' }, skip, take: limit })
+  }
+
+  static findLogs_AllLevels_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return prisma.log.findMany({
+      where: {
+        OR: [
+          { message: { contains: searchQuery } },
+          { service: { contains: searchQuery } },
+          { error: { contains: searchQuery } },
+          { other: { contains: searchQuery } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    })
+  }
+
+  static findLogs_LevelFilter_NoSearch_Paginated(
+    page: number,
+    limit: number,
+    logLevel: Log['level']
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return prisma.log.findMany({
+      where: { level: logLevel },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    })
+  }
+
+  static findLogs_LevelFilter_WithSearch_Paginated(
+    page: number,
+    limit: number,
+    searchQuery: string,
+    logLevel: Log['level']
+  ): Promise<readonly Log[]> {
+    const skip = page === 1 ? 0 : (page - 1) * limit
+
+    return prisma.log.findMany({
+      where: {
+        OR: [
+          { message: { contains: searchQuery } },
+          { service: { contains: searchQuery } },
+          { error: { contains: searchQuery } },
+          { other: { contains: searchQuery } },
+          { AND: { level: logLevel } },
+        ],
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,
+    })
+  }
+
+  static getAllPosts(): Promise<readonly Post[]> {
+    return prisma.post.findMany()
+  }
+
+  static getSinglePost(feedDomain: Post['feedDomain'], postId: Post['postId']): Promise<Maybe<Post>> {
+    return prisma.post.findFirst({ where: { feedDomain, postId } }).then(nullable)
+  }
+
   // eslint-disable-next-line max-lines-per-function
-  // static async init(): Promise<void> {
-  //   const session = driver.session({ database: 'rido' })
-  //   const createDefaultSettings = (): Promise<void> =>
-  //     session
-  //       .run(
-  //         `MERGE (settings:Settings {uniqueId : $uniqueId})
-  //             ON CREATE SET numberMediaDownloadsAtOnce = $numberMediaDownloadsAtOnce
-  //             ON CREATE SET numberImagesProcessAtOnce = $numberImagesProcessAtOnce
-  //             ON CREATE SET updateAllDay = $updateAllDay
-  //             ON CREATE SET updateStartingHour = $updateStartingHour
-  //             ON CREATE SET updateEndingHour = $updateEndingHour
-  //             ON CREATE SET imageCompressionQuality = $imageCompressionQuality
-  //             ON CREATE SET maxImageWidthDorNonArchiveImage = $maxImageWidthDorNonArchiveImage
-  //       `,
-  //         defaultSettings
-  //       )
-  //       .then(F.ignore)
-  //   try {
-  //     await createDefaultSettings()
-  //   } catch (error) {
-  //     await session.close()
-  //     throw error
-  //   }
-  //   await session.close()
-  // }
-  // readonly close = S.close
-  // static async getSettings(): Promise<QueryResult<Settings>> {
-  //   const session = driver.session({ database: 'rido' })
-  //   let results
-  //   try {
-  //     results = await session.run(`MATCH (settings:Settings {uniqueId: 'settings'}) LIMIT 1`)
-  //   } catch (error) {
-  //     await session.close()
-  //     throw error
-  //   }
-  //   await session.close()
-  //   return results
-  // }
-  // static updateSettings(setting: Partial<Settings>): Promise<void> {
-  //   return r.table('Settings').filter(r.row('uniqueId').eq('settings')).update(setting).run().then(F.ignore)
-  // }
-  // static saveLog(log: IncomingLog): Promise<void> {
-  //   const otherAsStr = log.other ? JSON.stringify(log.other) : ''
-  //   return r
-  //     .table('Log')
-  //     .insert({ ...log, otherAsStr, createdAt: Date.now() })
-  //     .run()
-  //     .then(F.ignore)
-  // }
-  // static getAllLogs_Paginated(page: number, limit: number): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  //   return r.table<Log>('Log').orderBy(r.desc('createdAt')).limit(limit).skip(skip).run()
-  // }
-  // static findLogs_AllLevels_WithSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   searchQuery: string
-  // ): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   const sq = `%${searchQuery.toLowerCase()}%`
-  //   return (
-  //     r
-  //       .table<Log>('Log')
-  //       // .filter((log:Log) => log.message)
-  //       .filter(r.js('(function (user) { return user.age > 30; })'))
-  //       // .filter(r.row('message').downcase().match(sq).or(r.row('message').downcase().match(sq)))
-  //       // .whereILike('message', sq)
-  //       // .orWhereILike('service', sq)
-  //       // .orWhereILike('error', sq)
-  //       // .orWhereILike('otherAsStr', sq)
-  //       // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  //       .orderBy(r.desc('createdAt'))
-  //       .limit(limit)
-  //       .skip(skip)
-  //       .run()
-  //   )
-  // }
-  // static findLogs_LevelFilter_NoSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   logLevel: Log['level']
-  // ): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   return knex<Log>('Log').where({ level: logLevel }).orderBy(r.desc('createdAt')).limit(limit).offset(skip)
-  // }
-  // static findLogs_LevelFilter_WithSearch_Paginated(
-  //   page: number,
-  //   limit: number,
-  //   searchQuery: string,
-  //   logLevel: Log['level']
-  // ): Promise<readonly Log[]> {
-  //   const skip = page === 1 ? 0 : (page - 1) * limit
-  //   const sq = `%${searchQuery.toLowerCase()}%`
-  //   return knex<Log>('Log')
-  //     .where({ level: logLevel })
-  //     .andWhere(function () {
-  //       this.whereILike('message', sq)
-  //         .orWhereILike('service', sq)
-  //         .orWhereILike('error', sq)
-  //         .orWhereILike('otherAsStr', sq)
-  //     })
-  //     .orderBy(r.desc('createdAt'))
-  //     .limit(limit)
-  //     .offset(skip)
-  // }
-  // static getAllPosts(): Promise<readonly Post[]> {
-  //   return knex<Post>('Post')
-  // }
-  // static getSinglePost(feedDomain: Post['feedDomain'], postId: Post['postId']): Promise<Maybe<Post>> {
-  //   return knex<Post>('Post').where({ feedDomain, postId }).first<Maybe<Post>>()
-  // }
-  // // eslint-disable-next-line max-lines-per-function
   // static async batchAddPosts(
   //   posts: readonly IncomingPost[],
   //   feedDomain: Post['feedDomain'],
   //   feedId: Post['feedId']
   // ): Promise<void> {
   //   invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+
   //   const postsOwnerFeed = await knex<Feed>('Feed').where({ feedDomain, feedId }).first()
+
   //   invariant(postsOwnerFeed, 'There is no owner feed for these posts')
-  //   const postsReadyForDB = posts.map(post => ({
-  //     ...post,
-  //     feedDomain,
-  //     feedId,
-  //     uniqueId: `${feedDomain}-${post.postId}`,
-  //   }))
+
   //   //TODO: Check whats the max amount of posts insert can do.
   //   return knex<Post>('Post')
   //     .insert(postsReadyForDB)
@@ -178,95 +173,93 @@ class DB {
   //     .then(res => console.log(res))
   //     .then(F.ignore)
   // }
-  // // //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
-  // // // static fetchAllPostIds(): Promise<readonly Post[]> {
-  // // //   return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
-  // // // }
-  // // static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
-  // //   return surrealdb
-  // //     .query<QueryResults<Post>>(
-  // //       `SELECT * FROM post WHERE mediaHasBeenDownloaded = false AND couldNotDownload = false`
-  // //     )
-  // //     .then(handleQueryResultMultipleItems)
-  // // }
-  // // static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
-  // //   return surrealdb
-  // //     .query<QueryResults<Post>>(
-  // //       `SELECT * FROM post WHERE mediaHasBeenDownloaded = true AND couldNotDownload = false AND postMediaImagesHaveBeenProcessed = false`
-  // //     )
-  // //     .then(handleQueryResultMultipleItems)
-  // // }
-  // // static updatePostData(
-  // //   feedDomain: Post['feedDomain'],
-  // //   feedId: Post['feedId'],
-  // //   postDataUpdates: Partial<Omit<Post>>
-  // // ): Promise<void> {
-  // //   return surrealdb
-  // //     .query('UPDATE post MERGE $postDataUpdates WHERE uniqueId = $uniqueId', {
-  // //       postDataUpdates,
-  // //     })
-  // //     .then(ignoreQueryResponse)
-  // // }
-  // static addFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
-  //   invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
-  //   const uniqueId = `${feedDomain}-${feedId}`
-  //   // Lowercase feedId for reddit as they may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
-  //   const fId = feedDomain === 'reddit.com' ? feedId.toLowerCase() : feedId
-  //   return knex<Feed>('Feed')
-  //     .insert({ feedId: fId, feedDomain, uniqueId })
-  //     .onConflict()
-  //     .ignore()
-  //     .then(F.ignore)
+
+  //TODO: this may need to be changed cause postId's are no longer unique, might need to get uniqueid, or postid+feed
+  // static fetchAllPostIds(): Promise<readonly Post[]> {
+  //   return client.query<QueryResults<Post>>(`SELECT postId FROM post`).then(handleResultMultipleItems)
   // }
-  // // static getAllFeeds(): Promise<readonly Feed[]> {
-  // //   return surrealdb.query<QueryResults<Feed>>('SELECT * FROM feed').then(handleQueryResultMultipleItems)
-  // // }
-  // // static getSingleFeed(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<Maybe<Feed>> {
-  // //   return surrealdb
-  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE feedId = $uniqueId', { uniqueId })
-  // //     .then(handleQueryResultSingleItem)
-  // // }
-  // // static getFavouriteFeeds(): Promise<readonly Feed[]> {
-  // //   return surrealdb
-  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE favourited = true')
-  // //     .then(handleQueryResultMultipleItems)
-  // // }
-  // // static getFeedsThatNeedToBeUpdated(): Promise<readonly Feed[]> {
-  // //   const oneHourInMillisecs = 3_600_000
-  // //   const anHourAgo = (): number => Date.now() - oneHourInMillisecs
-  // //   return surrealdb
-  // //     .query<QueryResults<Feed>>('SELECT * FROM feed WHERE updateCheck_lastUpdated < $anHourAgo', {
-  // //       anHourAgo: anHourAgo(),
-  // //     })
-  // //     .then(handleQueryResultMultipleItems)
-  // // }
-  // // static updateFeedLastUpdatedTimeToNow(feedId: Feed['feedId'], feedDomain: Feed['feedDomain']): Promise<void> {
-  // //   return surrealdb
-  // //     .query('UPDATE feed set updateCheck_lastUpdated = $nowMS WHERE feedId = $uniqueId', {
-  // //       nowMS: Date.now(),
-  // //     })
-  // //     .then(ignoreQueryResponse)
-  // // }
-  // // // // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
-  // // // // static getFeedTagsAssociatedWithFeed() {
-  // // // //   return e.select()
-  // // // // }
-  // // //static  getAllFeedTags(): Promise<readonly BaseTag[]> {
-  // // //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
-  // // // }
-  // // static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
-  // //   return surrealdb
-  // //     .query<QueryResults<Tag>>('SELECT * FROM tag WHERE tag = $tag', { tag })
-  // //     .then(handleQueryResultSingleItem)
-  // // }
-  // // static getAllTags(): Promise<readonly Tag[]> {
-  // //   return surrealdb.query<QueryResults<Tag>>('SELECT * FROM tag').then(handleQueryResultMultipleItems)
-  // // }
-  // // static getFavouriteTags(): Promise<readonly Tag[]> {
-  // //   return surrealdb
-  // //     .query<QueryResults<Tag>>('SELECT * FROM tag WHERE favourited = true')
-  // //     .then(handleQueryResultMultipleItems)
-  // // }
+
+  static getPostsThatNeedMediaToBeDownloaded(): Promise<readonly Post[]> {
+    return prisma.post.findMany({ where: { mediaHasBeenDownloaded: false, couldNotDownload: false } })
+  }
+
+  static getPostsWhereImagesNeedToBeOptimized(): Promise<readonly Post[]> {
+    return prisma.post.findMany({
+      where: {
+        mediaHasBeenDownloaded: true,
+        couldNotDownload: false,
+        postMediaImagesHaveBeenProcessed: false,
+      },
+    })
+  }
+
+  static updatePostData(
+    feedDomain: Post['feedDomain'],
+    postId: Post['postId'],
+    postDataUpdates: PostDataUpdates
+  ): Promise<void> {
+    return prisma.post
+      .update({ where: { feedDomain_postId: { feedDomain, postId } }, data: postDataUpdates })
+      .then(F.ignore)
+  }
+
+  static addFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
+    invariant(feedDomain.includes('.'), 'feedDomain is not a valid domain')
+
+    // Lowercase feedId for reddit as they may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
+    const name = feedDomain === 'reddit.com' ? feedName.toLowerCase() : feedName
+
+    return prisma.feed.create({ data: { domain: feedDomain, name } }).then(F.ignore)
+  }
+
+  static getAllFeeds(): Promise<readonly Feed[]> {
+    return prisma.feed.findMany()
+  }
+
+  static getSingleFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<Maybe<Feed>> {
+    return prisma.feed.findFirst({ where: { name: feedName, domain: feedDomain } }).then(nullable)
+  }
+
+  static getFavouriteFeeds(): Promise<readonly Feed[]> {
+    return prisma.feed.findMany({ where: { favourited: true } })
+  }
+
+  static getFeedsThatNeedToBeUpdated(): Promise<readonly Feed[]> {
+    const oneHourInMillisecs = 3_600_000
+    const anHourAgo = (): number => Date.now() - oneHourInMillisecs
+
+    return prisma.feed.findMany({ where: { updateCheck_lastUpdated: { lt: anHourAgo() } } })
+  }
+
+  static updateFeedLastUpdatedTimeToNow(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<void> {
+    return prisma.feed
+      .update({
+        where: { name_and_domain: { name: feedName, domain: feedDomain } },
+        data: { updateCheck_lastUpdated: Date.now() },
+      })
+      .then(F.ignore)
+  }
+
+  // TODO: would a backlink help here? https://www.edgedb.com/docs/intro/schema#backlinks
+  // static getFeedTagsAssociatedWithFeed() {
+  //   return e.select()
+  // }
+
+  // static  getAllFeedTags(): Promise<readonly BaseTag[]> {
+  //   return e.select(e.Tag, t => ({ ...tagShapeSansIdSansDBLinks(t) })).run(client)
+  // }
+
+  static getSingleTag({ tag }: Pick<Tag, 'tag'>): Promise<Maybe<Tag>> {
+    return prisma.tag.findFirst({ where: { tag } }).then(nullable)
+  }
+
+  static getAllTags(): Promise<readonly Tag[]> {
+    return prisma.tag.findMany()
+  }
+
+  static getFavouriteTags(): Promise<readonly Tag[]> {
+    return prisma.tag.findMany({ where: { favourited: true } })
+  }
 }
 
 // const delay = (): Promise<unknown> =>

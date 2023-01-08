@@ -115,11 +115,11 @@ DB.init().catch(err => console.error(err))
 //     //     //   }))
 //     //     // )
 //     .then(res => {
-//       // res.cata({
-//       //   Just: h => console.log(h),
-//       //   Nothing: () => console.log(`no data :-(`),
-//       // })
-//       console.log('res', res)
+//       res.cata({
+//         Just: h => console.log(h),
+//         Nothing: () => console.log(`no data :-(`),
+//       })
+//       // console.log('res', res)
 //     })
 //     // .then(() => DB.updateSettings({ numberImagesProcessAtOnce: 333 }))
 //     // .then(() => DB.getSettings())

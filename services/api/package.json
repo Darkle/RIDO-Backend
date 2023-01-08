@@ -1,13 +1,14 @@
 {
   "name": "api",
   "scripts": {
-    "dev": "NODE_ENV=development pnpm run setup && node --require ./src/env-loader.cjs --require @swc-node/register --watch ./src/api.ts",
+    "//": "NOTE: dotenv-extended cli can start processes, so dont use && as that loses the previous commands env vars.",
     "load-env-cli": "dotenv-extended --path=../../.env --defaults=../../.env.defaults --schema=./../.env.schema --errorOnMissing=true --errorOnRegex=true --assignToProcessEnv=true",
-    "//": "NOTE: dont use && as that loses the previous commands env vars. dotenv-extended cli can start processes.",
-    "setup": "node ./src/setup.cjs",
-    "inspect": "NODE_ENV=development node --require ./src/env-loader.cjs --require @swc-node/register --inspect ./src/api.ts",
-    "///": "NOTE: in the docker file, run setup before start",
-    "start": "NODE_ENV=production pnpm run setup && node --require ./src/env-loader.cjs --require @swc-node/register ./src/api.ts"
+    "gen-prisma-client": "pnpm run load-env-cli prisma generate",
+    "dev-start": "NODE_ENV=development node --require ./src/env-loader.cjs --require @swc-node/register --watch ./src/api.ts",
+    "dev-setup": "TODO: needs to be redone node ./src/setup.cjs && pnpm run load-env-cli prisma migrate dev && pnpm run load-env-cli prisma generate",
+    "prod-setup": "TODO: needs to be redone node ./src/setup.cjs && pnpm run load-env-cli prisma migrate deploy && pnpm run gen-prisma-client",
+    "prod-start": "NODE_ENV=production pnpm run setup-prod && node --require ./src/env-loader.cjs --require @swc-node/register ./src/api.ts",
+    "inspect": "NODE_ENV=development node --require ./src/env-loader.cjs --require @swc-node/register --inspect ./src/api.ts"
   },
   "engines": {
     "node": ">=18.2.0",

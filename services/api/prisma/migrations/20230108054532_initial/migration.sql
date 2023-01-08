@@ -26,6 +26,7 @@ CREATE TABLE "Logs" (
 CREATE TABLE "Posts" (
     "uniqueId" TEXT NOT NULL PRIMARY KEY,
     "postId" TEXT NOT NULL,
+    "feedDomain" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "postUrl" TEXT NOT NULL,
     "score" INTEGER NOT NULL,
@@ -39,7 +40,7 @@ CREATE TABLE "Posts" (
     "downloadError" TEXT,
     "mediaDownloadTries" INTEGER NOT NULL DEFAULT 0,
     "downloadedMediaCount" INTEGER NOT NULL DEFAULT 0,
-    "downloadedMedia" TEXT NOT NULL,
+    "downloadedMedia" TEXT NOT NULL DEFAULT '[]',
     "feedId" TEXT NOT NULL,
     CONSTRAINT "Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE
 );
@@ -85,7 +86,7 @@ CREATE TABLE "Tags_Feeds" (
 CREATE INDEX "Posts_uniqueId_postId_feedId_timestamp_idx" ON "Posts"("uniqueId", "postId", "feedId", "timestamp");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Posts_feedId_postId_key" ON "Posts"("feedId", "postId");
+CREATE UNIQUE INDEX "Posts_feedDomain_postId_key" ON "Posts"("feedDomain", "postId");
 
 -- CreateIndex
 CREATE INDEX "Feeds_uniqueId_domain_idx" ON "Feeds"("uniqueId", "domain");

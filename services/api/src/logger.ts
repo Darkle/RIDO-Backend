@@ -6,6 +6,8 @@ import microtime from 'microtime'
 import type { Log } from '@services/api/src/Entities/Log'
 import { trpcRouterCaller } from './api'
 
+// https://www.prisma.io/docs/concepts/components/prisma-client/working-with-prismaclient/logging#the-log-option
+
 enum LogLevel {
   error = 0,
   warn = 1,
