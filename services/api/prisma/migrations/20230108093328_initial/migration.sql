@@ -1,6 +1,9 @@
+-- CreateEnum
+CREATE TYPE "LogLevel" AS ENUM ('fatal', 'error', 'warn', 'info', 'debug', 'trace');
+
 -- CreateTable
 CREATE TABLE "Settings" (
-    "uniqueId" TEXT NOT NULL PRIMARY KEY DEFAULT 'settings',
+    "uniqueId" TEXT NOT NULL DEFAULT 'settings',
     "numberMediaDownloadsAtOnce" INTEGER NOT NULL DEFAULT 2,
     "numberImagesProcessAtOnce" INTEGER NOT NULL DEFAULT 2,
     "updateAllDay" BOOLEAN NOT NULL DEFAULT true,
@@ -8,29 +11,33 @@ CREATE TABLE "Settings" (
     "updateEndingHour" INTEGER NOT NULL DEFAULT 7,
     "imageCompressionQuality" INTEGER NOT NULL DEFAULT 80,
     "archiveImageCompressionQuality" INTEGER NOT NULL DEFAULT 80,
-    "maxImageWidthForNonArchiveImage" INTEGER NOT NULL DEFAULT 1400
+    "maxImageWidthForNonArchiveImage" INTEGER NOT NULL DEFAULT 1400,
+
+    CONSTRAINT "Settings_pkey" PRIMARY KEY ("uniqueId")
 );
 
 -- CreateTable
 CREATE TABLE "Logs" (
-    "uniqueId" TEXT NOT NULL PRIMARY KEY,
-    "createdAt" DATETIME NOT NULL DEFAULT (datetime('now', 'localtime')),
-    "level" TEXT NOT NULL,
+    "uniqueId" TEXT NOT NULL,
+    "createdAt" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "level" "LogLevel" NOT NULL,
     "message" TEXT,
     "service" TEXT,
     "error" TEXT,
-    "other" TEXT
+    "other" TEXT,
+
+    CONSTRAINT "Logs_pkey" PRIMARY KEY ("uniqueId")
 );
 
 -- CreateTable
 CREATE TABLE "Posts" (
-    "uniqueId" TEXT NOT NULL PRIMARY KEY,
+    "uniqueId" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
     "feedDomain" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "postUrl" TEXT NOT NULL,
     "score" INTEGER NOT NULL,
-    "timestamp" DATETIME NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
     "mediaUrl" TEXT NOT NULL,
     "mediaHasBeenDownloaded" BOOLEAN NOT NULL DEFAULT false,
     "couldNotDownload" BOOLEAN NOT NULL DEFAULT false,
@@ -40,26 +47,31 @@ CREATE TABLE "Posts" (
     "downloadError" TEXT,
     "mediaDownloadTries" INTEGER NOT NULL DEFAULT 0,
     "downloadedMediaCount" INTEGER NOT NULL DEFAULT 0,
-    "downloadedMedia" TEXT NOT NULL DEFAULT '[]',
+    "downloadedMedia" TEXT[] DEFAULT ARRAY[]::TEXT[],
     "feedId" TEXT NOT NULL,
-    CONSTRAINT "Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE
+
+    CONSTRAINT "Posts_pkey" PRIMARY KEY ("uniqueId")
 );
 
 -- CreateTable
 CREATE TABLE "Feeds" (
-    "uniqueId" TEXT NOT NULL PRIMARY KEY,
+    "uniqueId" TEXT NOT NULL,
     "domain" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "favourited" BOOLEAN NOT NULL DEFAULT false,
     "requiresBrowserForSraping" BOOLEAN NOT NULL DEFAULT false,
     "updateCheck_lastUpdated" INTEGER NOT NULL DEFAULT 0,
-    "updateCheck_LastPostSeen" TEXT
+    "updateCheck_LastPostSeen" TEXT,
+
+    CONSTRAINT "Feeds_pkey" PRIMARY KEY ("uniqueId")
 );
 
 -- CreateTable
 CREATE TABLE "Tags" (
-    "tag" TEXT NOT NULL PRIMARY KEY,
-    "favourited" BOOLEAN NOT NULL DEFAULT false
+    "tag" TEXT NOT NULL,
+    "favourited" BOOLEAN NOT NULL DEFAULT false,
+
+    CONSTRAINT "Tags_pkey" PRIMARY KEY ("tag")
 );
 
 -- CreateTable
@@ -67,9 +79,7 @@ CREATE TABLE "Tags_Posts" (
     "postId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
 
-    PRIMARY KEY ("postId", "tagId"),
-    CONSTRAINT "Tags_Posts_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Tags_Posts_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags" ("tag") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "Tags_Posts_pkey" PRIMARY KEY ("postId","tagId")
 );
 
 -- CreateTable
@@ -77,9 +87,7 @@ CREATE TABLE "Tags_Feeds" (
     "feedId" TEXT NOT NULL,
     "tagId" TEXT NOT NULL,
 
-    PRIMARY KEY ("feedId", "tagId"),
-    CONSTRAINT "Tags_Feeds_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds" ("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "Tags_Feeds_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags" ("tag") ON DELETE CASCADE ON UPDATE CASCADE
+    CONSTRAINT "Tags_Feeds_pkey" PRIMARY KEY ("feedId","tagId")
 );
 
 -- CreateIndex
@@ -93,3 +101,18 @@ CREATE INDEX "Feeds_uniqueId_domain_idx" ON "Feeds"("uniqueId", "domain");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Feeds_domain_name_key" ON "Feeds"("domain", "name");
+
+-- AddForeignKey
+ALTER TABLE "Posts" ADD CONSTRAINT "Posts_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Tags_Posts" ADD CONSTRAINT "Tags_Posts_postId_fkey" FOREIGN KEY ("postId") REFERENCES "Posts"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Tags_Posts" ADD CONSTRAINT "Tags_Posts_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags"("tag") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Tags_Feeds" ADD CONSTRAINT "Tags_Feeds_feedId_fkey" FOREIGN KEY ("feedId") REFERENCES "Feeds"("uniqueId") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Tags_Feeds" ADD CONSTRAINT "Tags_Feeds_tagId_fkey" FOREIGN KEY ("tagId") REFERENCES "Tags"("tag") ON DELETE CASCADE ON UPDATE CASCADE;

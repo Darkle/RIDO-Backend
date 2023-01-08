@@ -1,4 +1,4 @@
-import { F, G } from '@mobily/ts-belt'
+import { F } from '@mobily/ts-belt'
 import invariant from 'tiny-invariant'
 import { PrismaClient, type Feed, type Log, type Post, type Settings, type Tag } from '@prisma/client'
 import type { Jsonifiable } from 'type-fest'
@@ -7,7 +7,9 @@ import { EE } from './events'
 import { nullable, type Maybe } from 'pratica'
 
 type IncomingLog = Pick<Log, 'level'> &
-  Partial<Pick<Log, 'message' | 'error' | 'service'>> & { readonly other?: Jsonifiable }
+  Partial<Pick<Log, 'message' | 'error' | 'service'>> & {
+    readonly other?: Jsonifiable
+  }
 
 type IncomingPost = Pick<
   Post,

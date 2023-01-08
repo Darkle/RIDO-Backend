@@ -6,8 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DB_FILE_PATH")
+  provider = "postgresql"
+  url      = env("DB_URL")
 }
 
 model Settings {
@@ -22,11 +22,19 @@ model Settings {
   maxImageWidthForNonArchiveImage Int     @default(1400)
 }
 
+enum LogLevel {
+  fatal
+  error
+  warn
+  info
+  debug
+  trace
+}
+
 model Log {
-  uniqueId  String   @id @default(cuid())
-  // https://stackoverflow.com/questions/381371 https://stackoverflow.com/questions/200309/
-  createdAt DateTime @default(dbgenerated("(datetime('now', 'localtime'))"))
-  level     String
+  uniqueId  String   @id @default(uuid())
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  level     LogLevel
   message   String?
   service   String?
   error     String?
@@ -36,7 +44,7 @@ model Log {
 }
 
 model Post {
-  uniqueId                         String       @id @default(cuid())
+  uniqueId                         String       @id @default(uuid())
   postId                           String
   feedDomain                       String
   title                            String
@@ -52,8 +60,7 @@ model Post {
   downloadError                    String?
   mediaDownloadTries               Int          @default(0)
   downloadedMediaCount             Int          @default(0)
-  /// downloadedMedia is a JSON stringified array of strings 
-  downloadedMedia                  String       @default("[]")
+  downloadedMedia                  String[]     @default([])
   feed                             Feed         @relation(fields: [feedId], references: [uniqueId], onDelete: Cascade)
   feedId                           String
   tags                             Tags_Posts[]
@@ -64,7 +71,7 @@ model Post {
 }
 
 model Feed {
-  uniqueId                  String       @id @default(cuid())
+  uniqueId                  String       @id @default(uuid())
   domain                    String
   /// This should be lowercased when the domain is reddit.com
   name                      String
