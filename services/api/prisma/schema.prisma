@@ -38,6 +38,7 @@ model Post {
   uniqueId                         String       @id @default(uuid())
   postId                           String
   feedDomain                       String
+  feedName                       String
   title                            String
   postUrl                          String
   score                            Int

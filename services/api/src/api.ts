@@ -6,7 +6,7 @@
 // import { logRoutes } from './routes/log-routes'
 // import { initStaticFileServer } from './static-file-server'
 // import { settingsRoutes } from './routes/settings-routes'
-import { DB } from './db'
+import { DB } from './db/db'
 // import { startSubscriptionsServer } from './routes/sse-subscriptions'
 // import { postRoutes } from './routes/post-routes'
 // import { subredditRoutes } from './routes/subreddit-routes'
@@ -89,9 +89,10 @@ DB.init().catch(err => console.error(err))
 // export type { AppRouter }
 
 // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-const randomPosts = Array.from({ length: 20 }).map((_, idx) => ({
+const randomPosts = Array.from({ length: 80 }).map((_, idx) => ({
   postId: `post-id${idx}`,
   feedDomain: 'reddit.com',
+  feedName: 'aww',
   title: 'post-title',
   postUrl: 'http://foo.com',
   score: idx,
@@ -100,9 +101,10 @@ const randomPosts = Array.from({ length: 20 }).map((_, idx) => ({
 }))
 
 setTimeout(() => {
-  // DB.batchAddPosts(randomPosts, 'reddit.com', 'aww')
+  // DB.batchAddPosts(randomPosts, 'reddit.com', 'cats')
   // DB.getSinglePostWithItsFeedAttatched('reddit.com', `post-id1`)
-    DB.addTag('myFavs')
+  DB.getPostsOfFeed('aww', 'reddit.com')
+    // DB.addFeed('cats', 'reddit.com')
     // DB.getSettings()
     // DB.getSingleFeed('aww', 'reddit.com')
     //   // DB.addPost({
@@ -130,11 +132,11 @@ setTimeout(() => {
     //     //   }))
     //     // )
     .then(res => {
-      // res.cata({
-        // Just: h => console.log(h),
-        // Nothing: () => console.log(`no data :-(`),
-      // })
-      console.log('res', res)
+      res.cata({
+        Just: h => console.log(h),
+        Nothing: () => console.log(`no data :-(`),
+      })
+      // console.log('res', res)
     })
     // .then(() => DB.updateSettings({ numberImagesProcessAtOnce: 333 }))
     // .then(() => DB.getSettings())

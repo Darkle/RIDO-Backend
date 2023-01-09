@@ -31,6 +31,7 @@ CREATE TABLE "Posts" (
     "uniqueId" TEXT NOT NULL,
     "postId" TEXT NOT NULL,
     "feedDomain" TEXT NOT NULL,
+    "feedName" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "postUrl" TEXT NOT NULL,
     "score" INTEGER NOT NULL,

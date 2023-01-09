@@ -1,4 +1,4 @@
-import { DB } from '../db'
+import { DB } from '../db/db'
 import { SettingsZSchema } from '../ZodSchemas'
 import { trpc } from '../api'
 

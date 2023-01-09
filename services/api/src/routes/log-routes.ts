@@ -1,4 +1,4 @@
-import { DB } from '../db'
+import { DB } from '../db/db'
 import { logSearchZSchema, LogZSchema } from '../ZodSchemas'
 import { trpc } from '../api'
 

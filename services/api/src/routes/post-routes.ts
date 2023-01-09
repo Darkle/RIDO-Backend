@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { DB } from '../db'
+import { DB } from '../db/db'
 import { trpc } from '../api'
 import { IncommingPostZSchema } from '../ZodSchemas'
 

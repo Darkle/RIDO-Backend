@@ -18,3 +18,6 @@
     4. Then run `psql rido`
     5. In the psql repl, run `CREATE USER rido PASSWORD 'rido'; ALTER USER rido WITH SUPERUSER;` ([prisma requires user to be superuser](https://www.prisma.io/docs/concepts/components/prisma-migrate/shadow-database#shadow-database-user-permissions))
   - Using postgres 15.1
+  - When in a postres scratchpad, remember that PostgreSQL uses double quotes (") to signify system identifiers (such as tables, columns, etc.) while using single quotes (') to signify text.
+    - So this is incorrect: `SELECT Count(*) FROM Posts WHERE feedName = "cats"`
+    - This is correct: `SELECT Count(*) FROM "Posts" WHERE "feedName" = 'cats'`
