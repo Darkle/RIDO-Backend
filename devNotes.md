@@ -10,6 +10,8 @@
 
 - If you need to use the prisma cli, run `pnpm run load-env-cli <prisma command here>`. `pnpm run load-env-cli` loads the env vars so that they are available on the command line. We dont use `&&` as that would lose all the env vars for the next command. dotenv-extended can call other processes, which is what `pnpm run load-env-cli` is running.
 
+- Run `pnpm run dev-setup` in api folder to get that set up before running `pnpm run dev-start` in api folder
+
 - Postgres notes:
   - Setting up for dev:
     1. Download and install Postgres: https://www.postgresql.org/download/

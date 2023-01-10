@@ -1,13 +1,11 @@
 import type { Feed, Post } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { nullable, type Maybe } from 'pratica'
 import invariant from 'tiny-invariant'
 
 import { prisma } from './prisma-instance'
 
-type IncomingPost = Pick<
-  Post,
-  'postId' | 'feedDomain' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl'
->
+type IncomingPost = Pick<Post, 'postId' | 'title' | 'postUrl' | 'score' | 'timestamp' | 'mediaUrl'>
 
 type PostDataUpdates = Partial<
   Pick<
@@ -40,8 +38,7 @@ function getSinglePostWithItsFeed(
 }
 
 async function batchAddPosts(
-  // eslint-disable-next-line functional/prefer-readonly-type
-  posts: IncomingPost[],
+  posts: readonly IncomingPost[],
   feedDomain: Post['feedDomain'],
   feedName: Feed['name']
 ): Promise<void> {
@@ -51,7 +48,15 @@ async function batchAddPosts(
 
   invariant(postsOwnerFeed, 'There is no owner feed for these posts')
 
-  const postsForDB = posts.map(post => ({ ...post, feedId: postsOwnerFeed.uniqueId, feedDomain, feedName }))
+  // Lowercase feed name for reddit as user may have different casing when input and dont want dupes. We dont do this for non reddit feed ids as casing would be important (eg a thread id of `pu38Fg8` where casing matters)
+  const name = feedDomain === 'reddit.com' ? feedName.toLowerCase() : feedName
+
+  const postsForDB = posts.map(post => ({
+    ...post,
+    feedId: postsOwnerFeed.uniqueId,
+    feedDomain,
+    feedName: name,
+  }))
 
   await prisma.post.createMany({ data: postsForDB, skipDuplicates: true })
 }
@@ -78,7 +83,14 @@ async function updatePostData(
   await prisma.post.update({ where: { feedDomain_postId: { feedDomain, postId } }, data: postDataUpdates })
 }
 
-function getPostsOfFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<Maybe<Feed>> {
+// https://www.prisma.io/docs/concepts/components/prisma-client/advanced-type-safety/operating-against-partial-structures-of-model-types
+const feedWithPosts = Prisma.validator<Prisma.FeedArgs>()({
+  include: { posts: true },
+})
+
+type FeedWithPosts = Prisma.FeedGetPayload<typeof feedWithPosts>
+
+function getPostsOfFeed(feedName: Feed['name'], feedDomain: Feed['domain']): Promise<Maybe<FeedWithPosts>> {
   return prisma.feed
     .findFirst({ where: { name: feedName, domain: feedDomain }, include: { posts: true } })
     .then(nullable)
@@ -94,3 +106,5 @@ export {
   updatePostData,
   getPostsOfFeed,
 }
+
+export type { IncomingPost }

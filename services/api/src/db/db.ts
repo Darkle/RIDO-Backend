@@ -21,6 +21,13 @@ import {
 } from './db-feed-methods'
 import { addTag, getSingleTag, getAllTags, getFavouriteTags, findTag } from './db-tag-methods'
 import { getSettings, updateSettings, createDefaultSettingsIfNotExist } from './db-settings-methods'
+import {
+  saveLog,
+  getAllLogs_Paginated,
+  findLogs_AllLevels_WithSearch_Paginated,
+  findLogs_LevelFilter_NoSearch_Paginated,
+  findLogs_LevelFilter_WithSearch_Paginated,
+} from './db-log-methods'
 
 /* eslint-disable @typescript-eslint/lines-between-class-members */
 
@@ -30,6 +37,12 @@ class DB {
   static init(): Promise<void> {
     return createDefaultSettingsIfNotExist()
   }
+
+  static readonly saveLog = saveLog
+  static readonly getAllLogs_Paginated = getAllLogs_Paginated
+  static readonly findLogs_AllLevels_WithSearch_Paginated = findLogs_AllLevels_WithSearch_Paginated
+  static readonly findLogs_LevelFilter_NoSearch_Paginated = findLogs_LevelFilter_NoSearch_Paginated
+  static readonly findLogs_LevelFilter_WithSearch_Paginated = findLogs_LevelFilter_WithSearch_Paginated
 
   static readonly getSettings = getSettings
   static readonly updateSettings = updateSettings

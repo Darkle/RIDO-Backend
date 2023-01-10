@@ -1,5 +1,15 @@
 import { z, type ZodSchema } from 'zod'
-import type { IncomingPost, Settings, IncomingFeed, Tag, IncomingLog } from './entities'
+import type { Feed, Settings, Tag } from '@prisma/client'
+
+import type { IncomingLog } from './db/db-log-methods'
+import type { IncomingPost } from './db/db-post-methods'
+
+type IncomingFeed = Pick<Feed, 'name' | 'domain'>
+
+// https://zod.dev/?id=custom-schemas
+const feedDomainZSchema = z.custom<IncomingFeed['domain']>(val =>
+  typeof val === 'string' ? val.includes('.') && val.length : false
+)
 
 // From https://zod.dev/?id=json-type
 const literalSchema = z.union([z.string(), z.number(), z.boolean(), z.null()])
@@ -34,22 +44,32 @@ const logSearchZodSchema = z.object({
   logLevelFilter: z.enum(['all', 'error', 'warn', 'info', 'debug', 'trace']).default('all'),
 })
 
-const incomingPostZodSchema: ZodSchema<IncomingPost> = z.object({
-  postId: z.string().min(2),
-  title: z.string().min(2),
-  postUrl: z.string().url(),
-  score: z.number(),
-  timestamp: z.number().positive(),
-  mediaUrl: z.string().url(),
-  mediaHasBeenDownloaded: z.boolean().default(false).optional(),
-  couldNotDownload: z.boolean().default(false).optional(),
-  postMediaImagesHaveBeenProcessed: z.boolean().default(false).optional(),
-  postMediaImagesProcessingError: z.string().optional(),
-  postThumbnailsCreated: z.boolean().default(false).optional(),
-  mediaDownloadTries: z.number().gt(-1).default(0).optional(),
-  downloadedMediaCount: z.number().gt(-1).default(0).optional(),
-  downloadError: z.string().optional(),
-  downloadedMedia: z.array(z.string()).optional(),
+const incomingPostsZodSchema: ZodSchema<{
+  readonly feedDomain: Feed['domain']
+  readonly feedName: Feed['name']
+  readonly posts: readonly IncomingPost[]
+}> = z.object({
+  feedDomain: feedDomainZSchema,
+  feedName: z.string().min(2),
+  posts: z.array(
+    z.object({
+      postId: z.string().min(2),
+      title: z.string().min(2),
+      postUrl: z.string().url(),
+      score: z.number(),
+      timestamp: z.date(),
+      mediaUrl: z.string().url(),
+      mediaHasBeenDownloaded: z.boolean().default(false).optional(),
+      couldNotDownload: z.boolean().default(false).optional(),
+      postMediaImagesHaveBeenProcessed: z.boolean().default(false).optional(),
+      postMediaImagesProcessingError: z.string().optional(),
+      postThumbnailsCreated: z.boolean().default(false).optional(),
+      mediaDownloadTries: z.number().gt(-1).default(0).optional(),
+      downloadedMediaCount: z.number().gt(-1).default(0).optional(),
+      downloadError: z.string().optional(),
+      downloadedMedia: z.array(z.string()).optional(),
+    })
+  ),
 })
 
 /* eslint-disable @typescript-eslint/no-magic-numbers */
@@ -71,10 +91,7 @@ const incomingSettingsZodSchema: ZodSchema<Partial<Settings>> = z
 /* eslint-enable @typescript-eslint/no-magic-numbers */
 
 const incomingFeedZodSchema: ZodSchema<IncomingFeed> = z.object({
-  // https://zod.dev/?id=custom-schemas
-  domain: z.custom<IncomingFeed['domain']>(val =>
-    typeof val === 'string' ? val.includes('.') && val.length : false
-  ),
+  domain: feedDomainZSchema,
   name: z.string().min(1),
 })
 
@@ -84,9 +101,10 @@ const TagZodSchema: ZodSchema<Pick<Tag, 'tag'>> = z.object({
 
 export {
   incomingLogZodSchema,
-  incomingPostZodSchema,
+  incomingPostsZodSchema,
   incomingSettingsZodSchema,
   incomingFeedZodSchema,
   TagZodSchema,
   logSearchZodSchema,
+  feedDomainZSchema,
 }

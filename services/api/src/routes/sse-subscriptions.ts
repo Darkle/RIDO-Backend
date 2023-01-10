@@ -1,13 +1,13 @@
 import { PassThrough } from 'stream'
-
+import type { Settings } from '@prisma/client'
 import Koa from 'koa'
 import { StatusCodes as HttpStatusCode } from 'http-status-codes'
+
 import { EE } from '../events'
-import type { SettingsSansId } from '../Entities/Settings'
 
 const subscriptionsServer = new Koa()
 
-const createSSEEvent = (event: string, data: SettingsSansId): string =>
+const createSSEEvent = (event: string, data: Settings): string =>
   `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`
 
 // https://medium.com/trabe/server-sent-events-sse-streams-with-node-and-koa-d9330677f0bf
@@ -31,7 +31,7 @@ subscriptionsServer.use(ctx => {
   // eslint-disable-next-line functional/immutable-data
   ctx.body = stream
 
-  const settingsUpdate = (data: SettingsSansId): void => {
+  const settingsUpdate = (data: Settings): void => {
     stream.write(createSSEEvent('settings-update', data))
   }
 

@@ -11,6 +11,7 @@ async function getSettings(): Promise<Maybe<Settings>> {
 
 function updateSettings(setting: Partial<Settings>): Promise<void> {
   return prisma.settings.update({ where: { uniqueId: 'settings' }, data: setting }).then(updatedSettings => {
+    console.log('settings update ', updatedSettings)
     EE.emit('settingsUpdate', updatedSettings)
   })
 }

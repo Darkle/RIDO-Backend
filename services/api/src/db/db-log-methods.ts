@@ -105,3 +105,5 @@ export {
   findLogs_LevelFilter_NoSearch_Paginated,
   findLogs_LevelFilter_WithSearch_Paginated,
 }
+
+export type { IncomingLog }
